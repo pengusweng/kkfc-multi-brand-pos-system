@@ -184,7 +184,7 @@ export class KitchenQcService {
       this.logger,
     );
 
-    this.assertKitchenTicketIsApprovable(kitchenTicket, attempt);
+    this.assertKitchenTicketIsPassable(kitchenTicket, attempt);
 
     const passedAttempt = await this.kitchenQcRepository.updateStatus(
       attemptId,
@@ -195,6 +195,35 @@ export class KitchenQcService {
     this.logger.log(`Passed attempt ${attemptId}`);
 
     return passedAttempt;
+  }
+
+  async failAttempt(attemptId: string) {
+    this.logger.debug(`Rejecting QC attempt ${attemptId}`);
+
+    const attempt = await this.findOneUID(attemptId);
+
+    const kitchenTicket = await this.kitchenTicketRepository.findOne(
+      attempt.kitchen_ticket_id,
+    );
+
+    assertExists(
+      kitchenTicket,
+      'KitchenTicket',
+      attempt.kitchen_ticket_id,
+      this.logger,
+    );
+
+    this.assertKitchenTicketIsFailable(kitchenTicket, attempt);
+
+    const failedAttempt = await this.kitchenQcRepository.updateStatus(
+      attemptId,
+      KitchenTicketQcStatus.FAILED,
+      KitchenTicketQcStatus.IN_PROGRESS,
+    );
+
+    this.logger.log(`Failed attempt ${attemptId}`);
+
+    return failedAttempt;
   }
 
   private assertTicketIsForChecking(kitchenTicket: KitchenTicket) {
@@ -239,7 +268,7 @@ export class KitchenQcService {
     }
   }
 
-  private assertKitchenTicketIsApprovable(
+  private assertKitchenTicketIsPassable(
     kitchenTicket: KitchenTicket,
     attempt: KitchenTicketQcAttempt,
   ) {
@@ -263,6 +292,34 @@ export class KitchenQcService {
       throw new ConflictException({
         code: 'UNABLE_TO_APPROVE_QC_ATTEMPT',
         message: `Cannot approve kitchen QC. Kitchen QC attempt is already ${attempt.status}.`,
+      });
+    }
+  }
+
+  private assertKitchenTicketIsFailable(
+    kitchenTicket: KitchenTicket,
+    attempt: KitchenTicketQcAttempt,
+  ) {
+    if (kitchenTicket.status !== KitchenTicketStatus.CHECKING) {
+      this.logger.warn(
+        `Kitchen ticket ${kitchenTicket.kitchen_ticket_id} for QC ${attempt.kitchen_ticket_id} is not for checking.`,
+      );
+
+      throw new ConflictException({
+        code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
+        message:
+          'Cannot reject kitchen QC attempt. Kitchen ticket is not for checking.',
+      });
+    }
+
+    if (attempt.status !== KitchenTicketQcStatus.IN_PROGRESS) {
+      this.logger.warn(
+        `Attempt ${attempt.qc_attempt_id} cannot be failed, status=${attempt.status}`,
+      );
+
+      throw new ConflictException({
+        code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
+        message: `Cannot reject kitchen QC. Kitchen QC attempt is already ${attempt.status}.`,
       });
     }
   }

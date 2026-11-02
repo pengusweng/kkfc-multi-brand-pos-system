@@ -1,9 +1,9 @@
 import { Logger, NotFoundException } from '@nestjs/common';
 import { KitchenTicketStatus, Prisma } from '@prisma/client';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { OrdersRepository } from '../../orders/orders/orders.repository';
-import { KitchenTicketRepository } from './kitchen-ticket.repository';
-import { KitchenTicketService } from './kitchen-ticket.service';
+import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { OrdersRepository } from '../../../orders/orders/orders.repository';
+import { KitchenTicketRepository } from '../kitchen-ticket.repository';
+import { KitchenTicketService } from '../kitchen-ticket.service';
 
 const now = new Date('2026-10-30T04:00:00Z');
 const earlier = new Date('2026-10-30T03:00:00Z');

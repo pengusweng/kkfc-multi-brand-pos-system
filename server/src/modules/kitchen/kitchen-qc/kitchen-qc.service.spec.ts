@@ -205,6 +205,120 @@ describe('KitchenQcService', () => {
     });
   });
 
+  describe('failAttempt', () => {
+    const failedAttempt = {
+      ...attempt,
+      status: KitchenTicketQcStatus.FAILED,
+      completed_at: now,
+    };
+
+    beforeEach(() => {
+      ticketRepository.findOne.mockResolvedValue({
+        ...ticket,
+        status: KitchenTicketStatus.CHECKING,
+      });
+      repository.updateStatus.mockResolvedValue(failedAttempt);
+    });
+
+    it('fails an in-progress attempt for a ticket being checked and returns the saved attempt', async () => {
+      await expect(service.failAttempt('attempt')).resolves.toBe(failedAttempt);
+
+      expect(repository.findOneUID).toHaveBeenCalledWith('attempt');
+      expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket');
+      expect(repository.updateStatus).toHaveBeenCalledTimes(1);
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'attempt',
+        KitchenTicketQcStatus.FAILED,
+        KitchenTicketQcStatus.IN_PROGRESS,
+      );
+    });
+
+    it('rejects a missing attempt before looking up the ticket or updating', async () => {
+      repository.findOneUID.mockResolvedValue(null);
+
+      await expect(service.failAttempt('missing')).rejects.toMatchObject({
+        status: 404,
+        response: { code: 'KITCHEN_TICKET_QC_ATTEMPT_NOT_FOUND' },
+      });
+      expect(ticketRepository.findOne).not.toHaveBeenCalled();
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing kitchen ticket without updating the attempt', async () => {
+      ticketRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+        status: 404,
+        response: { code: 'KITCHEN_TICKET_NOT_FOUND' },
+      });
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it.each(
+      Object.values(KitchenTicketStatus).filter(
+        (status) => status !== KitchenTicketStatus.CHECKING,
+      ),
+    )(
+      'rejects failing an attempt when the ticket status is %s',
+      async (status) => {
+        ticketRepository.findOne.mockResolvedValue({ ...ticket, status });
+
+        await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+          status: 409,
+          response: {
+            code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
+            message:
+              'Cannot reject kitchen QC attempt. Kitchen ticket is not for checking.',
+          },
+        });
+        expect(repository.updateStatus).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([KitchenTicketQcStatus.PASSED, KitchenTicketQcStatus.FAILED])(
+      'rejects an attempt that is already %s',
+      async (status) => {
+        repository.findOneUID.mockResolvedValue({ ...attempt, status });
+
+        await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+          status: 409,
+          response: {
+            code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
+            message: `Cannot reject kitchen QC. Kitchen QC attempt is already ${status}.`,
+          },
+        });
+        expect(repository.updateStatus).not.toHaveBeenCalled();
+      },
+    );
+
+    it('propagates an attempt lookup failure without looking up the ticket or updating', async () => {
+      const error = new Error('QC attempt lookup failed');
+      repository.findOneUID.mockRejectedValue(error);
+
+      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      expect(ticketRepository.findOne).not.toHaveBeenCalled();
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('propagates a ticket lookup failure without updating the attempt', async () => {
+      const error = new Error('Kitchen ticket lookup failed');
+      ticketRepository.findOne.mockRejectedValue(error);
+
+      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('propagates an update failure without logging that the attempt failed QC', async () => {
+      const error = new Error('QC status update failed');
+      repository.updateStatus.mockRejectedValue(error);
+
+      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      expect(Logger.prototype.log).not.toHaveBeenCalledWith(
+        'Failed attempt attempt',
+      );
+    });
+  });
+
   describe('findAll', () => {
     it('forwards the pagination offset and limit and returns the attempts and total', async () => {
       await expect(service.findAll(10, 5)).resolves.toEqual({
