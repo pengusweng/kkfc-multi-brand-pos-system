@@ -11,6 +11,7 @@ import { assertExists } from '../../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 import {
   KitchenTicket,
+  KitchenTicketQcAttempt,
   KitchenTicketQcStatus,
   KitchenTicketStatus,
   Prisma,
@@ -167,7 +168,36 @@ export class KitchenQcService {
     return result;
   }
 
-  assertTicketIsForChecking(kitchenTicket: KitchenTicket) {
+  async passAttempt(attemptId: string) {
+    this.logger.debug(`Passing QC attempt ${attemptId}`);
+
+    const attempt = await this.findOneUID(attemptId);
+
+    const kitchenTicket = await this.kitchenTicketRepository.findOne(
+      attempt.kitchen_ticket_id,
+    );
+
+    assertExists(
+      kitchenTicket,
+      'KitchenTicket',
+      attempt.kitchen_ticket_id,
+      this.logger,
+    );
+
+    this.assertKitchenTicketIsApprovable(kitchenTicket, attempt);
+
+    const passedAttempt = await this.kitchenQcRepository.updateStatus(
+      attemptId,
+      KitchenTicketQcStatus.PASSED,
+      KitchenTicketQcStatus.IN_PROGRESS,
+    );
+
+    this.logger.log(`Passed attempt ${attemptId}`);
+
+    return passedAttempt;
+  }
+
+  private assertTicketIsForChecking(kitchenTicket: KitchenTicket) {
     if (kitchenTicket.status !== KitchenTicketStatus.FOR_CHECKING) {
       this.logger.warn(
         `Cannot create QC attempt for ${kitchenTicket.kitchen_ticket_id}, status=${kitchenTicket.status}`,
@@ -180,7 +210,7 @@ export class KitchenQcService {
     }
   }
 
-  assertUserIsAssignedChecker(
+  private assertUserIsAssignedChecker(
     kitchenTicket: KitchenTicket,
     user: Omit<User, 'password_hash'>,
   ) {
@@ -196,7 +226,7 @@ export class KitchenQcService {
     }
   }
 
-  assertValidCreationState(status: KitchenTicketQcStatus) {
+  private assertValidCreationState(status: KitchenTicketQcStatus) {
     if (status !== KitchenTicketQcStatus.FAILED) {
       this.logger.warn(
         `Cannot create new kitchen QC attempt. Status=${status}.`,
@@ -205,6 +235,34 @@ export class KitchenQcService {
       throw new ConflictException({
         code: 'CANNOT_CREATE_KITCHEN_QC_ATTEMPT',
         message: 'Latest kitchen QC is still in progress or has been passed.',
+      });
+    }
+  }
+
+  private assertKitchenTicketIsApprovable(
+    kitchenTicket: KitchenTicket,
+    attempt: KitchenTicketQcAttempt,
+  ) {
+    if (kitchenTicket.status !== KitchenTicketStatus.CHECKING) {
+      this.logger.warn(
+        `Kitchen ticket ${kitchenTicket.kitchen_ticket_id} for QC ${attempt.kitchen_ticket_id} is not for checking.`,
+      );
+
+      throw new ConflictException({
+        code: 'UNABLE_TO_APPROVE_QC_ATTEMPT',
+        message:
+          'Cannot approve kitchen QC attempt. Kitchen ticket is not for checking.',
+      });
+    }
+
+    if (attempt.status !== KitchenTicketQcStatus.IN_PROGRESS) {
+      this.logger.warn(
+        `Attempt ${attempt.qc_attempt_id} cannot be approved, status=${attempt.status}`,
+      );
+
+      throw new ConflictException({
+        code: 'UNABLE_TO_APPROVE_QC_ATTEMPT',
+        message: `Cannot approve kitchen QC. Kitchen QC attempt is already ${attempt.status}.`,
       });
     }
   }

@@ -543,19 +543,20 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   ] as const)(
     'IT-ORD-011 permits platform lookalikes differing in $name',
     async ({ change }) => {
+      const storeSuffix = randomUUID();
       const body = {
         ...orderBody('GRABFOOD'),
         external_order_reference: 'platform-1',
       };
-      const responses = await Promise.all([
-        request(ordersPath(), 'POST', body, 1),
-        request(
-          ordersPath(),
-          'POST',
-          { ...body, ...change, order_id: randomUUID() },
-          1,
-        ),
-      ]);
+      const bodies = [body, { ...body, ...change, order_id: randomUUID() }].map(
+        (input) => ({
+          ...input,
+          merchant_store_reference: `${input.merchant_store_reference}-${storeSuffix}`,
+        }),
+      );
+      const responses = await Promise.all(
+        bodies.map((input) => request(ordersPath(), 'POST', input, 1)),
+      );
       expect(responses.map((r) => r.status)).toEqual([201, 201]);
       expect(
         await prisma.order.count({
