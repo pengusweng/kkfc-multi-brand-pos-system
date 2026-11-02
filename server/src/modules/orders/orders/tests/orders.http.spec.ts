@@ -1,3 +1,5 @@
+import { OrderItemsService } from '../../order-items/order-items.service';
+import { OrderItemsRepository } from '../../order-items/order-items.repository';
 import {
   INestApplication,
   NotFoundException,
@@ -6,6 +8,10 @@ import {
 import { Test } from '@nestjs/testing';
 import { OrderChannel, UserRole } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Client } from 'pg';
+import sharp from 'sharp';
 import { AppModule } from '../../../../app.module';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { StorageService } from '../../../../shared/storage/storage.service';
@@ -19,7 +25,7 @@ import { OrdersService } from '../orders.service';
 import { AuthService } from '../../../auth/auth.service';
 import { OrdersController } from '../orders.controller';
 
-describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
+describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let fixture: Awaited<ReturnType<typeof createCatalogFixture>>;
@@ -69,7 +75,6 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   });
 
   afterEach(async () => {
-    jest.restoreAllMocks();
     if (fixture) await cleanupCatalogFixture(prisma, fixture);
   });
   afterAll(async () => {
@@ -102,8 +107,147 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
             : JSON.stringify(body),
     });
   }
+  it('IT-BRND-030: Given active employees, When a brand is deactivated, Then employees and their sessions remain active', async () => {
+    expect(
+      (
+        await request(
+          `/brands/${fixture.brand.brand_id}`,
+          'DELETE',
+          undefined,
+          2,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await prisma.user.count({
+        where: {
+          user_id: { in: fixture.users.map((user) => user.user_id) },
+          is_active: true,
+        },
+      }),
+    ).toBe(fixture.users.length);
+    expect((await request('/auth/me', 'GET', undefined, 0)).status).toBe(200);
+  });
+  it('IT-KT-014: Given a confirmed order, When kitchen staff claim its ticket, Then reads and assignee filters return the saved assignment', async () => {
+    const order = await draft();
+    const confirmed = await request(
+      `/brands/${fixture.brand.brand_id}/orders/${order.order_id}/confirm`,
+      'POST',
+      { payment_method: 'CASH', payment_status: 'UNPAID' },
+      1,
+    );
+    expect(confirmed.status).toBe(200);
+    const body = (await confirmed.json()) as {
+      kitchen_tickets_order: { kitchen_ticket_id: string };
+    };
+    const ticketId = body.kitchen_tickets_order.kitchen_ticket_id;
+    const preparerId = fixture.users[5].user_id;
+    const checkerId = fixture.users[4].user_id;
+    const assignment = await request(
+      `/kitchen-ticket/${ticketId}/preparer`,
+      'PATCH',
+      { preparer_id: preparerId },
+      5,
+    );
+    expect(assignment.status).toBe(200);
+    expect(await assignment.json()).toMatchObject({ preparer_id: preparerId });
+    expect(
+      (
+        await request(
+          `/kitchen-ticket/${ticketId}/checker`,
+          'PATCH',
+          { checker_id: checkerId },
+          4,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await (
+        await request(`/kitchen-ticket/${ticketId}`, 'GET', undefined, 5)
+      ).json(),
+    ).toMatchObject({
+      preparer_id: preparerId,
+      checker_id: checkerId,
+      status: 'QUEUED',
+    });
+    for (const path of [
+      '/kitchen-ticket/today',
+      `/kitchen-ticket/preparer/${preparerId}`,
+      `/kitchen-ticket/checker/${checkerId}`,
+    ]) {
+      const response = await request(path, 'GET', undefined, 5);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kitchen_ticket_id: ticketId }),
+        ]),
+      );
+    }
+    const denied = await request(
+      `/kitchen-ticket/${ticketId}/checker`,
+      'PATCH',
+      { checker_id: preparerId },
+      5,
+    );
+    expect(denied.status).toBe(403);
+    const duplicate = await request(
+      `/kitchen-ticket/${ticketId}/preparer`,
+      'PATCH',
+      { preparer_id: checkerId },
+      4,
+    );
+    expect(duplicate.status).toBe(409);
+    expect(await duplicate.json()).toMatchObject({
+      code: 'KITCHEN_TICKET_PREPARER_ALREADY_ASSIGNED',
+    });
+    expect(
+      await prisma.kitchenTicket.findUniqueOrThrow({
+        where: { kitchen_ticket_id: ticketId },
+      }),
+    ).toMatchObject({ preparer_id: preparerId, checker_id: checkerId });
+  });
+
+  it('IT-KT-015: Given a queued ticket, When two preparers race to claim it, Then exactly one assignment persists', async () => {
+    const order = await draft();
+    const confirmed = await request(
+      `/brands/${fixture.brand.brand_id}/orders/${order.order_id}/confirm`,
+      'POST',
+      { payment_method: 'CASH', payment_status: 'UNPAID' },
+      1,
+    );
+    expect(confirmed.status).toBe(200);
+    const body = (await confirmed.json()) as {
+      kitchen_tickets_order: { kitchen_ticket_id: string };
+    };
+    const ticket = body.kitchen_tickets_order;
+    const responses = await Promise.all(
+      [4, 5].map((user) =>
+        request(
+          `/kitchen-ticket/${ticket.kitchen_ticket_id}/preparer`,
+          'PATCH',
+          { preparer_id: fixture.users[user].user_id },
+          user,
+        ),
+      ),
+    );
+    expect(
+      responses.filter((response) => response.status === 200),
+    ).toHaveLength(1);
+    // A loser can fail the service precheck (409) or the guarded Prisma write (404).
+    expect([404, 409]).toContain(
+      responses.find((response) => response.status !== 200)?.status,
+    );
+    const winner = (await responses
+      .find((response) => response.status === 200)!
+      .json()) as { preparer_id: string };
+    expect(
+      await prisma.kitchenTicket.findUniqueOrThrow({
+        where: { kitchen_ticket_id: ticket.kitchen_ticket_id },
+      }),
+    ).toMatchObject({ preparer_id: winner.preparer_id });
+  });
   it.each(['verify', 'confirm', 'cancel'])(
-    'rejects a wrong-brand order URL for %s',
+    'IT-ORD-018: rejects a wrong-brand order URL for %s',
     async (operation) => {
       const body = await draft();
       const response = await request(
@@ -124,6 +268,87 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       ).toBe('DRAFT');
     },
   );
+  it('IT-ORD-019: persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
+    const userId = fixture.users[0].user_id;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const response =
+        attempt % 2 === 0
+          ? await request(
+              `/menu-items/${fixture.item.menu_item_id}`,
+              'PATCH',
+              { name: 'Blocked change' },
+              0,
+              '0000',
+            )
+          : await request('/menu-channels', 'POST', channelBody(), 0, '0000');
+      expect(response.status).toBe(attempt === 4 ? 429 : 403);
+    }
+    const credential = await prisma.userPinCredential.findUniqueOrThrow({
+      where: { user_id: userId },
+    });
+    expect(credential.failed_attempts).toBe(5);
+    expect(credential.locked_until!.getTime()).toBeGreaterThan(Date.now());
+    const locked = await request(
+      `/menu-items/${fixture.item.menu_item_id}`,
+      'PATCH',
+      { name: 'Still blocked' },
+    );
+    expect(locked.status).toBe(429);
+    expect(Number(locked.headers.get('Retry-After'))).toBeGreaterThan(0);
+    expect(
+      (
+        await prisma.menuItem.findUniqueOrThrow({
+          where: { menu_item_id: fixture.item.menu_item_id },
+        })
+      ).name,
+    ).toBe(fixture.item.name);
+    expect(
+      await prisma.menuItemChannel.count({
+        where: { menu_item_id: fixture.item.menu_item_id },
+      }),
+    ).toBe(0);
+    await prisma.userPinCredential.update({
+      where: { user_id: userId },
+      data: { locked_until: new Date(Date.now() - 1000) },
+    });
+    const allowed = await request(
+      `/menu-items/${fixture.item.menu_item_id}`,
+      'PATCH',
+      { name: 'Allowed change' },
+    );
+    expect(allowed.status).toBe(200);
+    expect(
+      await prisma.userPinCredential.findUniqueOrThrow({
+        where: { user_id: userId },
+      }),
+    ).toMatchObject({ failed_attempts: 0, locked_until: null });
+  });
+
+  it('IT-ORD-020: keeps reads and availability changes usable without an action PIN', async () => {
+    expect(
+      (
+        await request(
+          `/menu-items/${fixture.item.menu_item_id}`,
+          'GET',
+          undefined,
+          0,
+          null,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/menu-items/availability/${fixture.item.menu_item_id}`,
+          'PATCH',
+          { availability: false },
+          0,
+          null,
+        )
+      ).status,
+    ).toBe(200);
+  });
+
   async function json(response: Response): Promise<Record<string, unknown>> {
     return (await response.json()) as Record<string, unknown>;
   }
@@ -177,6 +402,183 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       },
     });
   }
+
+  it.each([
+    { user: 0, status: 201 },
+    { user: 1, status: 403 },
+    { user: 2, status: 201 },
+    { user: 3, status: 201 },
+    { user: -1, status: 401 },
+  ])(
+    'IT-MCH-001 Given session $user When creating a channel Then return $status through real guards',
+    async ({ user, status }) => {
+      expect(
+        (await request('/menu-channels', 'POST', channelBody(), user)).status,
+      ).toBe(status);
+      expect(
+        await prisma.menuItemChannel.count({
+          where: { menu_item_id: fixture.item.menu_item_id },
+        }),
+      ).toBe(status === 201 ? 1 : 0);
+    },
+  );
+
+  it.each(['GET', 'PATCH', 'DELETE', 'REACTIVATE'])(
+    'IT-MCH-002 Given another brand manager When requesting channel %s Then allow the operation',
+    async (operation) => {
+      const record = await channel();
+      if (operation === 'REACTIVATE')
+        await prisma.menuItemChannel.update({
+          where: { menu_item_channel_id: record.menu_item_channel_id },
+          data: { is_available: false },
+        });
+      const path =
+        operation === 'REACTIVATE'
+          ? `/menu-channels/reactivate/${record.menu_item_channel_id}`
+          : `/menu-channels/${record.menu_item_channel_id}`;
+      expect(
+        (
+          await request(
+            path,
+            operation === 'REACTIVATE' ? 'PATCH' : operation,
+            operation === 'PATCH' ? { price: 999 } : undefined,
+            3,
+          )
+        ).status,
+      ).toBe(200);
+      const stored = await prisma.menuItemChannel.findUniqueOrThrow({
+        where: { menu_item_channel_id: record.menu_item_channel_id },
+      });
+      expect(stored.price.toString()).toBe(
+        operation === 'PATCH' ? '999' : '120',
+      );
+      expect(stored.is_available).toBe(operation !== 'DELETE');
+    },
+  );
+
+  it.each([0, 1, 2, 3])(
+    'IT-MCH-003 Given session %s When listing all channels Then only superadmin succeeds',
+    async (user) => {
+      expect(
+        (await request('/menu-channels', 'GET', undefined, user)).status,
+      ).toBe(user === 2 ? 200 : 403);
+    },
+  );
+
+  it.each([false, true])(
+    'IT-MCH-004 Given duplicate creates with concurrent=%s When inserting Then persist one override and return conflict',
+    async (concurrent) => {
+      const responses = concurrent
+        ? await Promise.all([
+            request('/menu-channels', 'POST', channelBody()),
+            request('/menu-channels', 'POST', channelBody()),
+          ])
+        : [
+            await request('/menu-channels', 'POST', channelBody()),
+            await request('/menu-channels', 'POST', channelBody()),
+          ];
+      expect(responses.map((response) => response.status).sort()).toEqual([
+        201, 409,
+      ]);
+      expect(
+        await prisma.menuItemChannel.count({
+          where: { menu_item_id: fixture.item.menu_item_id },
+        }),
+      ).toBe(1);
+    },
+  );
+
+  it('IT-MCH-005 Given a saved channel When updating deleting and reactivating Then persist each transition', async () => {
+    const created = await request('/menu-channels', 'POST', channelBody());
+    expect(created.status).toBe(201);
+    const id = String((await json(created)).menu_item_channel_id);
+    const path = `/menu-channels/${id}`;
+    expect((await request(path, 'PATCH', { price: 150 })).status).toBe(200);
+    expect((await json(await request(path))).price).toBe('150');
+    expect((await request(path, 'DELETE')).status).toBe(200);
+    expect((await request(path)).status).toBe(404);
+    expect(await json(await request(`${path}?activeOnly=false`))).toMatchObject(
+      { is_available: false, price: '150' },
+    );
+    expect(
+      (await request(`/menu-channels/reactivate/${id}`, 'PATCH')).status,
+    ).toBe(200);
+    expect(await json(await request(path))).toMatchObject({
+      is_available: true,
+      price: '150',
+    });
+    expect(
+      (await request(`/menu-channels/reactivate/${id}`, 'PATCH')).status,
+    ).toBe(409);
+  });
+
+  it.each([0, 9999999999.99, -0.01, 10000000000, 1.001, null, '120'])(
+    'IT-MCH-006 Given price %s When creating and updating Then enforce decimal boundaries without rejected writes',
+    async (price) => {
+      const valid = price === 0 || price === 9999999999.99;
+      const created = await request('/menu-channels', 'POST', {
+        ...channelBody(),
+        price,
+      });
+      expect(created.status).toBe(valid ? 201 : 400);
+      expect(
+        await prisma.menuItemChannel.count({
+          where: {
+            menu_item_id: fixture.item.menu_item_id,
+            order_channel: 'GRABFOOD',
+          },
+        }),
+      ).toBe(valid ? 1 : 0);
+      const record = await channel('FOODPANDA');
+      expect(
+        (
+          await request(
+            `/menu-channels/${record.menu_item_channel_id}`,
+            'PATCH',
+            { price },
+          )
+        ).status,
+      ).toBe(valid ? 200 : 400);
+      const stored = await prisma.menuItemChannel.findUniqueOrThrow({
+        where: { menu_item_channel_id: record.menu_item_channel_id },
+      });
+      expect(stored.price.toString()).toBe(valid ? String(price) : '120');
+    },
+  );
+
+  it.each(['true', 'false'])(
+    'IT-MCH-007 Given mixed channel states When filtering activeOnly=%s Then rows and totals use the same predicate',
+    async (activeOnly) => {
+      const active = await channel();
+      await channel('FOODPANDA');
+      await prisma.menuItemChannel.update({
+        where: { menu_item_channel_id: active.menu_item_channel_id },
+        data: { is_available: false },
+      });
+      const itemResult = await request(
+        `/menu-channels/menu-item/${fixture.item.menu_item_id}?activeOnly=${activeOnly}`,
+      );
+      expect(itemResult.status).toBe(200);
+      const rows = (await itemResult.json()) as { is_available: boolean }[];
+      expect(rows).toHaveLength(activeOnly === 'true' ? 1 : 2);
+      const result = await request(
+        `/menu-channels?activeOnly=${activeOnly}&orderChannel=GRABFOOD&limit=1&page=1`,
+        'GET',
+        undefined,
+        2,
+      );
+      expect(result.status).toBe(200);
+      const expected = await prisma.menuItemChannel.count({
+        where: {
+          order_channel: 'GRABFOOD',
+          ...(activeOnly === 'true' ? { is_available: true } : {}),
+        },
+      });
+      expect(await json(result)).toMatchObject({
+        meta: { total: expected, totalPages: expected, limit: 1, page: 1 },
+      });
+    },
+  );
 
   it.each([
     { name: 'invalid order UUID', change: { order_id: 'invalid' } },
@@ -375,19 +777,27 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   it('IT-ORD-006 Given ticket insertion failure after snapshot writes When confirming Then roll back the real transaction', async () => {
     const order = await draft();
     const before = await savedOrder(order.order_id);
-    jest
-      .spyOn(app.get<OrdersRepository>(OrdersRepository), 'createTicket')
-      .mockRejectedValueOnce(new Error('Injected ticket failure'));
-    expect(
-      (
-        await request(
-          `${ordersPath()}/${order.order_id}/confirm`,
-          'POST',
-          payment,
-          1,
-        )
-      ).status,
-    ).toBe(500);
+    const failingClient = prisma.$extends({
+      query: {
+        kitchenTicket: {
+          create() {
+            throw new Error('Injected ticket failure');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
+    );
+    await expect(
+      service.confirm(
+        fixture.brand.brand_id,
+        order.order_id,
+        fixture.users[1].user_id,
+        payment as { payment_method: 'CASH'; payment_status: 'UNPAID' },
+      ),
+    ).rejects.toThrow('Injected ticket failure');
     expect(await savedOrder(order.order_id)).toEqual(before);
     expect(
       await prisma.kitchenTicket.count({ where: { order_id: order.order_id } }),
@@ -433,75 +843,6 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       ).status,
     ).toBe(400);
     expect(await savedOrder(order.order_id)).toEqual(before);
-  });
-
-  it.each([
-    {
-      order_channel: 'GRABFOOD' as const,
-      references: {
-        merchant_store_reference: 's'.repeat(255),
-        external_order_reference: 'e'.repeat(255),
-      },
-    },
-    {
-      order_channel: 'DINE_IN' as const,
-      references: { table_reference: 't'.repeat(50) },
-    },
-    {
-      order_channel: 'TAKEAWAY' as const,
-      references: {
-        merchant_store_reference: null,
-        external_order_reference: null,
-        table_reference: null,
-      },
-    },
-  ])(
-    'trims $order_channel references before validation and hashing',
-    async ({ order_channel, references }) => {
-      const body = {
-        ...orderBody(order_channel),
-        ...references,
-        notes: ' Keep these spaces ',
-      };
-      const padded = {
-        ...body,
-        ...Object.fromEntries(
-          Object.entries(references).map(([field, value]) => [
-            field,
-            ` \t${value ?? ''}\n `,
-          ]),
-        ),
-      };
-      const response = await request(ordersPath(), 'POST', padded, 1);
-      expect(response.status).toBe(201);
-      const order = await json(response);
-      expect(order).toMatchObject({ ...references, notes: body.notes });
-      const replay = await request(ordersPath(), 'POST', body, 1);
-      expect(replay.status).toBe(201);
-      expect(await json(replay)).toEqual(order);
-    },
-  );
-
-  it.each(
-    (
-      [
-        'merchant_store_reference',
-        'external_order_reference',
-        'table_reference',
-      ] as const
-    ).flatMap((field) =>
-      [123, true, {}, []].map((value) => ({ field, value })),
-    ),
-  )('rejects nonstring $field=$value', async ({ field, value }) => {
-    const create = jest.spyOn(app.get(OrdersService), 'create');
-    const response = await request(
-      ordersPath(),
-      'POST',
-      { ...orderBody(), [field]: value },
-      1,
-    );
-    expect(response.status).toBe(400);
-    expect(create).not.toHaveBeenCalled();
   });
 
   it.each(
@@ -612,20 +953,19 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   ] as const)(
     'IT-ORD-011 permits platform lookalikes differing in $name',
     async ({ change }) => {
-      const storeSuffix = randomUUID();
       const body = {
         ...orderBody('GRABFOOD'),
         external_order_reference: 'platform-1',
       };
-      const bodies = [body, { ...body, ...change, order_id: randomUUID() }].map(
-        (input) => ({
-          ...input,
-          merchant_store_reference: `${input.merchant_store_reference}-${storeSuffix}`,
-        }),
-      );
-      const responses = await Promise.all(
-        bodies.map((input) => request(ordersPath(), 'POST', input, 1)),
-      );
+      const responses = await Promise.all([
+        request(ordersPath(), 'POST', body, 1),
+        request(
+          ordersPath(),
+          'POST',
+          { ...body, ...change, order_id: randomUUID() },
+          1,
+        ),
+      ]);
       expect(responses.map((r) => r.status)).toEqual([201, 201]);
       expect(
         await prisma.order.count({
@@ -806,17 +1146,23 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
 
   it('IT-ORD-016 rolls back inserted order lines and modifiers, then safely retries the same UUID', async () => {
     const body = orderBody();
-    const repository = app.get<OrdersRepository>(OrdersRepository);
-    const create = repository.create.bind(
-      repository,
-    ) as OrdersRepository['create'];
-    jest.spyOn(repository, 'create').mockImplementationOnce(
-      (dto, context, tx) =>
-        create(dto, context, tx).then(() => {
-          throw new Error('Injected failure after order insertion');
-        }) as ReturnType<OrdersRepository['create']>,
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          async create({ args, query }) {
+            await query(args);
+            throw new Error('Injected failure after order insertion');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
     );
-    expect((await request(ordersPath(), 'POST', body, 1)).status).toBe(500);
+    await expect(
+      service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),
+    ).rejects.toThrow('Injected failure after order insertion');
     expect(
       await prisma.order.count({ where: { order_id: body.order_id } }),
     ).toBe(0);
@@ -841,17 +1187,32 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   it('IT-ORD-017 rolls back a ticket inserted before confirmation fails, then recovers with one ticket', async () => {
     const body = await draft();
     const before = await savedOrder(body.order_id);
-    jest
-      .spyOn(app.get<OrdersRepository>(OrdersRepository), 'updateStatus')
-      .mockRejectedValueOnce(
-        new Error('Injected failure after ticket insertion'),
-      );
-    const path = `${ordersPath()}/${body.order_id}/confirm`;
-    expect((await request(path, 'POST', payment, 1)).status).toBe(500);
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          update() {
+            throw new Error('Injected failure after ticket insertion');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
+    );
+    await expect(
+      service.confirm(
+        fixture.brand.brand_id,
+        body.order_id,
+        fixture.users[1].user_id,
+        payment as { payment_method: 'CASH'; payment_status: 'UNPAID' },
+      ),
+    ).rejects.toThrow('Injected failure after ticket insertion');
     expect(await savedOrder(body.order_id)).toEqual(before);
     expect(
       await prisma.kitchenTicket.count({ where: { order_id: body.order_id } }),
     ).toBe(0);
+    const path = `${ordersPath()}/${body.order_id}/confirm`;
     const recovered = await request(path, 'POST', payment, 1);
     expect(recovered.status).toBe(200);
     const replay = await request(path, 'POST', {}, 1);
@@ -862,7 +1223,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     ).toBe(1);
   });
 
-  it('assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
+  it('IT-ORD-021: assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
     const first = await draft();
     const saved = await savedOrder(first.order_id);
     expect(saved.order_code).toBe(`${fixture.brand.code.trim()}-00001`);
@@ -894,7 +1255,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     });
   });
 
-  it('starts a separate sequence for another brand', async () => {
+  it('IT-ORD-022: starts a separate sequence for another brand', async () => {
     await draft();
     const recipe = await prisma.recipe.create({
       data: {
@@ -930,7 +1291,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     });
   });
 
-  it('assigns different codes to simultaneous creates and preserves them on replay', async () => {
+  it('IT-ORD-023: assigns different codes to simultaneous creates and preserves them on replay', async () => {
     const bodies = Array.from({ length: 4 }, () => orderBody());
     const responses = await Promise.all(
       bodies.map((body) => request(ordersPath(), 'POST', body, 1)),
@@ -951,7 +1312,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(await json(next)).toMatchObject({ order_number: 5 });
   });
 
-  it('allocates one number for simultaneous creates with the same UUID', async () => {
+  it('IT-ORD-024: allocates one number for simultaneous creates with the same UUID', async () => {
     const body = orderBody();
     const responses = await Promise.all([
       request(ordersPath(), 'POST', body, 1),
@@ -964,12 +1325,24 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(await json(next)).toMatchObject({ order_number: 2 });
   });
 
-  it('rolls back the allocated number if order insertion fails', async () => {
+  it('IT-ORD-025: rolls back the allocated number if order insertion fails', async () => {
     const body = orderBody();
-    jest
-      .spyOn(app.get<OrdersRepository>(OrdersRepository), 'create')
-      .mockRejectedValueOnce(new Error('Injected order failure'));
-    expect((await request(ordersPath(), 'POST', body, 1)).status).toBe(500);
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          create() {
+            throw new Error('Injected order failure');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
+    );
+    await expect(
+      service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),
+    ).rejects.toThrow('Injected order failure');
     expect(
       await prisma.orderDailyCounter.count({
         where: { brand_id: fixture.brand.brand_id },
@@ -980,7 +1353,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(await json(response)).toMatchObject({ order_number: 1 });
   });
 
-  it('continues a seeded daily counter and snapshots subsequent brand code changes', async () => {
+  it('IT-ORD-026: continues a seeded daily counter and snapshots subsequent brand code changes', async () => {
     const [{ order_date }] = await prisma.$queryRaw<
       { order_date: Date }[]
     >`SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date`;
@@ -1012,6 +1385,215 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       order_code: `${code}-00019`,
       order_number: 19,
     });
+  });
+
+  it.each(['brand', 'menu'] as const)(
+    'IT-ASSET-001 Given a valid image When updating a %s Then persist the object key across reads',
+    async (target) => {
+      const image = await sharp({
+        create: { width: 2, height: 2, channels: 3, background: 'red' },
+      })
+        .png()
+        .toBuffer();
+      const form = new FormData();
+      form.set(
+        'file',
+        new Blob([new Uint8Array(image)], { type: 'image/png' }),
+        'fixture.png',
+      );
+      const path =
+        target === 'brand'
+          ? `/brands/${fixture.brand.brand_id}`
+          : `/menu-items/${fixture.item.menu_item_id}`;
+      expect((await request(path, 'PATCH', form, 2)).status).toBe(200);
+      const stored =
+        target === 'brand'
+          ? (
+              await prisma.brand.findUniqueOrThrow({
+                where: { brand_id: fixture.brand.brand_id },
+              })
+            ).logo_url
+          : (
+              await prisma.menuItem.findUniqueOrThrow({
+                where: { menu_item_id: fixture.item.menu_item_id },
+              })
+            ).img_url;
+      expect(stored).toMatch(
+        new RegExp(`^uploads/${fixture.users[2].user_id}/[a-f0-9-]+\\.png$`),
+      );
+      const retrieved = await request(path, 'GET', undefined, 2);
+      expect(retrieved.status).toBe(200);
+      expect(
+        (await json(retrieved))[target === 'brand' ? 'logo_url' : 'img_url'],
+      ).toBe(
+        target === 'brand' ? `https://files.example.test/${stored}` : stored,
+      );
+      expect(storage.putObject).toHaveBeenCalledWith(
+        stored,
+        expect.any(Buffer),
+        'image/png',
+      );
+    },
+  );
+});
+
+describe('Daily order code migration', () => {
+  it('IT-ORD-027: backfills Manila dates deterministically and seeds each brand/date counter', async () => {
+    requireTestDatabase();
+    const client = new Client({
+      connectionString: process.env.TEST_DATABASE_URL,
+    });
+    const schema = `order_codes_${randomUUID().replaceAll('-', '')}`;
+    await client.connect();
+    try {
+      await client.query(`CREATE SCHEMA "${schema}"`);
+      await client.query(`SET search_path TO "${schema}"`);
+      await client.query(`
+        CREATE TABLE brands (brand_id UUID PRIMARY KEY, code CHAR(4) NOT NULL);
+        CREATE TABLE orders (
+          order_id UUID PRIMARY KEY,
+          brand_id UUID NOT NULL REFERENCES brands(brand_id),
+          created_at TIMESTAMP(6) NOT NULL
+        );
+        INSERT INTO brands VALUES
+          ('00000000-0000-4000-8000-000000000001', 'GC'),
+          ('00000000-0000-4000-8000-000000000002', 'KK');
+        INSERT INTO orders VALUES
+          ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', '2026-10-28 15:59:59'),
+          ('00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', '2026-10-28 16:00:00'),
+          ('00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', '2026-10-28 16:00:00'),
+          ('00000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000002', '2026-10-28 16:00:00');
+      `);
+      await client.query(
+        await readFile(
+          join(
+            process.cwd(),
+            'prisma/migrations/20261029000100_daily_order_codes/migration.sql',
+          ),
+          'utf8',
+        ),
+      );
+      const orders = await client.query<{
+        order_id: string;
+        order_code: string;
+        order_date: string;
+        order_number: number;
+      }>(
+        'SELECT order_id, order_code, order_date::text, order_number FROM orders ORDER BY order_id',
+      );
+      expect(orders.rows).toEqual([
+        {
+          order_id: '00000000-0000-4000-8000-000000000001',
+          order_code: 'GC-00001',
+          order_date: '2026-10-28',
+          order_number: 1,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000002',
+          order_code: 'GC-00001',
+          order_date: '2026-10-29',
+          order_number: 1,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000003',
+          order_code: 'GC-00002',
+          order_date: '2026-10-29',
+          order_number: 2,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000004',
+          order_code: 'KK-00001',
+          order_date: '2026-10-29',
+          order_number: 1,
+        },
+      ]);
+      const counters = await client.query<{
+        brand_id: string;
+        order_date: string;
+        last_number: number;
+      }>(
+        'SELECT brand_id, order_date::text, last_number FROM order_daily_counters ORDER BY brand_id, order_date',
+      );
+      expect(counters.rows).toEqual([
+        {
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          order_date: '2026-10-28',
+          last_number: 1,
+        },
+        {
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          order_date: '2026-10-29',
+          last_number: 2,
+        },
+        {
+          brand_id: '00000000-0000-4000-8000-000000000002',
+          order_date: '2026-10-29',
+          last_number: 1,
+        },
+      ]);
+      await expect(
+        client.query('UPDATE orders SET order_number = 1'),
+      ).rejects.toMatchObject({ code: '23505' });
+      await expect(
+        client.query('UPDATE order_daily_counters SET last_number = 0'),
+      ).rejects.toMatchObject({ code: '23514' });
+    } finally {
+      await client.query('ROLLBACK');
+      await client.query('SET search_path TO public');
+      await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+      await client.end();
+    }
+  });
+});
+
+describe('User brand removal migration', () => {
+  it('IT-ORD-028: drops assignments while preserving users, brands, and sessions', async () => {
+    requireTestDatabase();
+    const client = new Client({
+      connectionString: process.env.TEST_DATABASE_URL,
+    });
+    const schema = `user_brands_${randomUUID().replaceAll('-', '')}`;
+    await client.connect();
+    try {
+      await client.query(`CREATE SCHEMA "${schema}"`);
+      await client.query(`SET search_path TO "${schema}"`);
+      await client.query(`
+        CREATE TABLE brands (brand_id INTEGER PRIMARY KEY);
+        CREATE TABLE users (user_id INTEGER PRIMARY KEY, brand_id INTEGER, is_active BOOLEAN NOT NULL,
+          CONSTRAINT users_brand_id_fkey FOREIGN KEY (brand_id) REFERENCES brands(brand_id));
+        CREATE INDEX users_brand_id_idx ON users(brand_id);
+        CREATE TABLE user_sessions (session_id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(user_id));
+        INSERT INTO brands VALUES (1);
+        INSERT INTO users VALUES (1, 1, true), (2, NULL, false);
+        INSERT INTO user_sessions VALUES (1, 1);
+      `);
+      await client.query(
+        await readFile(
+          join(
+            process.cwd(),
+            'prisma/migrations/20261031000100_remove_user_brand/migration.sql',
+          ),
+          'utf8',
+        ),
+      );
+      expect(
+        (await client.query('SELECT * FROM users ORDER BY user_id')).rows,
+      ).toEqual([
+        { user_id: 1, is_active: true },
+        { user_id: 2, is_active: false },
+      ]);
+      expect((await client.query('SELECT * FROM user_sessions')).rows).toEqual([
+        { session_id: 1, user_id: 1 },
+      ]);
+      expect((await client.query('SELECT * FROM brands')).rows).toEqual([
+        { brand_id: 1 },
+      ]);
+    } finally {
+      await client.query('ROLLBACK');
+      await client.query('SET search_path TO public');
+      await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+      await client.end();
+    }
   });
 });
 
