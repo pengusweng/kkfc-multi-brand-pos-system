@@ -5,7 +5,7 @@ import { Client } from 'pg';
 import { requireTestDatabase } from '../../shared/testing/catalog.fixture';
 
 describe('Daily order code migration', () => {
-  it('backfills Manila dates deterministically and seeds each brand/date counter', async () => {
+  it('IT-ORD-027: backfills Manila dates deterministically and seeds each brand/date counter', async () => {
     requireTestDatabase();
     const client = new Client({
       connectionString: process.env.TEST_DATABASE_URL,
@@ -114,7 +114,7 @@ describe('Daily order code migration', () => {
 });
 
 describe('Kitchen ticket QC migration', () => {
-  it('stores rejection-only portion history and enforces keys and required values', async () => {
+  it('IT-KQC-014: stores rejection-only portion history and enforces keys and required values', async () => {
     requireTestDatabase();
     const client = new Client({
       connectionString: process.env.TEST_DATABASE_URL,
@@ -246,7 +246,7 @@ describe('Kitchen ticket QC migration', () => {
 });
 
 describe('User brand removal migration', () => {
-  it('drops assignments while preserving users, brands, and sessions', async () => {
+  it('IT-ORD-028: drops assignments while preserving users, brands, and sessions', async () => {
     requireTestDatabase();
     const client = new Client({
       connectionString: process.env.TEST_DATABASE_URL,

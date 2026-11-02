@@ -79,3 +79,22 @@ test('all backend Jest declarations have complete and unambiguous feature docume
   assert.ok(result.tests > 0);
   assert.deepEqual(result.errors, []);
 });
+
+test('database integration specs require integration scenario IDs', () => {
+  const integrationScenario = { ...scenario, id: 'IT-DEMO-001' };
+  const integrationTest = {
+    ...declaration,
+    title: 'IT-DEMO-001: migration',
+    file: 'migrations.integration.spec.ts',
+  };
+  assert.deepEqual(
+    validateMappings([integrationTest], [integrationScenario]),
+    [],
+  );
+  assert.ok(
+    validateMappings(
+      [{ ...declaration, file: integrationTest.file }],
+      [scenario],
+    ).some((error) => error.includes('must use IT-')),
+  );
+});

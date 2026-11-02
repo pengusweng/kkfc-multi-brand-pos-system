@@ -110,31 +110,34 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
   }
 
   describe.each(routes)('GET $path', (route) => {
-    it.each(allowedRoles)('allows %s and forwards the ID', async (role) => {
-      const response = await request(route.path, `Bearer ${role}`);
+    it.each(allowedRoles)(
+      'IT-QCR-001: allows %s and forwards the ID',
+      async (role) => {
+        const response = await request(route.path, `Bearer ${role}`);
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual(route.result);
-      expect(service[route.handler]).toHaveBeenCalledWith(route.id);
-    });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(route.result);
+        expect(service[route.handler]).toHaveBeenCalledWith(route.id);
+      },
+    );
 
     it.each(
       Object.values(UserRole).filter((role) => !allowedRoles.includes(role)),
-    )('denies %s before calling the service', async (role) => {
+    )('IT-QCR-002: denies %s before calling the service', async (role) => {
       const response = await request(route.path, `Bearer ${role}`);
 
       expect(response.status).toBe(403);
       expect(service[route.handler]).not.toHaveBeenCalled();
     });
 
-    it('requires a bearer session', async () => {
+    it('IT-QCR-003: requires a bearer session', async () => {
       const response = await request(route.path, null);
 
       expect(response.status).toBe(401);
       expect(service[route.handler]).not.toHaveBeenCalled();
     });
 
-    it('rejects invalid or expired sessions', async () => {
+    it('IT-QCR-004: rejects invalid or expired sessions', async () => {
       auth.validateSession.mockRejectedValue(new NotFoundException());
 
       const response = await request(route.path);
@@ -145,7 +148,7 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
   });
 
   it.each(['/invalid', '/attempt/invalid', '/order-item/invalid'])(
-    'rejects invalid UUIDs on GET %s',
+    'IT-QCR-005: rejects invalid UUIDs on GET %s',
     async (path) => {
       const response = await request(path);
 
@@ -156,7 +159,7 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
     },
   );
 
-  it('preserves the standard rejection not-found response', async () => {
+  it('IT-QCR-006: preserves the standard rejection not-found response', async () => {
     service.findOne.mockRejectedValue(
       new NotFoundException({ code: 'ORDER_ITEM_QC_REJECTION_NOT_FOUND' }),
     );
@@ -173,7 +176,7 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
     { path: `/attempt/${attemptId}`, handler: 'findManyByAttemptId' },
     { path: `/order-item/${orderItemId}`, handler: 'findManyByOrderItemId' },
   ] as const)(
-    'returns an empty list on GET $path',
+    'IT-QCR-007: returns an empty list on GET $path',
     async ({ path, handler }) => {
       service[handler].mockResolvedValue([]);
 
@@ -185,7 +188,7 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
   );
 
   it.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
-    'does not expose a %s endpoint',
+    'IT-QCR-008: does not expose a %s endpoint',
     async (method) => {
       const response = await request(`/${rejectionId}`, undefined, method);
 

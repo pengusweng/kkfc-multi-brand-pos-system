@@ -94,7 +94,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
             : JSON.stringify(body),
     });
   }
-  it('deactivates a brand without deactivating employees or their sessions', async () => {
+  it('IT-BRND-030: deactivates a brand without deactivating employees or their sessions', async () => {
     expect(
       (
         await request(
@@ -115,7 +115,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     ).toBe(fixture.users.length);
     expect((await request('/auth/me', 'GET', undefined, 0)).status).toBe(200);
   });
-  it('persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
+  it('IT-ORD-019: persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
     const userId = fixture.users[0].user_id;
     for (let attempt = 0; attempt < 5; attempt++) {
       const response =
@@ -171,7 +171,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     ).toMatchObject({ failed_attempts: 0, locked_until: null });
   });
 
-  it('keeps reads and availability changes usable without an action PIN', async () => {
+  it('IT-ORD-020: keeps reads and availability changes usable without an action PIN', async () => {
     expect(
       (
         await request(

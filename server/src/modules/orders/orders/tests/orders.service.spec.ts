@@ -307,7 +307,7 @@ describe('OrdersService', () => {
       },
     },
   ] as const)(
-    'persists $order_channel draft fields and validated item snapshots',
+    'UT-ORD-043: persists $order_channel draft fields and validated item snapshots',
     async ({ order_channel, references, settlement }) => {
       tx.order.findFirst.mockResolvedValue(null);
       const dto: CreateOrderDTO = {
@@ -369,7 +369,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('creates a draft without a ticket, final recipe or stock writes', async () => {
+  it('UT-ORD-010: creates a draft without a ticket, final recipe or stock writes', async () => {
     await service.create('brand', 'actor', request);
     const { data } = (tx.order.create.mock.calls as unknown[][])[0][0] as {
       data: {
@@ -393,7 +393,7 @@ describe('OrdersService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('verifies without persisting any effects or exposing recipe instructions', async () => {
+  it('UT-ORD-011: verifies without persisting any effects or exposing recipe instructions', async () => {
     const result = await service.verify('brand', 'order', payment);
     expect(result.valid).toBe(true);
     expect(JSON.stringify(result)).not.toContain('Restricted');
@@ -408,7 +408,7 @@ describe('OrdersService', () => {
     [99999, 'GC-99999'],
     [100000, 'GC-100000'],
   ])(
-    'assigns order number %s as %s on draft creation',
+    'UT-ORD-012: assigns order number %s as %s on draft creation',
     async (number, code) => {
       tx.orderDailyCounter.upsert.mockResolvedValue({ last_number: number });
       const result = await service.create('brand', 'actor', request);
@@ -435,7 +435,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('uses the database Manila date to start a new counter after midnight', async () => {
+  it('UT-ORD-013: uses the database Manila date to start a new counter after midnight', async () => {
     const nextDate = new Date('2026-10-30T00:00:00Z');
     tx.$queryRaw
       .mockResolvedValueOnce([{ order_date: draft.order_date }])
@@ -461,7 +461,7 @@ describe('OrdersService', () => {
     ]);
   });
 
-  it('preserves the original code on a UUID replay across midnight and a brand code change', async () => {
+  it('UT-ORD-014: preserves the original code on a UUID replay across midnight and a brand code change', async () => {
     const original = await service.create('brand', 'actor', request);
     const { data } = tx.order.create.mock.calls[0][0];
     tx.order.findUnique.mockResolvedValue({
@@ -477,7 +477,7 @@ describe('OrdersService', () => {
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
-  it('retries a counter serialization conflict before saving an order', async () => {
+  it('UT-ORD-015: retries a counter serialization conflict before saving an order', async () => {
     tx.orderDailyCounter.upsert.mockRejectedValueOnce(
       new Prisma.PrismaClientKnownRequestError('conflict', {
         code: 'P2034',
@@ -499,7 +499,7 @@ describe('OrdersService', () => {
       run: () => service.confirm('brand', 'order', 'actor', payment),
     },
   ])(
-    '$name rejects an unavailable menu modifier before writing',
+    'UT-ORD-016: $name rejects an unavailable menu modifier before writing',
     async ({ run }) => {
       const menu = (await tx.menuItem.findFirst()) as {
         menu_item_modifiers_menu_item: { is_available: boolean }[];
@@ -526,7 +526,7 @@ describe('OrdersService', () => {
       run: () => service.confirm('brand', 'order', 'actor', payment),
     },
   ])(
-    '$name rejects an unavailable menu item before writing',
+    'UT-ORD-017: $name rejects an unavailable menu item before writing',
     async ({ run }) => {
       const menu = (await tx.menuItem.findFirst()) as { is_available: boolean };
       menu.is_available = false;
@@ -543,7 +543,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
+  it('UT-ORD-018: confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);
     expect(result.status).toBe('CONFIRMED');
     expect(tx.order.update).toHaveBeenCalledWith({
@@ -598,7 +598,7 @@ describe('OrdersService', () => {
     });
   });
 
-  it('returns the original ticket on retries without refreshing snapshots', async () => {
+  it('UT-ORD-019: returns the original ticket on retries without refreshing snapshots', async () => {
     tx.order.findFirst.mockResolvedValue({
       ...draft,
       status: 'CONFIRMED',
@@ -611,7 +611,7 @@ describe('OrdersService', () => {
     expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 
-  it('retries a serialization conflict and observes the winning confirmation', async () => {
+  it('UT-ORD-020: retries a serialization conflict and observes the winning confirmation', async () => {
     prisma.$transaction.mockRejectedValueOnce(
       new Prisma.PrismaClientKnownRequestError('conflict', {
         code: 'P2034',
@@ -629,7 +629,7 @@ describe('OrdersService', () => {
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
 
-  it('does not mark an order confirmed when ticket insertion fails', async () => {
+  it('UT-ORD-021: does not mark an order confirmed when ticket insertion fails', async () => {
     tx.kitchenTicket.create.mockRejectedValue(new Error('database failure'));
     await expect(
       service.confirm('brand', 'order', 'actor', payment),
@@ -643,7 +643,7 @@ describe('OrdersService', () => {
     [9007199254740993n, 'T-9007199254740993'],
     [9223372036854775807n, 'T-9223372036854775807'],
   ])(
-    'formats ticket %s without truncation or numeric precision loss',
+    'UT-ORD-022: formats ticket %s without truncation or numeric precision loss',
     async (number, ticket) => {
       tx.$queryRaw.mockResolvedValue([{ number }]);
       await service.confirm('brand', 'order', 'actor', payment);
@@ -664,7 +664,7 @@ describe('OrdersService', () => {
     { name: 'negative', rows: [{ number: -1n }] },
     { name: 'non-bigint', rows: [{ number: 100000 }] },
   ])(
-    'rejects an invalid sequence result ($name) without issuing a ticket',
+    'UT-ORD-023: rejects an invalid sequence result ($name) without issuing a ticket',
     async ({ rows }) => {
       tx.$queryRaw.mockResolvedValue(rows);
       await expect(
@@ -676,7 +676,7 @@ describe('OrdersService', () => {
   );
 
   it.each([0, -1, 1.5, 10000, Number.NaN, Number.POSITIVE_INFINITY])(
-    'rejects corrupted saved quantity %s before writes',
+    'UT-ORD-024: rejects corrupted saved quantity %s before writes',
     async (quantity) => {
       tx.order.findFirst.mockResolvedValue({
         ...draft,
@@ -691,7 +691,7 @@ describe('OrdersService', () => {
   );
 
   it.each(['-0.01', 'NaN', 'Infinity', '10000000000'])(
-    'rejects invalid catalog price %s',
+    'UT-ORD-025: rejects invalid catalog price %s',
     async (price) => {
       const menu = (await tx.menuItem.findFirst()) as {
         menu_item_channels_menu_item: {
@@ -716,16 +716,19 @@ describe('OrdersService', () => {
     { status: 'DRAFT', kitchen_tickets_order: { ticket_number: 'T-014' } },
     { status: 'CONFIRMED', kitchen_tickets_order: null },
     { status: 'CANCELLED', kitchen_tickets_order: { ticket_number: 'T-014' } },
-  ])('rejects inconsistent or cancelled state $status', async (state) => {
-    tx.order.findFirst.mockResolvedValue({ ...draft, ...state });
-    await expect(
-      service.confirm('brand', 'order', 'actor', payment),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
-    expect(tx.orderItem.update).not.toHaveBeenCalled();
-  });
+  ])(
+    'UT-ORD-026: rejects inconsistent or cancelled state $status',
+    async (state) => {
+      tx.order.findFirst.mockResolvedValue({ ...draft, ...state });
+      await expect(
+        service.confirm('brand', 'order', 'actor', payment),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+    },
+  );
 
-  it('bounds conflict retries without creating a ticket', async () => {
+  it('UT-ORD-027: bounds conflict retries without creating a ticket', async () => {
     prisma.$transaction.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('conflict', {
         code: 'P2034',
@@ -739,7 +742,7 @@ describe('OrdersService', () => {
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
 
-  it('uses platform references for duplicate lookup', async () => {
+  it('UT-ORD-028: uses platform references for duplicate lookup', async () => {
     await expect(
       service.create('brand', 'actor', {
         ...request,
@@ -764,7 +767,7 @@ describe('OrdersService', () => {
     expect(tx.order.create).not.toHaveBeenCalled();
   });
 
-  it('rejects duplicate modifier IDs even when invoked outside the HTTP validator', async () => {
+  it('UT-ORD-029: rejects duplicate modifier IDs even when invoked outside the HTTP validator', async () => {
     await expect(
       service.create('brand', 'actor', {
         ...request,
@@ -774,7 +777,7 @@ describe('OrdersService', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid payment and unavailable modifiers before writing', async () => {
+  it('UT-ORD-030: rejects invalid payment and unavailable modifiers before writing', async () => {
     await expect(
       service.confirm('brand', 'order', 'actor', {}),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -785,7 +788,7 @@ describe('OrdersService', () => {
     expect(tx.orderItem.update).not.toHaveBeenCalled();
   });
 
-  it('does not expose orders outside the requested brand', async () => {
+  it('UT-ORD-031: does not expose orders outside the requested brand', async () => {
     tx.order.findFirst.mockResolvedValue(null);
     await expect(
       service.confirm('other', 'order', 'actor', payment),
@@ -798,7 +801,7 @@ describe('OrdersService', () => {
   });
 
   it.each(['GRABFOOD', 'FOODPANDA'] as const)(
-    'forces platform settlement for %s',
+    'UT-ORD-032: forces platform settlement for %s',
     async (channel) => {
       tx.order.findFirst.mockResolvedValue({
         ...draft,
@@ -815,7 +818,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('rejects duplicate platform references even with a different order ID', async () => {
+  it('UT-ORD-033: rejects duplicate platform references even with a different order ID', async () => {
     await expect(
       service.create('brand', 'actor', {
         ...request,
@@ -828,7 +831,7 @@ describe('OrdersService', () => {
   });
 
   it.each(['brand', 'other-brand'])(
-    'returns duplicate details only for the requested brand (%s)',
+    'UT-ORD-034: returns duplicate details only for the requested brand (%s)',
     async (existingBrand) => {
       tx.order.findFirst.mockResolvedValue({
         ...draft,
@@ -863,7 +866,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('returns an opaque conflict when an order UUID belongs to another brand', async () => {
+  it('UT-ORD-035: returns an opaque conflict when an order UUID belongs to another brand', async () => {
     tx.order.findUnique.mockResolvedValue({
       ...draft,
       brand_id: 'other-brand',
@@ -896,7 +899,7 @@ describe('OrdersService', () => {
     ];
 
     it.each(conflicts)(
-      'retries confirmation after $name at commit',
+      'UT-ORD-007: retries confirmation after $name at commit',
       async ({ error }) => {
         prisma.$transaction.mockImplementationOnce(
           async (
@@ -915,7 +918,7 @@ describe('OrdersService', () => {
     );
 
     it.each(conflicts)(
-      'bounds $name retries and returns a stable recovery code',
+      'UT-ORD-008: bounds $name retries and returns a stable recovery code',
       async ({ error }) => {
         prisma.$transaction.mockRejectedValue(error);
         const result = await service
@@ -943,7 +946,7 @@ describe('OrdersService', () => {
         clientVersion: '7',
       }),
     ])(
-      'propagates non-retryable errors without replaying confirmation (%s)',
+      'UT-ORD-009: propagates non-retryable errors without replaying confirmation (%s)',
       async (error) => {
         prisma.$transaction.mockRejectedValue(error);
         await expect(
@@ -964,7 +967,7 @@ describe('OrdersService', () => {
       );
     });
 
-    it('cancels a draft, records actor/reason/time and redacts private fields', async () => {
+    it('UT-ORD-036: cancels a draft, records actor/reason/time and redacts private fields', async () => {
       const result = await service.cancel('brand', 'order', 'actor', reason);
       expect(result).toMatchObject({
         status: 'CANCELLED',
@@ -1000,7 +1003,7 @@ describe('OrdersService', () => {
       ['REWORKING', 'REWORKING'],
       ['READY', 'READY'],
     ])(
-      'cancels a %s order and %s ticket in the same serializable transaction',
+      'UT-ORD-037: cancels a %s order and %s ticket in the same serializable transaction',
       async (status, ticketStatus) => {
         tx.order.findFirst.mockResolvedValue({
           ...draft,
@@ -1023,7 +1026,7 @@ describe('OrdersService', () => {
     );
 
     it.each([null, { status: 'CANCELLED' }])(
-      'returns the original cancellation on retries without writing',
+      'UT-ORD-038: returns the original cancellation on retries without writing',
       async (ticket) => {
         const saved = {
           ...draft,
@@ -1058,7 +1061,7 @@ describe('OrdersService', () => {
       ['CANCELLED', 'QUEUED'],
       ['CONFIRMED', 'CANCELLED'],
     ])(
-      'rejects invalid state %s / %s before writing',
+      'UT-ORD-039: rejects invalid state %s / %s before writing',
       async (status, ticketStatus) => {
         tx.order.findFirst.mockResolvedValue({
           ...draft,
@@ -1074,7 +1077,7 @@ describe('OrdersService', () => {
     );
 
     it.each(['', '   ', 'x'.repeat(1001), null, 123])(
-      'rejects an invalid cancellation reason (%p)',
+      'UT-ORD-040: rejects an invalid cancellation reason (%p)',
       async (value) => {
         await expect(
           service.cancel('brand', 'order', 'actor', {
@@ -1085,7 +1088,7 @@ describe('OrdersService', () => {
       },
     );
 
-    it('rejects a missing order or order outside the requested brand', async () => {
+    it('UT-ORD-041: rejects a missing order or order outside the requested brand', async () => {
       tx.order.findFirst.mockResolvedValue(null);
       await expect(
         service.cancel('other-brand', 'order', 'actor', reason),
@@ -1097,7 +1100,7 @@ describe('OrdersService', () => {
       );
     });
 
-    it('does not update the order if the ticket update fails', async () => {
+    it('UT-ORD-042: does not update the order if the ticket update fails', async () => {
       tx.order.findFirst.mockResolvedValue({
         ...draft,
         status: 'CONFIRMED',

@@ -117,7 +117,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
 
   describe.each(routes)('GET $path', (route) => {
     it.each(allowedRoles)(
-      'allows %s and forwards validated arguments',
+      'IT-KQC-001: allows %s and forwards validated arguments',
       async (role) => {
         const response = await request(route.path, `Bearer ${role}`);
 
@@ -131,7 +131,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
 
     it.each(
       Object.values(UserRole).filter((role) => !allowedRoles.includes(role)),
-    )('denies %s before calling the service', async (role) => {
+    )('IT-KQC-002: denies %s before calling the service', async (role) => {
       const response = await request(route.path, `Bearer ${role}`);
 
       expect(response.status).toBe(403);
@@ -141,7 +141,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
       }
     });
 
-    it('requires a bearer session', async () => {
+    it('IT-KQC-003: requires a bearer session', async () => {
       const response = await request(route.path, null);
 
       expect(response.status).toBe(401);
@@ -152,7 +152,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
       expect(service[route.handler]).not.toHaveBeenCalled();
     });
 
-    it('rejects an invalid or expired session', async () => {
+    it('IT-KQC-004: rejects an invalid or expired session', async () => {
       auth.validateSession.mockRejectedValue(new NotFoundException());
 
       const response = await request(route.path);
@@ -163,14 +163,14 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
     });
   });
 
-  it('converts list pagination into an offset and limit', async () => {
+  it('IT-KQC-005: converts list pagination into an offset and limit', async () => {
     const response = await request('?page=3&limit=5');
 
     expect(response.status).toBe(200);
     expect(service.findAll).toHaveBeenCalledWith(10, 5);
   });
 
-  it('converts activeOnly=false and paginates checker history', async () => {
+  it('IT-KQC-006: converts activeOnly=false and paginates checker history', async () => {
     const response = await request(
       `/checker/${checkerId}?activeOnly=false&page=3&limit=5`,
     );
@@ -184,7 +184,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
     );
   });
 
-  it('accepts activeOnly=true explicitly', async () => {
+  it('IT-KQC-007: accepts activeOnly=true explicitly', async () => {
     const response = await request(`/checker/${checkerId}?activeOnly=true`);
 
     expect(response.status).toBe(200);
@@ -197,7 +197,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
   });
 
   it.each(['', `/checker/${checkerId}`])(
-    'validates pagination and rejects unknown query fields on GET %s',
+    'IT-KQC-008: validates pagination and rejects unknown query fields on GET %s',
     async (path) => {
       for (const query of [
         'page=0',
@@ -218,7 +218,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
   );
 
   it.each(['yes', '1', '', 'false&activeOnly=true'])(
-    'rejects invalid activeOnly=%s before calling the service',
+    'IT-KQC-009: rejects invalid activeOnly=%s before calling the service',
     async (value) => {
       const response = await request(
         `/checker/${checkerId}?activeOnly=${value}`,
@@ -234,7 +234,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
     '/ticket/invalid',
     '/ticket/invalid/latest',
     '/checker/invalid',
-  ])('rejects an invalid UUID on GET %s', async (path) => {
+  ])('IT-KQC-010: rejects an invalid UUID on GET %s', async (path) => {
     const response = await request(path);
 
     expect(response.status).toBe(400);
@@ -260,7 +260,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
       code: 'KITCHEN_TICKET_QC_ATTEMPT_NOT_FOUND',
     },
   ] as const)(
-    'preserves service not-found errors on GET $path',
+    'IT-KQC-011: preserves service not-found errors on GET $path',
     async ({ path, handler, code }) => {
       service[handler].mockRejectedValue(new NotFoundException({ code }));
 
@@ -271,7 +271,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
     },
   );
 
-  it('returns an empty history when a ticket has no attempts', async () => {
+  it('IT-KQC-012: returns an empty history when a ticket has no attempts', async () => {
     service.findMany.mockResolvedValue([]);
 
     const response = await request(`/ticket/${ticketId}`);
@@ -280,7 +280,7 @@ describe('Kitchen QC retrieval HTTP endpoints', () => {
     expect(await response.json()).toEqual([]);
   });
 
-  it('returns an empty result when a checker has no matching attempts', async () => {
+  it('IT-KQC-013: returns an empty result when a checker has no matching attempts', async () => {
     service.findManyByChecker.mockResolvedValue({ qcAttempts: [], total: 0 });
 
     const response = await request(`/checker/${checkerId}`);

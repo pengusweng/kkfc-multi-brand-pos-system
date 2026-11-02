@@ -69,7 +69,7 @@ describe('OrderItemQcRejectionService', () => {
     };
 
     it.each([1, 2])(
-      'creates a rejection for portion %s within the ticket quantity',
+      'UT-QCR-001: creates a rejection for portion %s within the ticket quantity',
       async (portion) => {
         const input = { ...dto, portion_number: portion };
 
@@ -93,7 +93,7 @@ describe('OrderItemQcRejectionService', () => {
       },
     );
 
-    it('forwards the caller transaction to every lookup and write', async () => {
+    it('UT-QCR-002: forwards the caller transaction to every lookup and write', async () => {
       const tx = {} as Prisma.TransactionClient;
 
       await service.create('attempt', 'item', dto, tx);
@@ -108,7 +108,7 @@ describe('OrderItemQcRejectionService', () => {
       );
     });
 
-    it('rejects a missing QC attempt before inserting', async () => {
+    it('UT-QCR-003: rejects a missing QC attempt before inserting', async () => {
       repository.findAttempt.mockResolvedValue(null);
 
       await expect(
@@ -120,7 +120,7 @@ describe('OrderItemQcRejectionService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
-    it('rejects a missing order item before inserting', async () => {
+    it('UT-QCR-004: rejects a missing order item before inserting', async () => {
       repository.findOrderItem.mockResolvedValue(null);
 
       await expect(
@@ -133,7 +133,7 @@ describe('OrderItemQcRejectionService', () => {
     });
 
     it.each([KitchenTicketQcStatus.PASSED, KitchenTicketQcStatus.FAILED])(
-      'rejects a completed %s attempt',
+      'UT-QCR-005: rejects a completed %s attempt',
       async (status) => {
         repository.findAttempt.mockResolvedValue({
           qc_attempt_id: 'attempt',
@@ -155,7 +155,7 @@ describe('OrderItemQcRejectionService', () => {
       Object.values(KitchenTicketStatus).filter(
         (status) => status !== KitchenTicketStatus.CHECKING,
       ),
-    )('rejects creation when the ticket is %s', async (status) => {
+    )('UT-QCR-006: rejects creation when the ticket is %s', async (status) => {
       repository.findAttempt.mockResolvedValue({
         qc_attempt_id: 'attempt',
         status: KitchenTicketQcStatus.IN_PROGRESS,
@@ -168,7 +168,7 @@ describe('OrderItemQcRejectionService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
-    it('rejects an order item belonging to a different ticket order', async () => {
+    it('UT-QCR-007: rejects an order item belonging to a different ticket order', async () => {
       repository.findOrderItem.mockResolvedValue({
         order_id: 'other-order',
         quantity: 2,
@@ -180,7 +180,7 @@ describe('OrderItemQcRejectionService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
-    it('rejects a portion exceeding the order item quantity', async () => {
+    it('UT-QCR-008: rejects a portion exceeding the order item quantity', async () => {
       await expect(
         service.create('attempt', 'item', { ...dto, portion_number: 3 }),
       ).rejects.toMatchObject({ status: 400 });
@@ -191,15 +191,20 @@ describe('OrderItemQcRejectionService', () => {
       { method: 'findAttempt', writes: 0 },
       { method: 'findOrderItem', writes: 0 },
       { method: 'create', writes: 1 },
-    ] as const)('propagates $method failures', async ({ method, writes }) => {
-      const error = new Error('Database unavailable');
-      repository[method].mockRejectedValue(error);
+    ] as const)(
+      'UT-QCR-009: propagates $method failures',
+      async ({ method, writes }) => {
+        const error = new Error('Database unavailable');
+        repository[method].mockRejectedValue(error);
 
-      await expect(service.create('attempt', 'item', dto)).rejects.toBe(error);
-      expect(repository.create).toHaveBeenCalledTimes(writes);
-    });
+        await expect(service.create('attempt', 'item', dto)).rejects.toBe(
+          error,
+        );
+        expect(repository.create).toHaveBeenCalledTimes(writes);
+      },
+    );
 
-    it('preserves the database uniqueness error for an already rejected portion', async () => {
+    it('UT-QCR-010: preserves the database uniqueness error for an already rejected portion', async () => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'Duplicate portion',
         {
@@ -214,12 +219,12 @@ describe('OrderItemQcRejectionService', () => {
     });
   });
 
-  it('returns a rejection by its ID', async () => {
+  it('UT-QCR-011: returns a rejection by its ID', async () => {
     await expect(service.findOne('rejection')).resolves.toEqual(rejection);
     expect(repository.findOne).toHaveBeenCalledWith('rejection');
   });
 
-  it('returns the standard not-found error for an unknown rejection', async () => {
+  it('UT-QCR-012: returns the standard not-found error for an unknown rejection', async () => {
     repository.findOne.mockResolvedValue(null);
 
     await expect(service.findOne('missing')).rejects.toMatchObject({
@@ -231,13 +236,16 @@ describe('OrderItemQcRejectionService', () => {
   it.each([
     { method: 'findManyByAttemptId', id: 'attempt' },
     { method: 'findManyByOrderItemId', id: 'item' },
-  ] as const)('$method returns matching rejections', async ({ method, id }) => {
-    await expect(service[method](id)).resolves.toEqual([rejection]);
-    expect(repository[method]).toHaveBeenCalledWith(id);
-  });
+  ] as const)(
+    'UT-QCR-013: $method returns matching rejections',
+    async ({ method, id }) => {
+      await expect(service[method](id)).resolves.toEqual([rejection]);
+      expect(repository[method]).toHaveBeenCalledWith(id);
+    },
+  );
 
   it.each(['findManyByAttemptId', 'findManyByOrderItemId'] as const)(
-    '%s returns an empty array when nothing matches',
+    'UT-QCR-014: %s returns an empty array when nothing matches',
     async (method) => {
       repository[method].mockResolvedValue([]);
       await expect(service[method]('missing')).resolves.toEqual([]);
@@ -245,7 +253,7 @@ describe('OrderItemQcRejectionService', () => {
   );
 
   it.each(['findOne', 'findManyByAttemptId', 'findManyByOrderItemId'] as const)(
-    '%s propagates repository failures',
+    'UT-QCR-015: %s propagates repository failures',
     async (method) => {
       const error = new Error('Lookup failed');
       repository[method].mockRejectedValue(error);
