@@ -278,6 +278,97 @@ describe('OrdersService', () => {
     },
   );
 
+  it.each([
+    {
+      order_channel: 'DINE_IN',
+      references: { table_reference: 'Table 3' },
+      settlement: {},
+    },
+    {
+      order_channel: 'GRABFOOD',
+      references: {
+        merchant_store_reference: 'grab-store',
+        external_order_reference: 'grab-order',
+      },
+      settlement: {
+        payment_method: 'PLATFORM_SETTLED',
+        payment_status: 'PAID',
+      },
+    },
+    {
+      order_channel: 'FOODPANDA',
+      references: {
+        merchant_store_reference: 'panda-store',
+        external_order_reference: 'panda-order',
+      },
+      settlement: {
+        payment_method: 'PLATFORM_SETTLED',
+        payment_status: 'PAID',
+      },
+    },
+  ] as const)(
+    'persists $order_channel draft fields and validated item snapshots',
+    async ({ order_channel, references, settlement }) => {
+      tx.order.findFirst.mockResolvedValue(null);
+      const dto: CreateOrderDTO = {
+        ...request,
+        ...references,
+        order_channel,
+        notes: 'Order note',
+        lines: [{ ...request.lines[0], notes: 'Line note' }],
+      };
+
+      await service.create('brand', 'actor', dto);
+
+      expect(tx.order.create).toHaveBeenCalledWith({
+        data: {
+          order_id: dto.order_id,
+          order_channel,
+          merchant_store_reference: dto.merchant_store_reference,
+          external_order_reference: dto.external_order_reference,
+          table_reference: dto.table_reference,
+          notes: 'Order note',
+          brand_id: 'brand',
+          created_by_id: 'actor',
+          order_code: 'GC-00001',
+          order_number: 1,
+          order_date: draft.order_date,
+          created_at: draft.created_at,
+          create_request_hash: expect.stringMatching(
+            /^[a-f0-9]{64}$/,
+          ) as string,
+          ...settlement,
+          order_items_order: {
+            create: [
+              {
+                menu_item_id: 'menu',
+                item_name: 'Meal',
+                quantity: 2,
+                unit_price: new Prisma.Decimal(12),
+                notes: 'Line note',
+                order_item_modifiers_order_item: {
+                  create: [
+                    {
+                      modifier_id: 'extra',
+                      modifier_name: 'Extra',
+                      additional_price: new Prisma.Decimal(2),
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        include: {
+          order_items_order: {
+            include: { order_item_modifiers_order_item: true },
+          },
+          kitchen_tickets_order: true,
+        },
+      });
+    },
+  );
+
   it('creates a draft without a ticket, final recipe or stock writes', async () => {
     await service.create('brand', 'actor', request);
     const { data } = (tx.order.create.mock.calls as unknown[][])[0][0] as {
@@ -455,6 +546,22 @@ describe('OrdersService', () => {
   it('confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);
     expect(result.status).toBe('CONFIRMED');
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { order_id: 'order', status: 'DRAFT' },
+      data: {
+        status: 'CONFIRMED',
+        confirmed_at: expect.any(Date) as Date,
+        modified_at: expect.any(Date) as Date,
+        ...payment,
+        payment_reference: null,
+      },
+      include: {
+        order_items_order: {
+          include: { order_item_modifiers_order_item: true },
+        },
+        kitchen_tickets_order: true,
+      },
+    });
     expect(
       (
         (tx.orderItem.update.mock.calls as unknown[][])[0][0] as {

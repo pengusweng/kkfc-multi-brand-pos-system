@@ -3,9 +3,17 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { OrderChannel, Prisma } from '@prisma/client';
+import {
+  OrderChannel,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import { setTimeout as delay } from 'node:timers/promises';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import type { OrderItemsService } from '../order-items/order-items.service';
+import type { CreateOrderDTO } from './dto/order.dto';
 
 const includeOrder = {
   order_items_order: { include: { order_item_modifiers_order_item: true } },
@@ -15,12 +23,56 @@ export type SavedOrder = Prisma.OrderGetPayload<{
   include: typeof includeOrder;
 }>;
 
+type CreateOrderContext = {
+  brandId: string;
+  actorId: string;
+  orderCode: string;
+  hash: string;
+  number: number;
+  order_date: Date;
+  created_at: Date;
+  lines: Awaited<ReturnType<OrderItemsService['snapshots']>>;
+  payment?: { payment_method: PaymentMethod; payment_status: PaymentStatus };
+};
+
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: Prisma.OrderUncheckedCreateInput, tx: Prisma.TransactionClient) {
-    return tx.order.create({ data, include: includeOrder });
+  create(
+    dto: CreateOrderDTO,
+    context: CreateOrderContext,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.order.create({
+      data: {
+        order_id: dto.order_id,
+        order_channel: dto.order_channel,
+        merchant_store_reference: dto.merchant_store_reference,
+        external_order_reference: dto.external_order_reference,
+        table_reference: dto.table_reference,
+        notes: dto.notes,
+        brand_id: context.brandId,
+        created_by_id: context.actorId,
+        order_code: context.orderCode,
+        order_number: context.number,
+        order_date: context.order_date,
+        created_at: context.created_at,
+        create_request_hash: context.hash,
+        ...context.payment,
+        order_items_order: {
+          create: context.lines.map((line) => ({
+            menu_item_id: line.menu_item_id,
+            item_name: line.item_name,
+            quantity: line.quantity,
+            unit_price: line.unit_price,
+            notes: line.notes,
+            order_item_modifiers_order_item: { create: line.modifiers },
+          })),
+        },
+      },
+      include: includeOrder,
+    });
   }
 
   createTicket(
@@ -91,6 +143,27 @@ export class OrdersRepository {
     return tx.order.update({
       where: { order_id: orderId },
       data,
+      include: includeOrder,
+    });
+  }
+
+  async updateStatus(
+    orderId: string,
+    newStatus: OrderStatus,
+    expectedStatus: OrderStatus,
+    extraData: Prisma.OrderUpdateInput,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.order.update({
+      where: {
+        order_id: orderId,
+        status: expectedStatus,
+      },
+      data: {
+        ...extraData,
+        status: newStatus,
+        modified_at: new Date(),
+      },
       include: includeOrder,
     });
   }

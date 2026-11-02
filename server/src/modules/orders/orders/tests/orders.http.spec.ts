@@ -811,8 +811,8 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       repository,
     ) as OrdersRepository['create'];
     jest.spyOn(repository, 'create').mockImplementationOnce(
-      (data, tx) =>
-        create(data, tx).then(() => {
+      (dto, context, tx) =>
+        create(dto, context, tx).then(() => {
           throw new Error('Injected failure after order insertion');
         }) as ReturnType<OrdersRepository['create']>,
     );

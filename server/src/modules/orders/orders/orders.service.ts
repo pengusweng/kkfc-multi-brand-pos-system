@@ -7,7 +7,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { Order, OrderChannel, Prisma } from '@prisma/client';
+import { Order, OrderChannel, OrderStatus, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
 import {
@@ -60,34 +60,19 @@ export class OrdersService {
       const { created_at, order_date, number } =
         await this.repository.nextOrderNumber(brandId, tx);
       const order = await this.repository.create(
+        dto,
         {
-          order_id: dto.order_id,
-          order_code: `${brand.code.trim()}-${number.toString().padStart(5, '0')}`,
+          brandId,
+          actorId,
+          orderCode: `${brand.code.trim()}-${number.toString().padStart(5, '0')}`,
+          hash,
+          number,
           order_date,
-          order_number: number,
           created_at,
-          create_request_hash: hash,
-          brand_id: brandId,
-          created_by_id: actorId,
-          order_channel: dto.order_channel,
-          merchant_store_reference: dto.merchant_store_reference,
-          external_order_reference: dto.external_order_reference,
-          table_reference: dto.table_reference,
-          notes: dto.notes,
-          ...(this.isDelivery(dto.order_channel)
+          lines,
+          payment: this.isDelivery(dto.order_channel)
             ? { payment_method: 'PLATFORM_SETTLED', payment_status: 'PAID' }
-            : {}),
-          order_items_order: {
-            create: lines.map((line) => ({
-              ...omit(
-                line,
-                'applied_recipe_id',
-                'recipe_snapshot',
-                'modifiers',
-              ),
-              order_item_modifiers_order_item: { create: line.modifiers },
-            })),
-          },
+            : undefined,
         },
         tx,
       );
@@ -155,6 +140,7 @@ export class OrdersService {
         throw new ServiceUnavailableException(
           'Ticket number exceeds storage capacity.',
         );
+
       await this.repository.createTicket(
         orderId,
         order.order_code,
@@ -162,14 +148,12 @@ export class OrdersService {
         actorId,
         tx,
       );
-      const confirmed = await this.repository.update(
+
+      const confirmed = await this.repository.updateStatus(
         orderId,
-        {
-          status: 'CONFIRMED',
-          confirmed_at: new Date(),
-          modified_at: new Date(),
-          ...payment,
-        },
+        OrderStatus.CONFIRMED,
+        OrderStatus.DRAFT,
+        { confirmed_at: new Date(), ...payment },
         tx,
       );
       // Sprint 1 deliberately performs no inventory writes or stock availability checks.
@@ -334,7 +318,6 @@ export class OrdersService {
       ),
     };
   }
-
 
   private async snapshots(
     tx: Prisma.TransactionClient,
