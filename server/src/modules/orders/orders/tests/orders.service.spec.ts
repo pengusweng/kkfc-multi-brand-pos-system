@@ -632,13 +632,13 @@ describe('OrdersService', () => {
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
 
-  it('normalizes platform references before duplicate lookup', async () => {
+  it('uses platform references for duplicate lookup', async () => {
     await expect(
       service.create('brand', 'actor', {
         ...request,
         order_channel: 'GRABFOOD',
-        merchant_store_reference: ' store ',
-        external_order_reference: ' external ',
+        merchant_store_reference: 'store',
+        external_order_reference: 'external',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(tx.order.findFirst).toHaveBeenCalledWith({

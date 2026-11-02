@@ -435,6 +435,75 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(await savedOrder(order.order_id)).toEqual(before);
   });
 
+  it.each([
+    {
+      order_channel: 'GRABFOOD' as const,
+      references: {
+        merchant_store_reference: 's'.repeat(255),
+        external_order_reference: 'e'.repeat(255),
+      },
+    },
+    {
+      order_channel: 'DINE_IN' as const,
+      references: { table_reference: 't'.repeat(50) },
+    },
+    {
+      order_channel: 'TAKEAWAY' as const,
+      references: {
+        merchant_store_reference: null,
+        external_order_reference: null,
+        table_reference: null,
+      },
+    },
+  ])(
+    'trims $order_channel references before validation and hashing',
+    async ({ order_channel, references }) => {
+      const body = {
+        ...orderBody(order_channel),
+        ...references,
+        notes: ' Keep these spaces ',
+      };
+      const padded = {
+        ...body,
+        ...Object.fromEntries(
+          Object.entries(references).map(([field, value]) => [
+            field,
+            ` \t${value ?? ''}\n `,
+          ]),
+        ),
+      };
+      const response = await request(ordersPath(), 'POST', padded, 1);
+      expect(response.status).toBe(201);
+      const order = await json(response);
+      expect(order).toMatchObject({ ...references, notes: body.notes });
+      const replay = await request(ordersPath(), 'POST', body, 1);
+      expect(replay.status).toBe(201);
+      expect(await json(replay)).toEqual(order);
+    },
+  );
+
+  it.each(
+    (
+      [
+        'merchant_store_reference',
+        'external_order_reference',
+        'table_reference',
+      ] as const
+    ).flatMap((field) =>
+      [123, true, {}, []].map((value) => ({ field, value })),
+    ),
+  )('rejects nonstring $field=$value', async ({ field, value }) => {
+    const create = jest.spyOn(app.get(OrdersService), 'create');
+    const response = await request(
+      ordersPath(),
+      'POST',
+      { ...orderBody(), [field]: value },
+      1,
+    );
+    expect(response.status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it.each(
     (['GRABFOOD', 'FOODPANDA'] as const).flatMap((order_channel) =>
       (
