@@ -31,12 +31,21 @@ export class OrderItemQcRejectionRepository {
     });
   }
 
-  async findMany(
+  async findManyByAttemptId(
     attemptId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.orderItemQcRejection.findMany({
       where: { qc_attempt_id: attemptId },
+    });
+  }
+
+  async findManyByOrderItemId(
+    orderItemId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.orderItemQcRejection.findMany({
+      where: { order_item_id: orderItemId },
     });
   }
 }
