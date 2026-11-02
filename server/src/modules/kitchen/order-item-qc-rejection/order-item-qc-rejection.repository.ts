@@ -31,6 +31,30 @@ export class OrderItemQcRejectionRepository {
     });
   }
 
+  async findAttempt(
+    attemptId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.kitchenTicketQcAttempt.findUnique({
+      where: { qc_attempt_id: attemptId },
+      select: {
+        qc_attempt_id: true,
+        status: true,
+        kitchen_ticket: { select: { order_id: true, status: true } },
+      },
+    });
+  }
+
+  async findOrderItem(
+    orderItemId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.orderItem.findUnique({
+      where: { order_item_id: orderItemId },
+      select: { order_id: true, quantity: true },
+    });
+  }
+
   async findManyByAttemptId(
     attemptId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
