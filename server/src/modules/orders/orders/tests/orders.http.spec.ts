@@ -842,7 +842,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     const body = await draft();
     const before = await savedOrder(body.order_id);
     jest
-      .spyOn(app.get<OrdersRepository>(OrdersRepository), 'update')
+      .spyOn(app.get<OrdersRepository>(OrdersRepository), 'updateStatus')
       .mockRejectedValueOnce(
         new Error('Injected failure after ticket insertion'),
       );
