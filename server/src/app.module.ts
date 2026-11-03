@@ -22,6 +22,7 @@ import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.modu
 import { KitchenTicketModule } from './modules/kitchen/kitchen-ticket/kitchen-ticket.module';
 import { KitchenQcModule } from './modules/kitchen/kitchen-qc/kitchen-qc.module';
 import { HandoffModule } from './modules/kitchen/handoff/handoff.module';
+import { KitchenFulfillmentModule } from './modules/kitchen/kitchen-fulfillment/kitchen-fulfillment.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { HandoffModule } from './modules/kitchen/handoff/handoff.module';
     KitchenTicketModule,
     KitchenQcModule,
     HandoffModule,
+    KitchenFulfillmentModule,
   ],
   controllers: [],
   providers: [

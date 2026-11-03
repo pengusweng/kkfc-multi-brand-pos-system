@@ -8,6 +8,6 @@ import { InventoryItemsService } from './inventory-items.service';
   imports: [PrismaModule],
   controllers: [InventoryItemsController],
   providers: [InventoryItemsService, InventoryItemsRepository],
-  exports: [InventoryItemsRepository],
+  exports: [InventoryItemsService, InventoryItemsRepository],
 })
 export class InventoryItemsModule {}

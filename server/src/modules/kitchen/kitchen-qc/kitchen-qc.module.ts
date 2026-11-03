@@ -16,5 +16,6 @@ import { KitchenQcService } from './kitchen-qc.service';
   ],
   controllers: [KitchenQcController],
   providers: [KitchenQcService, KitchenQcRepository],
+  exports: [KitchenQcService, KitchenQcRepository],
 })
 export class KitchenQcModule {}
