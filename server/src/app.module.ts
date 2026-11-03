@@ -21,6 +21,7 @@ import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu
 import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.module';
 import { KitchenTicketModule } from './modules/kitchen/kitchen-ticket/kitchen-ticket.module';
 import { KitchenQcModule } from './modules/kitchen/kitchen-qc/kitchen-qc.module';
+import { HandoffModule } from './modules/kitchen/handoff/handoff.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { KitchenQcModule } from './modules/kitchen/kitchen-qc/kitchen-qc.module'
     MenuCatalogModule,
     KitchenTicketModule,
     KitchenQcModule,
+    HandoffModule,
   ],
   controllers: [],
   providers: [
