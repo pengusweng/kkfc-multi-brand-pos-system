@@ -102,6 +102,50 @@ describe('KitchenQcService', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
+  it.each(['pass', 'fail'] as const)(
+    'UT-KQC-042: rejects an unassigned checker before the %s status update',
+    async (action) => {
+      ticketRepository.findOne.mockResolvedValue({
+        ...ticket,
+        status: KitchenTicketStatus.CHECKING,
+      });
+      const result =
+        action === 'pass'
+          ? service.passAttempt('other', 'attempt')
+          : service.failAttempt('attempt', 'other');
+      await expect(result).rejects.toMatchObject({
+        status: 403,
+        response: { code: 'UNAUTHORIZED_CHECKER' },
+      });
+      expect(repository.updateStatus).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['pass', 'fail'] as const)(
+    'UT-KQC-043: forwards the caller transaction through %s validation and update',
+    async (action) => {
+      const tx = {} as Prisma.TransactionClient;
+      ticketRepository.findOne.mockResolvedValue({
+        ...ticket,
+        status: KitchenTicketStatus.CHECKING,
+      });
+      if (action === 'pass')
+        await service.passAttempt('checker', 'attempt', tx);
+      else await service.failAttempt('attempt', 'checker', tx);
+      expect(repository.findOneUID).toHaveBeenCalledWith('attempt', tx);
+      expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket', tx);
+      expect(usersRepository.findOne).toHaveBeenCalledWith('checker', true, tx);
+      expect(repository.updateStatus).toHaveBeenCalledWith(
+        'attempt',
+        action === 'pass'
+          ? KitchenTicketQcStatus.PASSED
+          : KitchenTicketQcStatus.FAILED,
+        KitchenTicketQcStatus.IN_PROGRESS,
+        tx,
+      );
+    },
+  );
+
   describe('passAttempt', () => {
     beforeEach(() => {
       ticketRepository.findOne.mockResolvedValue({
@@ -111,26 +155,32 @@ describe('KitchenQcService', () => {
     });
 
     it('UT-KQC-001: passes an in-progress attempt for a ticket being checked and returns the saved attempt', async () => {
-      await expect(service.passAttempt('attempt')).resolves.toEqual({
+      await expect(service.passAttempt('checker', 'attempt')).resolves.toEqual({
         ...attempt,
         status: KitchenTicketQcStatus.PASSED,
         completed_at: now,
       });
 
-      expect(repository.findOneUID).toHaveBeenCalledWith('attempt');
-      expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket');
+      expect(repository.findOneUID).toHaveBeenCalledWith('attempt', undefined);
+      expect(ticketRepository.findOne).toHaveBeenCalledWith(
+        'ticket',
+        undefined,
+      );
       expect(repository.updateStatus).toHaveBeenCalledTimes(1);
       expect(repository.updateStatus).toHaveBeenCalledWith(
         'attempt',
         KitchenTicketQcStatus.PASSED,
         KitchenTicketQcStatus.IN_PROGRESS,
+        undefined,
       );
     });
 
     it('UT-KQC-002: rejects a missing attempt before looking up the ticket or updating', async () => {
       repository.findOneUID.mockResolvedValue(null);
 
-      await expect(service.passAttempt('missing')).rejects.toMatchObject({
+      await expect(
+        service.passAttempt('checker', 'missing'),
+      ).rejects.toMatchObject({
         status: 404,
         response: { code: 'KITCHEN_TICKET_QC_ATTEMPT_NOT_FOUND' },
       });
@@ -141,7 +191,9 @@ describe('KitchenQcService', () => {
     it('UT-KQC-003: rejects a missing kitchen ticket without updating the attempt', async () => {
       ticketRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.passAttempt('attempt')).rejects.toMatchObject({
+      await expect(
+        service.passAttempt('checker', 'attempt'),
+      ).rejects.toMatchObject({
         status: 404,
         response: { code: 'KITCHEN_TICKET_NOT_FOUND' },
       });
@@ -157,7 +209,9 @@ describe('KitchenQcService', () => {
       async (status) => {
         ticketRepository.findOne.mockResolvedValue({ ...ticket, status });
 
-        await expect(service.passAttempt('attempt')).rejects.toMatchObject({
+        await expect(
+          service.passAttempt('checker', 'attempt'),
+        ).rejects.toMatchObject({
           status: 409,
           response: { code: 'UNABLE_TO_APPROVE_QC_ATTEMPT' },
         });
@@ -170,7 +224,9 @@ describe('KitchenQcService', () => {
       async (status) => {
         repository.findOneUID.mockResolvedValue({ ...attempt, status });
 
-        await expect(service.passAttempt('attempt')).rejects.toMatchObject({
+        await expect(
+          service.passAttempt('checker', 'attempt'),
+        ).rejects.toMatchObject({
           status: 409,
           response: {
             code: 'UNABLE_TO_APPROVE_QC_ATTEMPT',
@@ -185,7 +241,9 @@ describe('KitchenQcService', () => {
       const error = new Error('QC attempt lookup failed');
       repository.findOneUID.mockRejectedValue(error);
 
-      await expect(service.passAttempt('attempt')).rejects.toBe(error);
+      await expect(service.passAttempt('checker', 'attempt')).rejects.toBe(
+        error,
+      );
       expect(ticketRepository.findOne).not.toHaveBeenCalled();
       expect(repository.updateStatus).not.toHaveBeenCalled();
     });
@@ -194,7 +252,9 @@ describe('KitchenQcService', () => {
       const error = new Error('Kitchen ticket lookup failed');
       ticketRepository.findOne.mockRejectedValue(error);
 
-      await expect(service.passAttempt('attempt')).rejects.toBe(error);
+      await expect(service.passAttempt('checker', 'attempt')).rejects.toBe(
+        error,
+      );
       expect(repository.updateStatus).not.toHaveBeenCalled();
     });
 
@@ -202,7 +262,9 @@ describe('KitchenQcService', () => {
       const error = new Error('QC status update failed');
       repository.updateStatus.mockRejectedValue(error);
 
-      await expect(service.passAttempt('attempt')).rejects.toBe(error);
+      await expect(service.passAttempt('checker', 'attempt')).rejects.toBe(
+        error,
+      );
       expect(log).not.toHaveBeenCalledWith('Passed attempt attempt');
     });
   });
@@ -223,22 +285,30 @@ describe('KitchenQcService', () => {
     });
 
     it('UT-KQC-009: fails an in-progress attempt for a ticket being checked and returns the saved attempt', async () => {
-      await expect(service.failAttempt('attempt')).resolves.toBe(failedAttempt);
+      await expect(service.failAttempt('attempt', 'checker')).resolves.toBe(
+        failedAttempt,
+      );
 
-      expect(repository.findOneUID).toHaveBeenCalledWith('attempt');
-      expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket');
+      expect(repository.findOneUID).toHaveBeenCalledWith('attempt', undefined);
+      expect(ticketRepository.findOne).toHaveBeenCalledWith(
+        'ticket',
+        undefined,
+      );
       expect(repository.updateStatus).toHaveBeenCalledTimes(1);
       expect(repository.updateStatus).toHaveBeenCalledWith(
         'attempt',
         KitchenTicketQcStatus.FAILED,
         KitchenTicketQcStatus.IN_PROGRESS,
+        undefined,
       );
     });
 
     it('UT-KQC-010: rejects a missing attempt before looking up the ticket or updating', async () => {
       repository.findOneUID.mockResolvedValue(null);
 
-      await expect(service.failAttempt('missing')).rejects.toMatchObject({
+      await expect(
+        service.failAttempt('missing', 'checker'),
+      ).rejects.toMatchObject({
         status: 404,
         response: { code: 'KITCHEN_TICKET_QC_ATTEMPT_NOT_FOUND' },
       });
@@ -249,7 +319,9 @@ describe('KitchenQcService', () => {
     it('UT-KQC-011: rejects a missing kitchen ticket without updating the attempt', async () => {
       ticketRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+      await expect(
+        service.failAttempt('attempt', 'checker'),
+      ).rejects.toMatchObject({
         status: 404,
         response: { code: 'KITCHEN_TICKET_NOT_FOUND' },
       });
@@ -265,7 +337,9 @@ describe('KitchenQcService', () => {
       async (status) => {
         ticketRepository.findOne.mockResolvedValue({ ...ticket, status });
 
-        await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+        await expect(
+          service.failAttempt('attempt', 'checker'),
+        ).rejects.toMatchObject({
           status: 409,
           response: {
             code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
@@ -282,7 +356,9 @@ describe('KitchenQcService', () => {
       async (status) => {
         repository.findOneUID.mockResolvedValue({ ...attempt, status });
 
-        await expect(service.failAttempt('attempt')).rejects.toMatchObject({
+        await expect(
+          service.failAttempt('attempt', 'checker'),
+        ).rejects.toMatchObject({
           status: 409,
           response: {
             code: 'UNABLE_TO_REJECT_QC_ATTEMPT',
@@ -297,7 +373,9 @@ describe('KitchenQcService', () => {
       const error = new Error('QC attempt lookup failed');
       repository.findOneUID.mockRejectedValue(error);
 
-      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      await expect(service.failAttempt('attempt', 'checker')).rejects.toBe(
+        error,
+      );
       expect(ticketRepository.findOne).not.toHaveBeenCalled();
       expect(repository.updateStatus).not.toHaveBeenCalled();
     });
@@ -306,7 +384,9 @@ describe('KitchenQcService', () => {
       const error = new Error('Kitchen ticket lookup failed');
       ticketRepository.findOne.mockRejectedValue(error);
 
-      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      await expect(service.failAttempt('attempt', 'checker')).rejects.toBe(
+        error,
+      );
       expect(repository.updateStatus).not.toHaveBeenCalled();
     });
 
@@ -314,7 +394,9 @@ describe('KitchenQcService', () => {
       const error = new Error('QC status update failed');
       repository.updateStatus.mockRejectedValue(error);
 
-      await expect(service.failAttempt('attempt')).rejects.toBe(error);
+      await expect(service.failAttempt('attempt', 'checker')).rejects.toBe(
+        error,
+      );
       expect(log).not.toHaveBeenCalledWith('Failed attempt attempt');
     });
   });
@@ -552,11 +634,20 @@ describe('KitchenQcService', () => {
   it('UT-KQC-033: creates attempt 1 when the ticket has no previous QC attempt', async () => {
     await expect(service.create('checker', 'ticket')).resolves.toEqual(attempt);
 
-    expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket');
-    expect(usersRepository.findOne).toHaveBeenCalledWith('checker');
-    expect(repository.findOneLatest).toHaveBeenCalledWith('ticket');
+    expect(ticketRepository.findOne).toHaveBeenCalledWith('ticket', undefined);
+    expect(usersRepository.findOne).toHaveBeenCalledWith(
+      'checker',
+      true,
+      undefined,
+    );
+    expect(repository.findOneLatest).toHaveBeenCalledWith('ticket', undefined);
     expect(repository.create).toHaveBeenCalledTimes(1);
-    expect(repository.create).toHaveBeenCalledWith('checker', 'ticket', 1);
+    expect(repository.create).toHaveBeenCalledWith(
+      'checker',
+      'ticket',
+      1,
+      undefined,
+    );
   });
 
   it.each([1, 4])(
@@ -579,6 +670,7 @@ describe('KitchenQcService', () => {
         'checker',
         'ticket',
         latestNumber + 1,
+        undefined,
       );
     },
   );

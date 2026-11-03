@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AssetsModule } from '../../assets/assets.module';
 import { InventoryItemsModule } from '../../inventory/inventory-items/inventory-items.module';
 import { OrderItemsModule } from '../../orders/order-items/order-items.module';
 import { OrdersModule } from '../../orders/orders/orders.module';
@@ -12,6 +13,7 @@ import { KitchenFulfillmentService } from './kitchen-fulfillment.service';
 
 @Module({
   imports: [
+    AssetsModule,
     KitchenTicketModule,
     KitchenQcModule,
     OrderItemQcRejectionModule,

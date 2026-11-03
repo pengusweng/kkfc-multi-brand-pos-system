@@ -7,7 +7,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { OrderChannel, UserRole } from '@prisma/client';
+import { OrderChannel, QcRejectionReason, UserRole } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
 import { AppModule } from '../../../../app.module';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
@@ -21,8 +21,6 @@ import { OrdersRepository } from '../orders.repository';
 import { OrdersService } from '../orders.service';
 import { AuthService } from '../../../auth/auth.service';
 import { OrdersController } from '../orders.controller';
-import { KitchenFulfillmentController } from '../../../kitchen/kitchen-fulfillment/kitchen-fulfillment.controller';
-import { KitchenFulfillmentService } from '../../../kitchen/kitchen-fulfillment/kitchen-fulfillment.service';
 
 describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   let app: INestApplication;
@@ -302,7 +300,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     });
   }
 
-  async function confirmedForCancellation() {
+  async function confirmedOrder() {
     const body = await draft();
     expect(
       (
@@ -317,6 +315,144 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     return savedOrder(body.order_id);
   }
 
+  it('IT-KFUL-015: completes preparation rejection rework QC approval and image-free handover through authenticated endpoints', async () => {
+    const order = await confirmedOrder();
+    const ticketId = order.kitchen_tickets_order!.kitchen_ticket_id;
+    const ticketPath = `/kitchen-fulfillment/${ticketId}`;
+    const preparerId = fixture.users[5].user_id;
+    const checkerId = fixture.users[4].user_id;
+    expect(
+      (
+        await request(
+          `/kitchen-ticket/${ticketId}/preparer`,
+          'PATCH',
+          { preparer_id: preparerId },
+          5,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/kitchen-ticket/${ticketId}/checker`,
+          'PATCH',
+          { checker_id: checkerId },
+          4,
+        )
+      ).status,
+    ).toBe(200);
+
+    const acknowledged = await request(
+      `${ticketPath}/acknowledge`,
+      'POST',
+      undefined,
+      5,
+    );
+    expect(acknowledged.status).toBe(200);
+    expect(await json(acknowledged)).toMatchObject({ status: 'ACKNOWLEDGED' });
+    const prepared = await request(
+      `${ticketPath}/prepare`,
+      'POST',
+      undefined,
+      5,
+    );
+    expect(prepared.status).toBe(200);
+    expect(await json(prepared)).toMatchObject({
+      ticket: { status: 'PREPARING' },
+      order: { status: 'PREPARING' },
+    });
+    expect(
+      (await request(`${ticketPath}/for-checking`, 'POST', undefined, 5))
+        .status,
+    ).toBe(200);
+
+    const checked = await request(`${ticketPath}/check`, 'POST', undefined, 4);
+    expect(checked.status).toBe(200);
+    const first = (await checked.json()) as {
+      ticket: { status: string };
+      attempt: {
+        qc_attempt_id: string;
+        attempt_number: number;
+        status: string;
+      };
+    };
+    expect(first).toMatchObject({
+      ticket: { status: 'CHECKING' },
+      attempt: { status: 'IN_PROGRESS', attempt_number: 1 },
+    });
+    const rejected = await request(
+      `/kitchen-fulfillment/qc-attempts/${first.attempt.qc_attempt_id}/reject`,
+      'POST',
+      {
+        rejections: [
+          {
+            order_item_id: order.order_items_order[0].order_item_id,
+            portion_number: 1,
+            rejection_reason: Object.values(QcRejectionReason)[0],
+            description: 'Portion needs rework.',
+          },
+        ],
+      },
+      4,
+    );
+    expect(rejected.status).toBe(200);
+    expect(await json(rejected)).toMatchObject({
+      ticket: { status: 'REWORKING', preparer_id: preparerId },
+      attempt: { status: 'FAILED' },
+      rejections: [{ portion_number: 1 }],
+    });
+
+    expect(
+      (await request(`${ticketPath}/for-checking`, 'POST', undefined, 5))
+        .status,
+    ).toBe(200);
+    const rechecked = await request(
+      `${ticketPath}/check`,
+      'POST',
+      undefined,
+      4,
+    );
+    expect(rechecked.status).toBe(200);
+    const second = (await rechecked.json()) as {
+      attempt: { qc_attempt_id: string; attempt_number: number };
+    };
+    expect(second.attempt.attempt_number).toBe(2);
+    const passed = await request(
+      `/kitchen-fulfillment/qc-attempts/${second.attempt.qc_attempt_id}/pass`,
+      'POST',
+      undefined,
+      4,
+    );
+    expect(passed.status).toBe(200);
+    expect(await json(passed)).toMatchObject({
+      ticket: { status: 'READY' },
+      attempt: { status: 'PASSED' },
+    });
+
+    const handedOver = await request(
+      `${ticketPath}/hand-over`,
+      'POST',
+      undefined,
+      5,
+    );
+    expect(handedOver.status).toBe(200);
+    expect(await json(handedOver)).toMatchObject({
+      order: {
+        status: 'COMPLETED',
+        kitchen_tickets_order: { status: 'HANDED_OVER' },
+      },
+      handedOverTicket: { status: 'HANDED_OVER' },
+    });
+    const saved = await savedOrder(order.order_id);
+    expect(saved.status).toBe('COMPLETED');
+    expect(saved.kitchen_tickets_order?.status).toBe('HANDED_OVER');
+    expect(
+      await prisma.kitchenTicketQcAttempt.count({
+        where: { kitchen_ticket_id: ticketId },
+      }),
+    ).toBe(2);
+  });
+
   it.each([
     ['CONFIRMED', 'QUEUED'],
     ['CONFIRMED', 'ACKNOWLEDGED'],
@@ -328,7 +464,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   ] as const)(
     'IT-KFUL-001: cancels a %s order and its %s ticket atomically and preserves the original cancellation on retry',
     async (orderStatus, ticketStatus) => {
-      const original = await confirmedForCancellation();
+      const original = await confirmedOrder();
       await prisma.order.update({
         where: { order_id: original.order_id },
         data: { status: orderStatus },
@@ -342,14 +478,14 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
         path,
         'POST',
         { cancellation_reason: '  Customer request  ' },
-        1,
+        0,
       );
       expect(response.status).toBe(200);
       const result = await json(response);
       expect(result).toMatchObject({
         order: {
           status: 'CANCELLED',
-          cancelled_by_id: fixture.users[1].user_id,
+          cancelled_by_id: fixture.users[0].user_id,
           cancellation_reason: 'Customer request',
           kitchen_tickets_order: { status: 'CANCELLED' },
         },
@@ -411,7 +547,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   ] as const)(
     'IT-KFUL-002: rejects cancellation for $name without changing either record',
     async ({ orderStatus, ticketStatus, fulfillment, wrongBrand, status }) => {
-      const original = await confirmedForCancellation();
+      const original = await confirmedOrder();
       await prisma.order.update({
         where: { order_id: original.order_id },
         data: { status: orderStatus },
@@ -431,7 +567,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
             path,
             'POST',
             { cancellation_reason: 'Customer request' },
-            1,
+            0,
           )
         ).status,
       ).toBe(status);
@@ -440,7 +576,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   );
 
   it('IT-KFUL-003: rolls back ticket cancellation when order cancellation fails and safely retries', async () => {
-    const original = await confirmedForCancellation();
+    const original = await confirmedOrder();
     const path = `/kitchen-fulfillment${ordersPath()}/${original.order_id}/cancel`;
     const cancel = jest
       .spyOn(app.get(OrdersService), 'cancel')
@@ -454,7 +590,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
             path,
             'POST',
             { cancellation_reason: 'Customer request' },
-            1,
+            0,
           )
         ).status,
       ).toBe(409);
@@ -468,7 +604,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
           path,
           'POST',
           { cancellation_reason: 'Customer request' },
-          1,
+          0,
         )
       ).status,
     ).toBe(200);
@@ -486,7 +622,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
           `/kitchen-fulfillment${path}`,
           'POST',
           { cancellation_reason: 'Customer request' },
-          1,
+          0,
         )
       ).status,
     ).toBe(409);
@@ -495,7 +631,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       path,
       'POST',
       { cancellation_reason: 'Customer request' },
-      1,
+      0,
     );
     expect(cancelled.status).toBe(200);
     const result = await json(cancelled);
@@ -507,7 +643,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       path,
       'POST',
       { cancellation_reason: 'Another request' },
-      1,
+      0,
     );
     expect(retry.status).toBe(200);
     expect(await json(retry)).toEqual(result);
@@ -1325,37 +1461,22 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   });
 });
 
-describe.each([
-  {
-    name: 'draft orders',
-    controller: OrdersController,
-    serviceToken: OrdersService,
-    handler: 'cancelDraft',
-    prefix: '',
-  },
-  {
-    name: 'kitchen fulfillment',
-    controller: KitchenFulfillmentController,
-    serviceToken: KitchenFulfillmentService,
-    handler: 'cancel',
-    prefix: '/kitchen-fulfillment',
-  },
-] as const)('Cancellation HTTP API: $name', (route) => {
+describe('Draft cancellation HTTP API', () => {
   const brandId = '11111111-1111-4111-8111-111111111111';
   const orderId = '22222222-2222-4222-8222-222222222222';
   const actorId = '33333333-3333-4333-8333-333333333333';
   const auth = { validateSession: jest.fn() };
   const prisma = { order: { findUnique: jest.fn() } };
-  const service = { cancelDraft: jest.fn(), cancel: jest.fn() };
-  const cancelMethod = service[route.handler];
+  const service = { cancelDraft: jest.fn() };
+  const cancelMethod = service.cancelDraft;
   let app: INestApplication;
   let url: string;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      controllers: [route.controller],
+      controllers: [OrdersController],
       providers: [
-        { provide: route.serviceToken, useValue: service },
+        { provide: OrdersService, useValue: service },
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
       ],
@@ -1398,17 +1519,14 @@ describe.each([
     brand = brandId,
     order = orderId,
   ) {
-    return fetch(
-      `${url}/api${route.prefix}/brands/${brand}/orders/${order}/cancel`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: 'Bearer test-session' } : {}),
-        },
-        body: JSON.stringify(body),
+    return fetch(`${url}/api/brands/${brand}/orders/${order}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: 'Bearer test-session' } : {}),
       },
-    );
+      body: JSON.stringify(body),
+    });
   }
 
   it.each([UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN])(

@@ -43,3 +43,15 @@ Feature: Kitchen fulfillment handover responses
     Given ticket cancellation fails because the ticket was handed over
     When fulfillment cancellation is requested
     Then the order cancellation service is not called
+
+  @UT-KFUL-007
+  Scenario: Record rejected portions before failing QC and starting rework
+    Given an in-progress QC attempt with rejected portions
+    When the assigned checker rejects the attempt
+    Then rejection records the failed attempt and reworking ticket use the same transaction in that order
+
+  @UT-KFUL-008
+  Scenario: Stop rejection when a portion cannot be recorded
+    Given recording a rejected portion fails
+    When the checker rejects the attempt
+    Then the failure propagates before QC or ticket status updates

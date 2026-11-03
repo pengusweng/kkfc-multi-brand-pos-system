@@ -6,9 +6,96 @@ import { OrdersService } from '../../../orders/orders/orders.service';
 import { OrdersRepository } from '../../../orders/orders/orders.repository';
 import { HandoffService } from '../../handoff/handoff.service';
 import { KitchenTicketService } from '../../kitchen-ticket/kitchen-ticket.service';
+import { KitchenQcService } from '../../kitchen-qc/kitchen-qc.service';
+import { OrderItemQcRejectionService } from '../../order-item-qc-rejection/order-item-qc-rejection.service';
+import { QcRejectionReason } from '@prisma/client';
 import { KitchenFulfillmentService } from '../kitchen-fulfillment.service';
 
 describe('KitchenFulfillmentService', () => {
+  describe('rejectQcAttempt', () => {
+    const tx = {} as Prisma.TransactionClient;
+    const dto = {
+      rejections: [
+        {
+          order_item_id: 'item',
+          portion_number: 1,
+          rejection_reason: Object.values(QcRejectionReason)[0],
+          description: 'Needs rework',
+        },
+      ],
+    };
+    const rejection = { rejection_id: 'rejection' };
+    const attempt = {
+      qc_attempt_id: 'attempt',
+      kitchen_ticket_id: 'ticket',
+      status: 'FAILED',
+    };
+    const ticket = { kitchen_ticket_id: 'ticket', status: 'REWORKING' };
+    let module: TestingModule;
+    let service: KitchenFulfillmentService;
+    let rejections: { create: jest.Mock };
+    let qc: { failAttempt: jest.Mock };
+    let tickets: { rework: jest.Mock };
+
+    beforeEach(async () => {
+      rejections = { create: jest.fn().mockResolvedValue(rejection) };
+      qc = { failAttempt: jest.fn().mockResolvedValue(attempt) };
+      tickets = { rework: jest.fn().mockResolvedValue(ticket) };
+      const prisma = {
+        $transaction: jest.fn(
+          (work: (client: Prisma.TransactionClient) => Promise<unknown>) =>
+            work(tx),
+        ),
+      };
+      module = await Test.createTestingModule({
+        providers: [KitchenFulfillmentService],
+      })
+        .useMocker((token) => {
+          if (token === PrismaService) return prisma;
+          if (token === KitchenQcService) return qc;
+          if (token === KitchenTicketService) return tickets;
+          if (token === OrderItemQcRejectionService) return rejections;
+          return {};
+        })
+        .compile();
+      service = module.get(KitchenFulfillmentService);
+    });
+    afterEach(async () => module.close());
+
+    it('UT-KFUL-007: records rejections before failing QC and marking the ticket for rework in one transaction', async () => {
+      await expect(
+        service.rejectQcAttempt('attempt', 'checker', dto),
+      ).resolves.toEqual({ attempt, ticket, rejections: [rejection] });
+      expect(rejections.create).toHaveBeenCalledWith(
+        'attempt',
+        'item',
+        {
+          portion_number: 1,
+          rejection_reason: dto.rejections[0].rejection_reason,
+          description: 'Needs rework',
+        },
+        tx,
+      );
+      expect(qc.failAttempt).toHaveBeenCalledWith('attempt', 'checker', tx);
+      expect(tickets.rework).toHaveBeenCalledWith('ticket', 'checker', tx);
+      expect(rejections.create.mock.invocationCallOrder[0]).toBeLessThan(
+        qc.failAttempt.mock.invocationCallOrder[0],
+      );
+      expect(qc.failAttempt.mock.invocationCallOrder[0]).toBeLessThan(
+        tickets.rework.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('UT-KFUL-008: propagates a rejection write failure without changing QC or ticket status', async () => {
+      const error = new Error('Rejection failed');
+      rejections.create.mockRejectedValue(error);
+      await expect(
+        service.rejectQcAttempt('attempt', 'checker', dto),
+      ).rejects.toBe(error);
+      expect(qc.failAttempt).not.toHaveBeenCalled();
+      expect(tickets.rework).not.toHaveBeenCalled();
+    });
+  });
   it.each(Object.values(OrderChannel))(
     'UT-KFUL-001: returns the final ticket state in the completed order after %s handover',
     async (orderChannel) => {

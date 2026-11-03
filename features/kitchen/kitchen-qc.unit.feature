@@ -330,3 +330,15 @@ Feature: Kitchen QC services
     Given persisting a first or subsequent QC attempt fails
     When a QC attempt is created
     Then the service propagates a creation failure for a $name
+
+  @UT-KQC-042
+  Scenario: Deny a checker who is not assigned to the ticket
+    Given an in-progress attempt and an unassigned caller
+    When the caller passes or fails the attempt
+    Then the service returns a forbidden error before updating
+
+  @UT-KQC-043
+  Scenario: Use the caller transaction for QC result validation and update
+    Given an in-progress attempt and a transaction
+    When its assigned checker passes or fails it
+    Then all database operations use that transaction

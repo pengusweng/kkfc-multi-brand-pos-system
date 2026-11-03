@@ -170,8 +170,9 @@ Example `200 OK` response for cancellation of an unpaid draft:
 ```
 
 `POST /api/kitchen-fulfillment/brands/:brandId/orders/:orderId/cancel` cancels an
-order with a kitchen ticket. It accepts the same reason and roles as draft
-cancellation and returns `{ order, ticket }`. The fulfillment service calls the
+order with a kitchen ticket. It accepts the same reason as draft cancellation,
+requires a valid authenticated session with the SUPERADMIN, MANAGER, SUPERVISOR,
+or KITCHEN_HEAD role, and returns `{ order, ticket }`. The fulfillment service calls the
 kitchen-ticket and order services in one serializable transaction. Each record
 keeps its own cancellation timestamp; the returned order includes the final ticket.
 
