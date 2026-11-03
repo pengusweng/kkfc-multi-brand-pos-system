@@ -114,9 +114,9 @@ export function ConfirmOrderDocs() {
 export function CancelOrderDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Cancel an order',
+      summary: 'Cancel a draft order',
       description:
-        'Cancels an unfinished order and its kitchen ticket atomically. Requires a nonblank reason. Repeated cancellation returns the original saved result. Completed orders and handed-over tickets cannot be cancelled. No refund or inventory adjustment is performed.',
+        'Cancels only a draft order without a kitchen ticket. Requires a nonblank reason. Repeated cancellation of the same draft returns the original saved result. Orders with kitchen tickets must be cancelled through kitchen fulfillment. No refund or inventory adjustment is performed.',
     }),
     ApiParam({
       name: 'orderId',
@@ -127,7 +127,7 @@ export function CancelOrderDocs() {
       status: 200,
       type: OrderResponseDTO,
       description:
-        'Cancelled order with cancellation actor, reason and timestamp; its ticket is CANCELLED if present.',
+        'Cancelled draft order with cancellation actor, reason and timestamp. Its kitchen ticket remains null.',
     }),
   );
 }

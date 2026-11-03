@@ -79,3 +79,46 @@ Feature: Order catalog and payment rules
       | a GrabFood store without an order  |
       | a Foodpanda order without a store  |
       | a whitespace-only GrabFood store   |
+
+  @UT-ORD-044
+  Scenario: Advance an order using the default client or caller transaction
+    Given a confirmed order for preparation or a preparing order for completion
+    When the lifecycle transition runs with or without a caller transaction
+    Then only the expected source status is updated and private fields are redacted
+    And completing the order records its completion time
+
+  @UT-ORD-045
+  Scenario: Reject a lifecycle transition for a missing order
+    Given an order that does not exist
+    When preparation or completion is requested
+    Then ORDER_NOT_FOUND is returned before writing
+
+  @UT-ORD-046
+  Scenario: Reject an invalid source status for an order transition
+    Given an order outside the permitted source status including terminal states
+    When preparation or completion is requested
+    Then ORDER_INVALID_STATUS is returned before writing
+
+  @UT-ORD-047
+  Scenario: Propagate a failed conditional order update
+    Given the order status changes before the conditional update can succeed
+    When preparation or completion is requested
+    Then the update failure propagates without retrying
+
+  @UT-ORD-048
+  Scenario: Cancel a draft or retry its cancellation through the draft service
+    Given a draft order without a kitchen ticket or its saved cancellation
+    When draft cancellation is requested
+    Then the cancelled order is returned without any ticket writes
+
+  @UT-ORD-049
+  Scenario: Reject orders outside the draft cancellation route
+    Given an order with a kitchen ticket or a non-draft lifecycle
+    When draft cancellation is requested
+    Then ORDER_NOT_DRAFT is returned before writing
+
+  @UT-ORD-050
+  Scenario: Participate in the caller transaction when cancelling only the order
+    Given an order and an existing transaction
+    When the order cancellation service receives that transaction
+    Then its queries use that transaction without opening another or writing a ticket

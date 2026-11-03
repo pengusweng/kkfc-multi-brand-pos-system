@@ -4,11 +4,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Order, OrderChannel, OrderStatus, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
+import { assertExists } from '../../../shared/assertions/assert-exists';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
 import {
   ConfirmOrderDTO,
@@ -18,6 +20,8 @@ import {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly repository: OrdersRepository,
     private readonly items: OrderItemsService,
@@ -161,11 +165,70 @@ export class OrdersService {
     });
   }
 
+  async prepare(orderId: string, tx?: Prisma.TransactionClient) {
+    this.logger.debug(`Preparing order ${orderId}`);
+    const order = await this.repository.findById(orderId, tx);
+    assertExists(order, 'Order', orderId, this.logger);
+
+    if (order.status !== OrderStatus.CONFIRMED) {
+      this.logger.warn(
+        `Cannot mark order ${orderId} as preparing, status=${order.status}`,
+      );
+
+      throw new ConflictException({
+        code: 'ORDER_INVALID_STATUS',
+        message: 'Cannot mark order as preparing. Order is not confirmed.',
+      });
+    }
+
+    const updated = await this.repository.updateStatus(
+      orderId,
+      OrderStatus.PREPARING,
+      order.status,
+      {},
+      tx,
+    );
+
+    this.logger.log(`Order ${updated.order_id} set to ${updated.status}`);
+    return this.response(updated);
+  }
+
+  async complete(orderId: string, tx?: Prisma.TransactionClient) {
+    this.logger.debug(`Completing order ${orderId}`);
+    const order = await this.repository.findById(orderId, tx);
+    assertExists(order, 'Order', orderId, this.logger);
+
+    if (order.status !== OrderStatus.PREPARING) {
+      this.logger.warn(
+        `Cannot complete order ${orderId}, status=${order.status}`,
+      );
+
+      throw new ConflictException({
+        code: 'ORDER_INVALID_STATUS',
+        message: 'Cannot complete order. Order is not preparing.',
+      });
+    }
+
+    const updated = await this.repository.updateStatus(
+      orderId,
+      OrderStatus.COMPLETED,
+      order.status,
+      { completed_at: new Date() },
+      tx,
+    );
+
+    this.logger.log(
+      `Completed order ${updated.order_id}, time=${updated.completed_at?.toISOString()}`,
+    );
+    return this.response(updated);
+  }
+
   async cancel(
     brandId: string,
     orderId: string,
     actorId: string,
     dto: CancelOrderDTO,
+    tx?: Prisma.TransactionClient,
   ) {
     const reason = dto?.cancellation_reason;
     if (typeof reason !== 'string' || !reason.trim() || reason.length > 1000) {
@@ -173,30 +236,16 @@ export class OrdersService {
         'Cancellation reason must be nonblank and at most 1000 characters.',
       );
     }
-    return this.repository.transaction(async (tx) => {
-      const order = await this.load(tx, brandId, orderId);
-      const ticket = order.kitchen_tickets_order;
+    const cancelOrder = async (client: Prisma.TransactionClient) => {
+      const order = await this.load(client, brandId, orderId);
       if (order.status === 'CANCELLED') {
-        if (ticket && ticket.status !== 'CANCELLED') {
-          throw new ConflictException(
-            'Cancelled order has an active ticket; repair is required.',
-          );
-        }
         return this.response(order);
       }
-      if (order.status === 'COMPLETED' || ticket?.status === 'HANDED_OVER') {
-        throw new ConflictException(
-          'Completed orders or handed-over tickets cannot be cancelled.',
-        );
+      if (order.status === 'COMPLETED') {
+        throw new ConflictException('Completed orders cannot be cancelled.');
       }
-      this.assertConfirmable(order);
-      if (ticket?.status === 'CANCELLED') {
-        throw new ConflictException(
-          'Active order has a cancelled ticket; repair is required.',
-        );
-      }
+
       const cancelledAt = new Date();
-      if (ticket) await this.repository.cancelTicket(orderId, cancelledAt, tx);
       const cancelled = await this.repository.update(
         orderId,
         {
@@ -206,9 +255,37 @@ export class OrdersService {
           cancelled_at: cancelledAt,
           modified_at: cancelledAt,
         },
-        tx,
+        client,
       );
       return this.response(cancelled);
+    };
+
+    return tx ? cancelOrder(tx) : this.repository.transaction(cancelOrder);
+  }
+
+  async cancelDraft(
+    brandId: string,
+    orderId: string,
+    actorId: string,
+    dto: CancelOrderDTO,
+  ) {
+    return this.repository.transaction(async (tx) => {
+      const order = await this.load(tx, brandId, orderId);
+      const isCancelledDraft =
+        order.status === OrderStatus.CANCELLED && order.confirmed_at == null;
+
+      if (
+        order.kitchen_tickets_order ||
+        (order.status !== OrderStatus.DRAFT && !isCancelledDraft)
+      ) {
+        throw new ConflictException({
+          code: 'ORDER_NOT_DRAFT',
+          message:
+            'Only draft orders can be cancelled here. Cancel orders with a kitchen ticket through kitchen fulfillment.',
+        });
+      }
+
+      return this.cancel(brandId, orderId, actorId, dto, tx);
     });
   }
 

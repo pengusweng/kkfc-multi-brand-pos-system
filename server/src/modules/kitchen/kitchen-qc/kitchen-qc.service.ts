@@ -27,28 +27,38 @@ export class KitchenQcService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async create(callerId: string, kitchenTicketId: string) {
+  async create(
+    callerId: string,
+    kitchenTicketId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     this.logger.debug(`Creating kitchen qc attempt for ${kitchenTicketId}`);
 
-    const kitchenTicket =
-      await this.kitchenTicketRepository.findOne(kitchenTicketId);
+    const kitchenTicket = await this.kitchenTicketRepository.findOne(
+      kitchenTicketId,
+      tx,
+    );
+
     assertExists(kitchenTicket, 'KitchenTicket', kitchenTicketId, this.logger);
 
     this.assertTicketIsForChecking(kitchenTicket);
 
-    const user = await this.usersRepository.findOne(callerId);
+    const user = await this.usersRepository.findOne(callerId, true, tx);
     assertExists(user, 'User', callerId, this.logger);
 
     this.assertUserIsAssignedChecker(kitchenTicket, user);
 
-    const latestAttempt =
-      await this.kitchenQcRepository.findOneLatest(kitchenTicketId);
+    const latestAttempt = await this.kitchenQcRepository.findOneLatest(
+      kitchenTicketId,
+      tx,
+    );
 
     if (latestAttempt === null) {
       const freshAttempt = this.kitchenQcRepository.create(
         callerId,
         kitchenTicketId,
         1,
+        tx,
       );
 
       this.logger.log(
@@ -64,6 +74,7 @@ export class KitchenQcService {
       callerId,
       kitchenTicketId,
       latestAttempt.attempt_number + 1,
+      tx,
     );
 
     this.logger.log(
@@ -73,10 +84,10 @@ export class KitchenQcService {
     return attempt;
   }
 
-  async findOneUID(attemptId: string) {
+  async findOneUID(attemptId: string, tx?: Prisma.TransactionClient) {
     this.logger.debug(`Finding QC attempt ${attemptId}`);
 
-    const attempt = await this.kitchenQcRepository.findOneUID(attemptId);
+    const attempt = await this.kitchenQcRepository.findOneUID(attemptId, tx);
     assertExists(attempt, 'KitchenTicketQcAttempt', attemptId, this.logger);
 
     this.logger.log(`Found QC attempt ${attempt.qc_attempt_id}`);
@@ -168,13 +179,18 @@ export class KitchenQcService {
     return result;
   }
 
-  async passAttempt(attemptId: string) {
+  async passAttempt(
+    callerId: string,
+    attemptId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     this.logger.debug(`Passing QC attempt ${attemptId}`);
 
-    const attempt = await this.findOneUID(attemptId);
+    const attempt = await this.findOneUID(attemptId, tx);
 
     const kitchenTicket = await this.kitchenTicketRepository.findOne(
       attempt.kitchen_ticket_id,
+      tx,
     );
 
     assertExists(
@@ -183,6 +199,20 @@ export class KitchenQcService {
       attempt.kitchen_ticket_id,
       this.logger,
     );
+
+    const user = await this.usersRepository.findOne(callerId, true, tx);
+    assertExists(user, 'User', callerId, this.logger);
+
+    if (callerId !== kitchenTicket.checker_id) {
+      this.logger.warn(
+        `Unauthorized checker. ${callerId} is not the checker for ${kitchenTicket.kitchen_ticket_id}.`,
+      );
+
+      throw new ForbiddenException({
+        code: 'UNAUTHORIZED_CHECKER',
+        message: 'You are not the assigned checker for this kitchen ticket.',
+      });
+    }
 
     this.assertKitchenTicketIsPassable(kitchenTicket, attempt);
 
@@ -190,6 +220,7 @@ export class KitchenQcService {
       attemptId,
       KitchenTicketQcStatus.PASSED,
       KitchenTicketQcStatus.IN_PROGRESS,
+      tx,
     );
 
     this.logger.log(`Passed attempt ${attemptId}`);
@@ -197,13 +228,18 @@ export class KitchenQcService {
     return passedAttempt;
   }
 
-  async failAttempt(attemptId: string) {
+  async failAttempt(
+    attemptId: string,
+    callerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     this.logger.debug(`Rejecting QC attempt ${attemptId}`);
 
-    const attempt = await this.findOneUID(attemptId);
+    const attempt = await this.findOneUID(attemptId, tx);
 
     const kitchenTicket = await this.kitchenTicketRepository.findOne(
       attempt.kitchen_ticket_id,
+      tx,
     );
 
     assertExists(
@@ -213,12 +249,27 @@ export class KitchenQcService {
       this.logger,
     );
 
+    const user = await this.usersRepository.findOne(callerId, true, tx);
+    assertExists(user, 'User', callerId, this.logger);
+
+    if (callerId !== kitchenTicket.checker_id) {
+      this.logger.warn(
+        `Unauthorized checker. ${callerId} is not the checker for ${kitchenTicket.kitchen_ticket_id}.`,
+      );
+
+      throw new ForbiddenException({
+        code: 'UNAUTHORIZED_CHECKER',
+        message: 'You are not the assigned checker for this kitchen ticket.',
+      });
+    }
+
     this.assertKitchenTicketIsFailable(kitchenTicket, attempt);
 
     const failedAttempt = await this.kitchenQcRepository.updateStatus(
       attemptId,
       KitchenTicketQcStatus.FAILED,
       KitchenTicketQcStatus.IN_PROGRESS,
+      tx,
     );
 
     this.logger.log(`Failed attempt ${attemptId}`);

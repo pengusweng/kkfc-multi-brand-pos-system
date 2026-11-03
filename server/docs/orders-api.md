@@ -17,7 +17,7 @@ and `orderId` must be UUIDs. Unknown body properties are rejected.
 | `POST /`                                             | `order_id`, `order_channel`, `lines`; channel-specific references below | `201`, saved order, including identical replays |
 | `POST /:orderId/verify`                              | Payment body below; existing draft order                                | `200`, validation result with current lines     |
 | `POST /:orderId/confirm`                             | Payment body below; existing order                                      | `200`, saved order with kitchen ticket          |
-| `POST /:orderId/cancel`                              | `cancellation_reason`; unfinished order                                 | `200`, saved cancelled order                    |
+| `POST /:orderId/cancel`                              | `cancellation_reason`; draft without a kitchen ticket                    | `200`, saved cancelled draft                    |
 
 ### Create body
 
@@ -123,8 +123,8 @@ the cancellation actor comes from the authenticated session.
 Returns `200` with the saved order response below, setting `status` to
 `CANCELLED`, `cancelled_by_id` to the session user UUID, `cancellation_reason`
 to the trimmed reason, and `cancelled_at`/`modified_at` to the cancellation time.
-Drafts retain a null ticket. An existing kitchen ticket becomes `CANCELLED`
-with the same `cancelled_at`/`modified_at` timestamp, in one serializable transaction.
+Only drafts without a kitchen ticket can use this endpoint. Their ticket remains
+null. Orders with kitchen tickets use the kitchen fulfillment endpoint below.
 
 Example `200 OK` response for cancellation of an unpaid draft:
 
@@ -169,15 +169,17 @@ Example `200 OK` response for cancellation of an unpaid draft:
 }
 ```
 
-For an order with a kitchen ticket, `kitchen_tickets_order` contains the saved
-ticket object with `status: "CANCELLED"` and matching cancellation timestamps;
-its ID, number and previous preparation timestamps remain intact.
+`POST /api/kitchen-fulfillment/brands/:brandId/orders/:orderId/cancel` cancels an
+order with a kitchen ticket. It accepts the same reason and roles as draft
+cancellation and returns `{ order, ticket }`. The fulfillment service calls the
+kitchen-ticket and order services in one serializable transaction. Each record
+keeps its own cancellation timestamp; the returned order includes the final ticket.
 
-Cancellation supports DRAFT, CONFIRMED, PREPARING, CHECKING, REWORKING and READY
-orders. COMPLETED orders or HANDED_OVER tickets return `409`. Inconsistent
-order/ticket states also return `409`. Retrying an already cancelled order returns
-its original cancellation details without writes, provided its ticket is absent
-or also cancelled. Every request, including retries, must contain a valid reason.
+The orders endpoint returns `409 ORDER_NOT_DRAFT` for orders with tickets or
+non-draft orders. The fulfillment endpoint returns `409 ORDER_HAS_NO_KITCHEN_TICKET`
+for drafts, and rejects COMPLETED orders and HANDED_OVER tickets. Both endpoints
+preserve the original cancellation details on retries. Every request, including
+retries, must contain a valid reason.
 
 Order identity, daily number, item snapshots and payment records are preserved.
 This endpoint performs no refund, platform synchronization or inventory movement.
@@ -186,19 +188,18 @@ Cancellation error responses:
 
 | Status | Cause                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| `400`  | Missing, blank, non-string or overlong reason; unknown body fields; invalid path UUIDs or URL/order brand mismatch |
+| `400`  | Missing, blank, non-string or overlong reason; unknown body fields; invalid path UUIDs |
 | `401`  | Missing, invalid or expired bearer session                                                                         |
-| `403`  | Caller lacks an allowed role or access to the order's brand                                                        |
-| `404`  | Order not found                                                                                                    |
-| `409`  | Completed order, handed-over ticket, inconsistent order/ticket state, or exhausted concurrency retries             |
+| `403`  | Caller lacks an allowed role |
+| `404`  | Order not found within the requested brand |
+| `409`  | Wrong cancellation endpoint for the order, completed order, handed-over ticket, or exhausted concurrency retries |
 
-Example `409 Conflict` body:
+Example `409 Conflict` body from the draft orders endpoint:
 
 ```json
 {
-  "statusCode": 409,
-  "message": "Completed orders or handed-over tickets cannot be cancelled.",
-  "error": "Conflict"
+  "code": "ORDER_NOT_DRAFT",
+  "message": "Only draft orders can be cancelled here. Cancel orders with a kitchen ticket through kitchen fulfillment."
 }
 ```
 
@@ -274,9 +275,9 @@ repository.
   and recipe IDs without writes. This does not reserve prices or stock.
 - `POST /:orderId/confirm`: atomically capture current prices, modifier names/prices
   and complete recipe contents, create a QUEUED ticket and set CONFIRMED.
-- `POST /:orderId/cancel`: require `cancellation_reason`, record the actor and time,
-  and atomically cancel the unfinished order and any kitchen ticket. Returns the
-  original cancellation details on retries.
+- `POST /:orderId/cancel`: require `cancellation_reason` and cancel a draft without
+  a kitchen ticket, recording actor and time. Returns the original cancellation
+  details on retries. Orders with tickets use the kitchen fulfillment endpoint.
 
 Verify/confirm accept `payment_method`, `payment_status` and optional
 `payment_reference`. Dine-in/takeaway require CASH, E_WALLET or CARD plus UNPAID
