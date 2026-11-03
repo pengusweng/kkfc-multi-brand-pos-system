@@ -5,7 +5,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { OrdersRepository } from '../orders.repository';
 import { OrdersService } from '../orders.service';
@@ -958,6 +958,102 @@ describe('OrdersService', () => {
     );
   });
 
+  describe.each([
+    ['prepare', OrderStatus.CONFIRMED, OrderStatus.PREPARING],
+    ['complete', OrderStatus.PREPARING, OrderStatus.COMPLETED],
+  ] as const)('%s', (action, fromStatus, toStatus) => {
+    beforeEach(() => {
+      service = new OrdersService(
+        new OrdersRepository(tx as unknown as PrismaService),
+        new OrderItemsService(new OrderItemsRepository()),
+      );
+    });
+
+    it.each([false, true])(
+      'UT-ORD-044: Given a valid source status, When transitioning with transaction=%s, Then update only the expected state and redact private fields',
+      async (useTransaction) => {
+        const client = useTransaction ? mockClient() : tx;
+        const transaction = useTransaction
+          ? (client as unknown as Prisma.TransactionClient)
+          : undefined;
+        client.order.findUnique.mockResolvedValue({
+          ...draft,
+          status: fromStatus,
+        });
+        client.order.update.mockImplementation(
+          ({ data }: { data: Record<string, unknown> }) =>
+            Promise.resolve({ ...draft, ...data }),
+        );
+
+        const result = await service[action]('order', transaction);
+
+        expect(result.status).toBe(toStatus);
+        expect(result).not.toHaveProperty('create_request_hash');
+        expect(result.order_items_order[0]).not.toHaveProperty(
+          'recipe_snapshot',
+        );
+        expect(client.order.findUnique).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { order_id: 'order' } }),
+        );
+        expect(client.order.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { order_id: 'order', status: fromStatus },
+            data: {
+              status: toStatus,
+              modified_at: expect.any(Date) as Date,
+              ...(action === 'complete'
+                ? { completed_at: expect.any(Date) as Date }
+                : {}),
+            },
+          }),
+        );
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+        if (useTransaction) {
+          expect(tx.order.findUnique).not.toHaveBeenCalled();
+          expect(tx.order.update).not.toHaveBeenCalled();
+        }
+      },
+    );
+
+    it('UT-ORD-045: Given a missing order, When transitioning, Then return ORDER_NOT_FOUND before writing', async () => {
+      await expect(
+        service[action]('order', tx as unknown as Prisma.TransactionClient),
+      ).rejects.toMatchObject({ response: { code: 'ORDER_NOT_FOUND' } });
+      expect(tx.order.update).not.toHaveBeenCalled();
+    });
+
+    it.each(
+      Object.values(OrderStatus).filter((status) => status !== fromStatus),
+    )(
+      'UT-ORD-046: Given invalid source status %s, When transitioning, Then return ORDER_INVALID_STATUS before writing',
+      async (status) => {
+        tx.order.findUnique.mockResolvedValue({ ...draft, status });
+
+        await expect(
+          service[action]('order', tx as unknown as Prisma.TransactionClient),
+        ).rejects.toMatchObject({
+          response: { code: 'ORDER_INVALID_STATUS' },
+          status: 409,
+        });
+        expect(tx.order.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it('UT-ORD-047: Given a failed conditional write, When transitioning, Then propagate the failure without retrying', async () => {
+      tx.order.findUnique.mockResolvedValue({ ...draft, status: fromStatus });
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Order changed concurrently',
+        { code: 'P2025', clientVersion: 'test' },
+      );
+      tx.order.update.mockRejectedValue(error);
+
+      await expect(
+        service[action]('order', tx as unknown as Prisma.TransactionClient),
+      ).rejects.toBe(error);
+      expect(tx.order.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('cancellation', () => {
     const reason = { cancellation_reason: '  Customer changed their mind.  ' };
     beforeEach(() => {
@@ -999,11 +1095,11 @@ describe('OrdersService', () => {
       ['CONFIRMED', 'QUEUED'],
       ['CONFIRMED', 'ACKNOWLEDGED'],
       ['PREPARING', 'PREPARING'],
-      ['CHECKING', 'CHECKING'],
-      ['REWORKING', 'REWORKING'],
-      ['READY', 'READY'],
+      ['PREPARING', 'CHECKING'],
+      ['PREPARING', 'REWORKING'],
+      ['PREPARING', 'READY'],
     ])(
-      'UT-ORD-037: cancels a %s order and %s ticket in the same serializable transaction',
+      'UT-ORD-037: cancels only a %s order and leaves its %s kitchen ticket untouched',
       async (status, ticketStatus) => {
         tx.order.findFirst.mockResolvedValue({
           ...draft,
@@ -1011,14 +1107,8 @@ describe('OrdersService', () => {
           kitchen_tickets_order: { status: ticketStatus },
         });
         const result = await service.cancel('brand', 'order', 'actor', reason);
-        expect(tx.kitchenTicket.update).toHaveBeenCalledWith({
-          where: { order_id: 'order' },
-          data: {
-            status: 'CANCELLED',
-            cancelled_at: result.cancelled_at,
-            modified_at: result.cancelled_at,
-          },
-        });
+        expect(result.status).toBe('CANCELLED');
+        expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
         expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
           isolationLevel: 'Serializable',
         });
@@ -1055,11 +1145,7 @@ describe('OrdersService', () => {
 
     it.each([
       ['COMPLETED', 'HANDED_OVER'],
-      ['CONFIRMED', 'HANDED_OVER'],
-      ['DRAFT', 'QUEUED'],
-      ['CONFIRMED', null],
-      ['CANCELLED', 'QUEUED'],
-      ['CONFIRMED', 'CANCELLED'],
+      ['COMPLETED', null],
     ])(
       'UT-ORD-039: rejects invalid state %s / %s before writing',
       async (status, ticketStatus) => {
@@ -1100,19 +1186,69 @@ describe('OrdersService', () => {
       );
     });
 
-    it('UT-ORD-042: does not update the order if the ticket update fails', async () => {
+    it('UT-ORD-042: propagates an order cancellation write failure without touching the ticket', async () => {
       tx.order.findFirst.mockResolvedValue({
         ...draft,
         status: 'CONFIRMED',
         kitchen_tickets_order: { status: 'QUEUED' },
       });
-      tx.kitchenTicket.update.mockRejectedValue(
-        new Error('Ticket write failed'),
-      );
+      tx.order.update.mockRejectedValue(new Error('Order write failed'));
       await expect(
         service.cancel('brand', 'order', 'actor', reason),
-      ).rejects.toThrow('Ticket write failed');
-      expect(tx.order.update).not.toHaveBeenCalled();
+      ).rejects.toThrow('Order write failed');
+      expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+    });
+
+    it.each(['DRAFT', 'CANCELLED'])(
+      'UT-ORD-048: accepts a %s draft through cancelDraft without touching tickets',
+      async (status) => {
+        tx.order.findFirst.mockResolvedValue({ ...draft, status });
+
+        await expect(
+          service.cancelDraft('brand', 'order', 'actor', reason),
+        ).resolves.toMatchObject({ status: 'CANCELLED' });
+        expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ['CONFIRMED', null, null],
+      ['PREPARING', null, null],
+      ['COMPLETED', null, null],
+      ['DRAFT', { status: 'QUEUED' }, null],
+      ['CANCELLED', { status: 'CANCELLED' }, null],
+      ['CANCELLED', null, new Date()],
+    ])(
+      'UT-ORD-049: rejects non-draft cancellation through cancelDraft with state %s / %p',
+      async (status, ticket, confirmedAt) => {
+        tx.order.findFirst.mockResolvedValue({
+          ...draft,
+          status,
+          kitchen_tickets_order: ticket,
+          confirmed_at: confirmedAt,
+        });
+
+        await expect(
+          service.cancelDraft('brand', 'order', 'actor', reason),
+        ).rejects.toMatchObject({ response: { code: 'ORDER_NOT_DRAFT' } });
+        expect(tx.order.update).not.toHaveBeenCalled();
+        expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it('UT-ORD-050: uses the supplied transaction for order cancellation without opening another', async () => {
+      await service.cancel(
+        'brand',
+        'order',
+        'actor',
+        reason,
+        tx as unknown as Prisma.TransactionClient,
+      );
+      expect(tx.order.findFirst).toHaveBeenCalled();
+      expect(tx.order.update).toHaveBeenCalled();
+      expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });

@@ -8,6 +8,6 @@ import { KitchenTicketService } from './kitchen-ticket.service';
   imports: [OrdersModule],
   controllers: [KitchenTicketController],
   providers: [KitchenTicketService, KitchenTicketRepository],
-  exports: [KitchenTicketRepository],
+  exports: [KitchenTicketService, KitchenTicketRepository],
 })
 export class KitchenTicketModule {}

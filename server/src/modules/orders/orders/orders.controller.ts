@@ -78,6 +78,11 @@ export class OrdersController {
     @Body() dto: CancelOrderDTO,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.orders.cancel(brandId, orderId, req.session.user.user_id, dto);
+    return this.orders.cancelDraft(
+      brandId,
+      orderId,
+      req.session.user.user_id,
+      dto,
+    );
   }
 }

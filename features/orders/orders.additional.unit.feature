@@ -283,11 +283,11 @@ Feature: Additional orders unit coverage
   # Jest: server/src/modules/orders/orders/orders.service.spec.ts
   # Context: Order lifecycle / cancellation
   @UT-ORD-037
-  Scenario: Cancel the order and kitchen ticket in one serializable transaction
+  Scenario: Cancel only the order without modifying its kitchen ticket
     Test Case ID: UT-ORD-037
     Given a confirmed order with a cancellable kitchen ticket
     When the order is cancelled
-    Then the order and ticket are cancelled in the same serializable transaction
+    Then only the order is cancelled and the kitchen ticket is not written
 
   # Jest: server/src/modules/orders/orders/orders.service.spec.ts
   # Context: Order lifecycle / cancellation
@@ -301,9 +301,9 @@ Feature: Additional orders unit coverage
   # Jest: server/src/modules/orders/orders/orders.service.spec.ts
   # Context: Order lifecycle / cancellation
   @UT-ORD-039
-  Scenario: Reject non-cancellable order and ticket states before writing
+  Scenario: Reject completed orders before writing
     Test Case ID: UT-ORD-039
-    Given an order or ticket is in a non-cancellable state
+    Given a completed order with or without a kitchen ticket
     When cancellation is requested
     Then the invalid state is rejected before writing
 
@@ -328,8 +328,8 @@ Feature: Additional orders unit coverage
   # Jest: server/src/modules/orders/orders/orders.service.spec.ts
   # Context: Order lifecycle / cancellation
   @UT-ORD-042
-  Scenario: Does not update the order if the ticket update fails
+  Scenario: Propagate order cancellation write failures
     Test Case ID: UT-ORD-042
-    Given the kitchen ticket cancellation write fails
+    Given the order cancellation write fails
     When the order is cancelled
-    Then the order cancellation is not persisted
+    Then the failure propagates without touching the kitchen ticket

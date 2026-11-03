@@ -168,21 +168,6 @@ export class OrdersRepository {
     });
   }
 
-  cancelTicket(
-    orderId: string,
-    cancelledAt: Date,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.kitchenTicket.update({
-      where: { order_id: orderId },
-      data: {
-        status: 'CANCELLED',
-        cancelled_at: cancelledAt,
-        modified_at: cancelledAt,
-      },
-    });
-  }
-
   // Serialization retries rerun the entire transaction, never a partial confirmation.
   async transaction<T>(
     work: (tx: Prisma.TransactionClient) => Promise<T>,

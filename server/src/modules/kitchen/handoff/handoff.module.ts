@@ -18,6 +18,6 @@ import { HandoffService } from './handoff.service';
   ],
   controllers: [HandoffController],
   providers: [HandoffService, HandoffRepository],
-  exports: [HandoffRepository],
+  exports: [HandoffService, HandoffRepository],
 })
 export class HandoffModule {}

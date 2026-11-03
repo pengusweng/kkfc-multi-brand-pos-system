@@ -106,7 +106,12 @@ export class KitchenTicketController {
 
   @Patch(':id/checker')
   @AssignKitchenTicketCheckerDocs()
-  @Roles(UserRole.MANAGER, UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD)
+  @Roles(
+    UserRole.MANAGER,
+    UserRole.SUPERADMIN,
+    UserRole.SUPERVISOR,
+    UserRole.KITCHEN_HEAD,
+  )
   async claimChecker(
     @Param('id', ParseUUIDPipe) kitchenTicketId: string,
     @Body('checker_id', ParseUUIDPipe) checkerId: string,

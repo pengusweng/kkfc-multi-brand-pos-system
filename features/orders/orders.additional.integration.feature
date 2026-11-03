@@ -115,7 +115,7 @@ Feature: Additional orders integration coverage
   Scenario: Allow permitted cancellation roles and use the session actor
     Test Case ID: IT-ORD-029
     Given an authenticated cashier, manager, or superadmin and a valid cancellation body
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 200 and the actor is taken from the session
 
   # Jest: server/src/modules/orders/orders/orders-cancel.http.spec.ts
@@ -124,7 +124,7 @@ Feature: Additional orders integration coverage
   Scenario: Reject invalid or extra cancellation fields
     Test Case ID: IT-ORD-030
     Given an invalid cancellation body or an extra field
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 400 before calling the cancellation service
 
   # Jest: server/src/modules/orders/orders/orders-cancel.http.spec.ts
@@ -133,7 +133,7 @@ Feature: Additional orders integration coverage
   Scenario: Requires authentication
     Test Case ID: IT-ORD-031
     Given no authenticated session
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 401
 
   # Jest: server/src/modules/orders/orders/orders-cancel.http.spec.ts
@@ -142,7 +142,7 @@ Feature: Additional orders integration coverage
   Scenario: Rejects other roles
     Test Case ID: IT-ORD-032
     Given a role without order cancellation permission
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 403
 
   # Jest: server/src/modules/orders/orders/orders-cancel.http.spec.ts
@@ -151,7 +151,7 @@ Feature: Additional orders integration coverage
   Scenario: Returns 404 for a missing order
     Test Case ID: IT-ORD-033
     Given the cancellation service reports a missing order
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 404
 
   # Jest: server/src/modules/orders/orders/orders-cancel.http.spec.ts
@@ -160,5 +160,5 @@ Feature: Additional orders integration coverage
   Scenario: Rejects malformed order IDs
     Test Case ID: IT-ORD-034
     Given a malformed order UUID
-    When order cancellation is requested
+    When cancellation is requested through the draft orders endpoint
     Then the response is 400 before calling the cancellation service

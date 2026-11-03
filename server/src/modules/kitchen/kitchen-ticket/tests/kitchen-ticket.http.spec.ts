@@ -105,7 +105,12 @@ describe('Kitchen ticket HTTP endpoints', () => {
       handler: 'assignChecker',
       args: [ticketId, assigneeId],
       result: { ...ticket, checker_id: assigneeId },
-      roles: [UserRole.MANAGER, UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD],
+      roles: [
+        UserRole.MANAGER,
+        UserRole.SUPERADMIN,
+        UserRole.KITCHEN_HEAD,
+        UserRole.SUPERVISOR,
+      ],
     },
   ] as const;
   let app: INestApplication;

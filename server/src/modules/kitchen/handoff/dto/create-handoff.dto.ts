@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ArrayMinSize,
+  ArrayMaxSize,
   IsArray,
   IsString,
   Matches,
@@ -20,6 +21,7 @@ export class CreateHandoffDTO {
   })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(5, { message: 'A handover can have at most 5 images.' })
   @IsString({ each: true })
   @Matches(/\S/, { each: true })
   @MaxLength(2048, { each: true })
