@@ -7,7 +7,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { OrderChannel, Prisma } from '@prisma/client';
+import { Order, OrderChannel, OrderStatus, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
 import {
@@ -16,12 +16,6 @@ import {
   CancelOrderDTO,
 } from './dto/order.dto';
 
-function omit<T, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
-  const copy = { ...value };
-  for (const key of keys) delete copy[key];
-  return copy;
-}
-
 @Injectable()
 export class OrdersService {
   constructor(
@@ -29,149 +23,34 @@ export class OrdersService {
     private readonly items: OrderItemsService,
   ) {}
 
-  private platform(channel: OrderChannel) {
-    return channel === 'GRABFOOD' || channel === 'FOODPANDA';
-  }
-
-  private response(order: SavedOrder) {
-    return {
-      ...omit(order, 'create_request_hash'),
-      order_items_order: order.order_items_order.map((line) =>
-        omit(line, 'recipe_snapshot'),
-      ),
-    };
-  }
-
-  private async load(
-    tx: Prisma.TransactionClient,
-    brandId: string,
-    orderId: string,
-  ) {
-    const order = await this.repository.findByBrand(brandId, orderId, tx);
-    if (!order) throw new NotFoundException('Order not found.');
-    return order;
-  }
-
-  private payment(channel: OrderChannel, dto: ConfirmOrderDTO) {
-    if (this.platform(channel)) {
-      if (
-        (dto.payment_method && dto.payment_method !== 'PLATFORM_SETTLED') ||
-        (dto.payment_status && dto.payment_status !== 'PAID')
-      )
-        throw new BadRequestException(
-          'Platform orders must be PLATFORM_SETTLED and PAID.',
-        );
-      return {
-        payment_method: 'PLATFORM_SETTLED' as const,
-        payment_status: 'PAID' as const,
-        payment_reference: dto.payment_reference ?? null,
-      };
-    }
-    if (
-      !dto.payment_method ||
-      !['CASH', 'E_WALLET', 'CARD'].includes(dto.payment_method) ||
-      !dto.payment_status ||
-      !['UNPAID', 'PAID'].includes(dto.payment_status)
-    )
-      throw new BadRequestException(
-        'Cash, E-wallet or Card and an UNPAID or PAID status are required.',
-      );
-    return {
-      payment_method: dto.payment_method,
-      payment_status: dto.payment_status,
-      payment_reference: dto.payment_reference ?? null,
-    };
-  }
-
-  private async snapshots(
-    tx: Prisma.TransactionClient,
-    brandId: string,
-    channel: OrderChannel,
-    lines: OrderLineDTO[],
-  ) {
-    this.items.validateLines(lines);
-    const brand = await this.repository.findActiveBrand(brandId, tx);
-    if (!brand) throw new BadRequestException('Brand is unavailable.');
-    const snapshots = await this.items.snapshots(tx, brandId, channel, lines);
-    return { brand, lines: snapshots };
-  }
-
   async create(brandId: string, actorId: string, dto: CreateOrderDTO) {
     this.items.validateLines(dto.lines);
-    // Normalize identity references before hashing, checking duplicates or saving.
-    dto = {
-      ...dto,
-      merchant_store_reference:
-        dto.merchant_store_reference?.trim() || undefined,
-      external_order_reference:
-        dto.external_order_reference?.trim() || undefined,
-      table_reference: dto.table_reference?.trim() || undefined,
-    };
-    // Explicit field order makes the fingerprint independent of JSON property order.
-    const request = {
-      brandId,
-      channel: dto.order_channel,
-      merchant: dto.merchant_store_reference ?? null,
-      external: dto.external_order_reference ?? null,
-      table: dto.table_reference ?? null,
-      notes: dto.notes ?? null,
-      lines: dto.lines.map((l) => ({
-        menu: l.menu_item_id,
-        quantity: l.quantity,
-        modifiers: [...(l.modifier_ids ?? [])].sort(),
-        notes: l.notes ?? null,
-      })),
-    };
-    const hash = createHash('sha256')
-      .update(JSON.stringify(request))
-      .digest('hex');
+
+    const hash = this.buildHash(brandId, dto);
     return this.repository.transaction(async (tx) => {
       const existing = await this.repository.findById(dto.order_id, tx);
+
       if (existing) {
-        if (
-          existing.brand_id !== brandId ||
-          existing.create_request_hash !== hash
-        )
-          throw new ConflictException({
-            statusCode: 409,
-            error: 'Conflict',
-            code: 'ORDER_ID_CONFLICT',
-            message: 'Order ID was already used for a different request.',
-          });
+        this.assertNoRequestConflicts(brandId, existing, hash);
         return this.response(existing);
       }
-      if (this.platform(dto.order_channel)) {
-        if (
-          !dto.merchant_store_reference?.trim() ||
-          !dto.external_order_reference?.trim()
-        )
-          throw new BadRequestException(
-            'Platform store and order references are required.',
-          );
-        const duplicate = await this.repository.findPlatformOrder(
-          dto.order_channel,
-          dto.merchant_store_reference,
-          dto.external_order_reference,
-          tx,
-        );
-        if (duplicate)
-          throw new ConflictException({
-            statusCode: 409,
-            error: 'Conflict',
-            code: 'DUPLICATE_PLATFORM_ORDER',
-            message: 'Platform order already exists.',
-            // Creation authorizes the URL brand, not the globally unique
-            // platform identity. Never expose an order from another brand.
-            existing_order:
-              duplicate.brand_id === brandId ? this.response(duplicate) : null,
-          });
+
+      if (this.isDelivery(dto.order_channel)) {
+        await this.assertValidDeliveryOrder(dto, brandId, tx);
       } else if (dto.merchant_store_reference || dto.external_order_reference) {
-        throw new BadRequestException(
-          'Platform references are only valid for platform orders.',
-        );
+        throw new BadRequestException({
+          code: 'INVALID_ORDER_REQUEST',
+          message: 'Platform references are only valid for platform orders.',
+        });
       }
-      if (dto.order_channel === 'DINE_IN' && !dto.table_reference?.trim())
-        throw new BadRequestException('Dine-in requires a table reference.');
+
+      if (dto.order_channel === 'DINE_IN' && !dto.table_reference?.trim()) {
+        throw new BadRequestException({
+          code: 'DINE_IN_NO_TABLE_REFERENCE',
+          message: 'Dine-in requires a table reference.',
+        });
+      }
+
       const { brand, lines } = await this.snapshots(
         tx,
         brandId,
@@ -181,63 +60,24 @@ export class OrdersService {
       const { created_at, order_date, number } =
         await this.repository.nextOrderNumber(brandId, tx);
       const order = await this.repository.create(
+        dto,
         {
-          order_id: dto.order_id,
-          order_code: `${brand.code.trim()}-${number.toString().padStart(5, '0')}`,
+          brandId,
+          actorId,
+          orderCode: `${brand.code.trim()}-${number.toString().padStart(5, '0')}`,
+          hash,
+          number,
           order_date,
-          order_number: number,
           created_at,
-          create_request_hash: hash,
-          brand_id: brandId,
-          created_by_id: actorId,
-          order_channel: dto.order_channel,
-          merchant_store_reference: dto.merchant_store_reference,
-          external_order_reference: dto.external_order_reference,
-          table_reference: dto.table_reference,
-          notes: dto.notes,
-          ...(this.platform(dto.order_channel)
+          lines,
+          payment: this.isDelivery(dto.order_channel)
             ? { payment_method: 'PLATFORM_SETTLED', payment_status: 'PAID' }
-            : {}),
-          order_items_order: {
-            create: lines.map((line) => ({
-              ...omit(
-                line,
-                'applied_recipe_id',
-                'recipe_snapshot',
-                'modifiers',
-              ),
-              order_item_modifiers_order_item: { create: line.modifiers },
-            })),
-          },
+            : undefined,
         },
         tx,
       );
       return this.response(order);
     });
-  }
-
-  private draftLines(order: SavedOrder): OrderLineDTO[] {
-    return order.order_items_order.map((line) => ({
-      menu_item_id: line.menu_item_id,
-      quantity: line.quantity,
-      notes: line.notes ?? undefined,
-      modifier_ids: line.order_item_modifiers_order_item.map(
-        (m) => m.modifier_id,
-      ),
-    }));
-  }
-
-  private assertConfirmable(order: SavedOrder) {
-    if (order.status === 'DRAFT' && order.kitchen_tickets_order)
-      throw new ConflictException(
-        'Draft order unexpectedly has a ticket; repair is required.',
-      );
-    if (order.status === 'CANCELLED')
-      throw new ConflictException('Cancelled orders cannot be confirmed.');
-    if (order.status !== 'DRAFT' && !order.kitchen_tickets_order)
-      throw new ConflictException(
-        'Order is missing its confirmed ticket; repair is required.',
-      );
   }
 
   async verify(brandId: string, orderId: string, dto: ConfirmOrderDTO) {
@@ -300,6 +140,7 @@ export class OrdersService {
         throw new ServiceUnavailableException(
           'Ticket number exceeds storage capacity.',
         );
+
       await this.repository.createTicket(
         orderId,
         order.order_code,
@@ -307,14 +148,12 @@ export class OrdersService {
         actorId,
         tx,
       );
-      const confirmed = await this.repository.update(
+
+      const confirmed = await this.repository.updateStatus(
         orderId,
-        {
-          status: 'CONFIRMED',
-          confirmed_at: new Date(),
-          modified_at: new Date(),
-          ...payment,
-        },
+        OrderStatus.CONFIRMED,
+        OrderStatus.DRAFT,
+        { confirmed_at: new Date(), ...payment },
         tx,
       );
       // Sprint 1 deliberately performs no inventory writes or stock availability checks.
@@ -372,4 +211,182 @@ export class OrdersService {
       return this.response(cancelled);
     });
   }
+
+  private buildHash(brandId: string, dto: CreateOrderDTO) {
+    const request = {
+      brandId,
+      channel: dto.order_channel,
+      merchant: dto.merchant_store_reference ?? null,
+      external: dto.external_order_reference ?? null,
+      table: dto.table_reference ?? null,
+      notes: dto.notes ?? null,
+      lines: dto.lines.map((l) => ({
+        menu: l.menu_item_id,
+        quantity: l.quantity,
+        modifiers: [...(l.modifier_ids ?? [])].sort(),
+        notes: l.notes ?? null,
+      })),
+    };
+
+    return createHash('sha256').update(JSON.stringify(request)).digest('hex');
+  }
+
+  private assertNoRequestConflicts(
+    brandId: string,
+    existing: Order,
+    hash: string,
+  ) {
+    if (
+      existing.brand_id !== brandId ||
+      existing.create_request_hash !== hash
+    ) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'ORDER_ID_CONFLICT',
+        message: 'Order ID was already used for a different request.',
+      });
+    }
+  }
+
+  private isDelivery(channel: OrderChannel) {
+    return (
+      channel === OrderChannel.GRABFOOD || channel === OrderChannel.FOODPANDA
+    );
+  }
+
+  private async assertValidDeliveryOrder(
+    dto: CreateOrderDTO,
+    brandId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const { merchant_store_reference, external_order_reference } = dto;
+
+    if (
+      !merchant_store_reference?.trim() ||
+      !external_order_reference?.trim()
+    ) {
+      throw new BadRequestException({
+        code: 'EMPTY_DELIVERY_REFERENCES',
+        message: 'Platform store and order references are required.',
+      });
+    }
+
+    const duplicate = await this.repository.findPlatformOrder(
+      dto.order_channel,
+      merchant_store_reference,
+      external_order_reference,
+      tx,
+    );
+
+    this.assertNoDuplicateOrder(duplicate, brandId);
+  }
+
+  private assertNoDuplicateOrder(
+    duplicate: SavedOrder | null,
+    brandId: string,
+  ) {
+    if (duplicate)
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'DUPLICATE_PLATFORM_ORDER',
+        message: 'Platform order already exists.',
+        existing_order:
+          duplicate.brand_id === brandId ? this.response(duplicate) : null,
+      });
+  }
+
+  private assertConfirmable(order: SavedOrder) {
+    if (order.status === 'DRAFT' && order.kitchen_tickets_order)
+      throw new ConflictException(
+        'Draft order unexpectedly has a ticket; repair is required.',
+      );
+    if (order.status === 'CANCELLED')
+      throw new ConflictException('Cancelled orders cannot be confirmed.');
+    if (order.status !== 'DRAFT' && !order.kitchen_tickets_order)
+      throw new ConflictException(
+        'Order is missing its confirmed ticket; repair is required.',
+      );
+  }
+
+  private response(order: SavedOrder) {
+    return {
+      ...omit(order, 'create_request_hash'),
+      order_items_order: order.order_items_order.map((line) =>
+        omit(line, 'recipe_snapshot'),
+      ),
+    };
+  }
+
+  private async snapshots(
+    tx: Prisma.TransactionClient,
+    brandId: string,
+    channel: OrderChannel,
+    lines: OrderLineDTO[],
+  ) {
+    this.items.validateLines(lines);
+    const brand = await this.repository.findActiveBrand(brandId, tx);
+    if (!brand) throw new BadRequestException('Brand is unavailable.');
+    const snapshots = await this.items.snapshots(tx, brandId, channel, lines);
+    return { brand, lines: snapshots };
+  }
+
+  private async load(
+    tx: Prisma.TransactionClient,
+    brandId: string,
+    orderId: string,
+  ) {
+    const order = await this.repository.findByBrand(brandId, orderId, tx);
+    if (!order) throw new NotFoundException('Order not found.');
+    return order;
+  }
+
+  private payment(channel: OrderChannel, dto: ConfirmOrderDTO) {
+    if (this.isDelivery(channel)) {
+      if (
+        (dto.payment_method && dto.payment_method !== 'PLATFORM_SETTLED') ||
+        (dto.payment_status && dto.payment_status !== 'PAID')
+      )
+        throw new BadRequestException(
+          'Platform orders must be PLATFORM_SETTLED and PAID.',
+        );
+      return {
+        payment_method: 'PLATFORM_SETTLED' as const,
+        payment_status: 'PAID' as const,
+        payment_reference: dto.payment_reference ?? null,
+      };
+    }
+    if (
+      !dto.payment_method ||
+      !['CASH', 'E_WALLET', 'CARD'].includes(dto.payment_method) ||
+      !dto.payment_status ||
+      !['UNPAID', 'PAID'].includes(dto.payment_status)
+    )
+      throw new BadRequestException(
+        'Cash, E-wallet or Card and an UNPAID or PAID status are required.',
+      );
+    return {
+      payment_method: dto.payment_method,
+      payment_status: dto.payment_status,
+      payment_reference: dto.payment_reference ?? null,
+    };
+  }
+
+  private draftLines(order: SavedOrder): OrderLineDTO[] {
+    return order.order_items_order.map((line) => ({
+      menu_item_id: line.menu_item_id,
+      quantity: line.quantity,
+      notes: line.notes ?? undefined,
+      modifier_ids: line.order_item_modifiers_order_item.map(
+        (m) => m.modifier_id,
+      ),
+    }));
+  }
+}
+
+function omit<T, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
+  const copy = { ...value };
+  for (const key of keys) delete copy[key];
+  return copy;
 }

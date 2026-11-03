@@ -1,17 +1,23 @@
-import { OrderItemsService } from '../order-items/order-items.service';
-import { OrderItemsRepository } from '../order-items/order-items.repository';
+import { OrderItemsService } from '../../order-items/order-items.service';
+import { OrderItemsRepository } from '../../order-items/order-items.repository';
 import {
   BadRequestException,
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { OrdersRepository } from './orders.repository';
-import { OrdersService } from './orders.service';
-import { CreateOrderDTO } from './dto/order.dto';
+import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { OrdersRepository } from '../orders.repository';
+import { OrdersService } from '../orders.service';
+import { CreateOrderDTO } from '../dto/order.dto';
 
-describe('Order lifecycle', () => {
+function adapterError(originalCode: string, kind = 'TransactionWriteConflict') {
+  const error = new Error(kind, { cause: { kind, originalCode } });
+  error.name = 'DriverAdapterError';
+  return error;
+}
+
+describe('OrdersService', () => {
   const payment = { payment_method: 'CASH', payment_status: 'UNPAID' } as const;
   const request: CreateOrderDTO = {
     order_id: 'order',
@@ -272,6 +278,97 @@ describe('Order lifecycle', () => {
     },
   );
 
+  it.each([
+    {
+      order_channel: 'DINE_IN',
+      references: { table_reference: 'Table 3' },
+      settlement: {},
+    },
+    {
+      order_channel: 'GRABFOOD',
+      references: {
+        merchant_store_reference: 'grab-store',
+        external_order_reference: 'grab-order',
+      },
+      settlement: {
+        payment_method: 'PLATFORM_SETTLED',
+        payment_status: 'PAID',
+      },
+    },
+    {
+      order_channel: 'FOODPANDA',
+      references: {
+        merchant_store_reference: 'panda-store',
+        external_order_reference: 'panda-order',
+      },
+      settlement: {
+        payment_method: 'PLATFORM_SETTLED',
+        payment_status: 'PAID',
+      },
+    },
+  ] as const)(
+    'UT-ORD-043: persists $order_channel draft fields and validated item snapshots',
+    async ({ order_channel, references, settlement }) => {
+      tx.order.findFirst.mockResolvedValue(null);
+      const dto: CreateOrderDTO = {
+        ...request,
+        ...references,
+        order_channel,
+        notes: 'Order note',
+        lines: [{ ...request.lines[0], notes: 'Line note' }],
+      };
+
+      await service.create('brand', 'actor', dto);
+
+      expect(tx.order.create).toHaveBeenCalledWith({
+        data: {
+          order_id: dto.order_id,
+          order_channel,
+          merchant_store_reference: dto.merchant_store_reference,
+          external_order_reference: dto.external_order_reference,
+          table_reference: dto.table_reference,
+          notes: 'Order note',
+          brand_id: 'brand',
+          created_by_id: 'actor',
+          order_code: 'GC-00001',
+          order_number: 1,
+          order_date: draft.order_date,
+          created_at: draft.created_at,
+          create_request_hash: expect.stringMatching(
+            /^[a-f0-9]{64}$/,
+          ) as string,
+          ...settlement,
+          order_items_order: {
+            create: [
+              {
+                menu_item_id: 'menu',
+                item_name: 'Meal',
+                quantity: 2,
+                unit_price: new Prisma.Decimal(12),
+                notes: 'Line note',
+                order_item_modifiers_order_item: {
+                  create: [
+                    {
+                      modifier_id: 'extra',
+                      modifier_name: 'Extra',
+                      additional_price: new Prisma.Decimal(2),
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        include: {
+          order_items_order: {
+            include: { order_item_modifiers_order_item: true },
+          },
+          kitchen_tickets_order: true,
+        },
+      });
+    },
+  );
+
   it('UT-ORD-010: creates a draft without a ticket, final recipe or stock writes', async () => {
     await service.create('brand', 'actor', request);
     const { data } = (tx.order.create.mock.calls as unknown[][])[0][0] as {
@@ -449,6 +546,22 @@ describe('Order lifecycle', () => {
   it('UT-ORD-018: confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);
     expect(result.status).toBe('CONFIRMED');
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { order_id: 'order', status: 'DRAFT' },
+      data: {
+        status: 'CONFIRMED',
+        confirmed_at: expect.any(Date) as Date,
+        modified_at: expect.any(Date) as Date,
+        ...payment,
+        payment_reference: null,
+      },
+      include: {
+        order_items_order: {
+          include: { order_item_modifiers_order_item: true },
+        },
+        kitchen_tickets_order: true,
+      },
+    });
     expect(
       (
         (tx.orderItem.update.mock.calls as unknown[][])[0][0] as {
@@ -629,13 +742,13 @@ describe('Order lifecycle', () => {
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
 
-  it('UT-ORD-028: normalizes platform references before duplicate lookup', async () => {
+  it('UT-ORD-028: uses platform references for duplicate lookup', async () => {
     await expect(
       service.create('brand', 'actor', {
         ...request,
         order_channel: 'GRABFOOD',
-        merchant_store_reference: ' store ',
-        external_order_reference: ' external ',
+        merchant_store_reference: 'store',
+        external_order_reference: 'external',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(tx.order.findFirst).toHaveBeenCalledWith({
@@ -770,6 +883,81 @@ describe('Order lifecycle', () => {
     });
     expect(tx.order.create).not.toHaveBeenCalled();
   });
+  describe('transaction conflict recovery', () => {
+    const conflicts = [
+      ...['P2034', 'P2002'].map((code) => ({
+        name: code,
+        error: new Prisma.PrismaClientKnownRequestError('conflict', {
+          code,
+          clientVersion: '7',
+        }),
+      })),
+      ...['40001', '40P01'].map((code) => ({
+        name: `pg adapter ${code}`,
+        error: adapterError(code),
+      })),
+    ];
+
+    it.each(conflicts)(
+      'UT-ORD-007: retries confirmation after $name at commit',
+      async ({ error }) => {
+        prisma.$transaction.mockImplementationOnce(
+          async (
+            callback: (client: Prisma.TransactionClient) => Promise<unknown>,
+          ) => {
+            await callback(tx as unknown as Prisma.TransactionClient);
+            throw error;
+          },
+        );
+        await expect(
+          service.confirm('brand', 'order', 'actor', payment),
+        ).resolves.toMatchObject({ status: 'CONFIRMED' });
+        expect(tx.order.findFirst).toHaveBeenCalledTimes(2);
+        expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+      },
+    );
+
+    it.each(conflicts)(
+      'UT-ORD-008: bounds $name retries and returns a stable recovery code',
+      async ({ error }) => {
+        prisma.$transaction.mockRejectedValue(error);
+        const result = await service
+          .confirm('brand', 'order', 'actor', payment)
+          .catch((error: unknown) => error);
+        expect(result).toBeInstanceOf(ConflictException);
+        expect((result as ConflictException).getResponse()).toEqual({
+          statusCode: 409,
+          error: 'Conflict',
+          code: 'ORDER_RETRY_REQUIRED',
+          message: 'Concurrent order request; retry using the same order ID.',
+        });
+        expect(prisma.$transaction).toHaveBeenCalledTimes(5);
+        expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      new Error('Connection lost; commit outcome unknown'),
+      adapterError('08006', 'ConnectionClosed'),
+      adapterError('23503', 'ForeignKeyConstraintViolation'),
+      adapterError('40001', 'UnexpectedError'),
+      new Prisma.PrismaClientKnownRequestError('not found', {
+        code: 'P2025',
+        clientVersion: '7',
+      }),
+    ])(
+      'UT-ORD-009: propagates non-retryable errors without replaying confirmation (%s)',
+      async (error) => {
+        prisma.$transaction.mockRejectedValue(error);
+        await expect(
+          service.confirm('brand', 'order', 'actor', payment),
+        ).rejects.toBe(error);
+        expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('cancellation', () => {
     const reason = { cancellation_reason: '  Customer changed their mind.  ' };
     beforeEach(() => {

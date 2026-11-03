@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { Brand } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { config } from 'dotenv';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIN_ROLES } from '../../modules/pin/pin.roles';
 
 /** Never fall back to a developer database for destructive test cleanup. */
 export function requireTestDatabase() {
+  config({ path: '.env.test', quiet: true });
   const url = process.env.TEST_DATABASE_URL;
   if (!url || !/(^|[_-])test([_-]|$)/i.test(new URL(url).pathname.slice(1))) {
     throw new Error(
@@ -118,6 +120,12 @@ export async function cleanupCatalogFixture(
     ...extraBrandIds,
   ];
   const orderWhere = { brand_id: { in: brandIds } };
+  await prisma.orderItemQcRejection.deleteMany({
+    where: { qc_attempt: { kitchen_ticket: { order: orderWhere } } },
+  });
+  await prisma.kitchenTicketQcAttempt.deleteMany({
+    where: { kitchen_ticket: { order: orderWhere } },
+  });
   await prisma.orderItemModifier.deleteMany({
     where: { order_item: { order: orderWhere } },
   });

@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
-import { AuthService } from '../../auth/auth.service';
-import { OrdersRepository } from '../../orders/orders/orders.repository';
-import { KitchenTicketController } from './kitchen-ticket.controller';
-import { KitchenTicketRepository } from './kitchen-ticket.repository';
-import { KitchenTicketService } from './kitchen-ticket.service';
+import { AuthService } from '../../../auth/auth.service';
+import { OrdersRepository } from '../../../orders/orders/orders.repository';
+import { KitchenTicketController } from '../kitchen-ticket.controller';
+import { KitchenTicketRepository } from '../kitchen-ticket.repository';
+import { KitchenTicketService } from '../kitchen-ticket.service';
 
 describe('Kitchen ticket HTTP endpoints', () => {
   const ticketId = '00000000-0000-4000-8000-000000000001';

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrderLineDTO } from '../../order-items/dto/order-line.dto';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -35,6 +35,9 @@ export class CreateOrderDTO {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
   merchant_store_reference?: string;
   @ApiPropertyOptional({
     maxLength: 255,
@@ -44,6 +47,9 @@ export class CreateOrderDTO {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
   external_order_reference?: string;
   @ApiPropertyOptional({
     maxLength: 50,
@@ -52,6 +58,9 @@ export class CreateOrderDTO {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
   table_reference?: string;
   @ApiPropertyOptional({ maxLength: 2000 })
   @IsOptional()

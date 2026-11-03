@@ -50,7 +50,9 @@ function validateMappings(tests, scenarios) {
       );
       continue;
     }
-    const expected = test.file.endsWith('.http.spec.ts') ? 'IT-' : 'UT-';
+    const expected = /\.(http|integration)\.spec\.ts$/.test(test.file)
+      ? 'IT-'
+      : 'UT-';
     if (!id.startsWith(expected))
       errors.push(`${location}: ${id} must use ${expected}`);
     if (seen.has(id))
