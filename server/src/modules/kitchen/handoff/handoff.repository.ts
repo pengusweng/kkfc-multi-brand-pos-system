@@ -42,11 +42,27 @@ export class HandoffRepository {
 
   async findManyByActor(
     actorId: string,
+    skip: number,
+    take: number,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    return tx.handoff.findMany({
-      where: { actor_id: actorId },
+    const where = { actor_id: actorId };
+    const handoffsQuery = tx.handoff.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { handoff_id: 'asc' }],
     });
+    const totalQuery = tx.handoff.count({ where });
+
+    const [handoffs, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([handoffsQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([handoffsQuery, totalQuery]);
+
+    return { handoffs, total };
   }
 
   async findAll(

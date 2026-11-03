@@ -1,11 +1,18 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { AssetsService } from '../../assets/assets.service';
 import { UsersRepository } from '../../users/users.repository';
 import { KitchenTicketRepository } from '../kitchen-ticket/kitchen-ticket.repository';
 import { HandoffRepository } from './handoff.repository';
 import { CreateHandoffDTO } from './dto/create-handoff.dto';
-import { KitchenTicket, KitchenTicketStatus, Prisma } from '@prisma/client';
+import {
+  Handoff,
+  KitchenTicket,
+  KitchenTicketStatus,
+  Prisma,
+} from '@prisma/client';
 import { assertExists } from '../../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
+import { StorageService } from '../../../shared/storage/storage.service';
 
 @Injectable()
 export class HandoffService {
@@ -15,6 +22,8 @@ export class HandoffService {
     private readonly handoffRepository: HandoffRepository,
     private readonly kitchenTicketRepository: KitchenTicketRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly assetsService: AssetsService,
+    private readonly storage: StorageService,
   ) {}
 
   async create(
@@ -37,7 +46,7 @@ export class HandoffService {
     const user = await this.usersRepository.findOne(actorId, true, tx);
     assertExists(user, 'User', actorId, this.logger);
 
-    await this.assertHandoffCreatable(kitchenTicket, tx);
+    await this.assertHandoffCreatable(kitchenTicket, actorId, dto, tx);
 
     const handoffEntry = await this.handoffRepository.create(
       kitchenTicketId,
@@ -50,7 +59,7 @@ export class HandoffService {
       `Created handoff entry for ${kitchenTicketId} with handoff id ${handoffEntry.handoff_id}.`,
     );
 
-    return handoffEntry;
+    return this.response(handoffEntry);
   }
 
   async findOne(handoffId: string) {
@@ -60,7 +69,7 @@ export class HandoffService {
     assertExists(handoff, 'Handoff', handoffId, this.logger);
 
     this.logger.log(`Found handoff ${handoff.handoff_id}`);
-    return handoff;
+    return this.response(handoff);
   }
 
   async findOneByKitchenTicket(kitchenTicketId: string) {
@@ -77,18 +86,30 @@ export class HandoffService {
     this.logger.log(
       `Found handoff ${handoff.handoff_id} for kitchen ticket ${kitchenTicketId}`,
     );
-    return handoff;
+    return this.response(handoff);
   }
 
-  async findManyByActor(actorId: string) {
-    this.logger.debug(`Listing handoffs for actor ${actorId}`);
+  async findManyByActor(actorId: string, skip: number, take: number) {
+    this.logger.debug(
+      `Listing handoffs: actor=${actorId}, skip=${skip}, take=${take}`,
+    );
+    assertValidPagination(skip, this.logger);
 
-    const handoffs = await this.handoffRepository.findManyByActor(actorId);
+    const result = await this.handoffRepository.findManyByActor(
+      actorId,
+      skip,
+      take,
+    );
 
     this.logger.log(
-      `Listed handoffs for actor ${actorId}: returned=${handoffs.length}`,
+      `Listed handoffs for actor ${actorId}: returned=${result.handoffs.length}, total=${result.total}`,
     );
-    return handoffs;
+    return {
+      ...result,
+      handoffs: await Promise.all(
+        result.handoffs.map((handoff) => this.response(handoff)),
+      ),
+    };
   }
 
   async findAll(skip: number, take: number) {
@@ -99,11 +120,28 @@ export class HandoffService {
     this.logger.log(
       `Listed handoffs: returned=${result.handoffs.length}, total=${result.total}`,
     );
-    return result;
+    return {
+      ...result,
+      handoffs: await Promise.all(
+        result.handoffs.map((handoff) => this.response(handoff)),
+      ),
+    };
+  }
+
+  private async response(handoff: Handoff) {
+    const { img_keys, ...data } = handoff;
+    return {
+      ...data,
+      img_urls: await Promise.all(
+        img_keys.map((key) => this.storage.createDownloadUrl(key)),
+      ),
+    };
   }
 
   async assertHandoffCreatable(
     kitchenTicket: KitchenTicket,
+    actorId: string,
+    dto: CreateHandoffDTO,
     tx?: Prisma.TransactionClient,
   ) {
     if (kitchenTicket.status !== KitchenTicketStatus.READY) {
@@ -131,6 +169,10 @@ export class HandoffService {
         code: 'KITCHEN_TICKET_HAS_EXISTING_HANDOFF',
         message: 'Kitchen ticket already has an existing handoff record.',
       });
+    }
+
+    for (const key of dto.img_keys) {
+      await this.assetsService.download(actorId, key);
     }
   }
 }
