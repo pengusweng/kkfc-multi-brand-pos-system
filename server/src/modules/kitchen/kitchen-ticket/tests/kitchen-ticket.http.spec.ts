@@ -29,6 +29,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
   const kitchenRoles: UserRole[] = [
     UserRole.SUPERADMIN,
     UserRole.MANAGER,
+    UserRole.SUPERVISOR,
     UserRole.KITCHEN_STAFF,
     UserRole.KITCHEN_HEAD,
   ];
@@ -49,7 +50,12 @@ describe('Kitchen ticket HTTP endpoints', () => {
       handler: 'findAll',
       args: [0, 10],
       result: { kitchenTickets: [ticket], total: 1 },
-      roles: [UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.KITCHEN_HEAD],
+      roles: [
+        UserRole.SUPERADMIN,
+        UserRole.MANAGER,
+        UserRole.KITCHEN_HEAD,
+        UserRole.SUPERVISOR,
+      ],
     },
     {
       method: 'GET',
@@ -99,7 +105,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
       handler: 'assignChecker',
       args: [ticketId, assigneeId],
       result: { ...ticket, checker_id: assigneeId },
-      roles: [UserRole.KITCHEN_HEAD],
+      roles: [UserRole.MANAGER, UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD],
     },
   ] as const;
   let app: INestApplication;

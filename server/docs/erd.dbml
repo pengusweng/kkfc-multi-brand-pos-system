@@ -393,6 +393,17 @@ Table kitchen_tickets {
   Note: 'Created when an order is confirmed. QC attempts and rejected portions are stored separately; state transitions are logged in audit_logs.'
 }
 
+Table handoffs {
+  handoff_id uuid [pk]
+  actor_id uuid [not null, ref: > users.user_id]
+  kitchen_ticket_id uuid [not null, unique, ref: - kitchen_tickets.kitchen_ticket_id]
+  img_keys "varchar(2048)[]" [not null, default: `'{}'`]
+  created_at timestamp [not null, default: `now()`]
+  indexes {
+    (actor_id)
+  }
+}
+
 // Each recheck creates a new attempt. A completed passing attempt needs no rejection rows.
 Table kitchen_ticket_qc_attempts {
   qc_attempt_id uuid [pk]

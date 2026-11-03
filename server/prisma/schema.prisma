@@ -198,6 +198,7 @@ model User {
   kitchen_tickets_checker            KitchenTicket[]          @relation("KitchenTicketChecker")
   kitchen_tickets_created_by         KitchenTicket[]          @relation("KitchenTicketCreatedBy")
   kitchen_ticket_qc_attempts_checker KitchenTicketQcAttempt[] @relation("KitchenTicketQcAttemptChecker")
+  handoffs_actor                     Handoff[]                @relation("HandoffActor")
   audit_logs_actor                   AuditLog[]               @relation("AuditLogActor")
 
   @@map("users")
@@ -721,9 +722,24 @@ model KitchenTicket {
   checker     User?                    @relation("KitchenTicketChecker", fields: [checker_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   created_by  User                     @relation("KitchenTicketCreatedBy", fields: [created_by_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   qc_attempts KitchenTicketQcAttempt[] @relation("KitchenTicketQcAttemptKitchenTicket")
+  handoff     Handoff?                 @relation("HandoffKitchenTicket")
 
   @@index([status, created_at])
   @@map("kitchen_tickets")
+}
+
+model Handoff {
+  handoff_id        String   @id @default(uuid()) @db.Uuid
+  actor_id          String   @db.Uuid
+  kitchen_ticket_id String   @unique @db.Uuid
+  img_keys          String[] @default([]) @db.VarChar(2048)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+
+  actor          User          @relation("HandoffActor", fields: [actor_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  kitchen_ticket KitchenTicket @relation("HandoffKitchenTicket", fields: [kitchen_ticket_id], references: [kitchen_ticket_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([actor_id])
+  @@map("handoffs")
 }
 
 /// Each recheck creates a new attempt; completing QC does not require rows for passed portions.
