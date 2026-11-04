@@ -1,3 +1,5 @@
+export 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_ticket_panel_state.dart';
+
 export 'kitchen_panel_actions.dart';
 export 'kitchen_panel_confirm_checklist.dart';
 export 'kitchen_panel_header.dart';

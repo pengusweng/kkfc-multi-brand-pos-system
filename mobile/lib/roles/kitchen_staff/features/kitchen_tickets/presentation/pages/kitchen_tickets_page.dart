@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_board_sample_data.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_ticket_panel_state.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_tickets_view_state.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/empty_queue_view.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_board/kitchen_board_phone_view.dart';
