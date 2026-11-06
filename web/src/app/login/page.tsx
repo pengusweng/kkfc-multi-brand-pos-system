@@ -1,7 +1,7 @@
+import LoginPage from "@/src/features/auth/containers/login";
+
 export default function Login() {
   return (
-    <h1>
-      login
-    </h1>
-  )
+    <LoginPage />
+  );
 }
