@@ -18,9 +18,6 @@ import '../features/order_entry/presentation/pages/order_not_sent_screen.dart';
 import '../features/order_entry/presentation/pages/duplicate_platform_order_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
-import '../roles/kitchen_staff/features/kitchen_tickets/presentation/pages/kitchen_tickets_page.dart';
-
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_tickets_view_state.dart';
 
 import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
 import 'routes.dart';
@@ -145,11 +142,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.platformReference,
         builder: (context, state) => const PlatformReferenceScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.kitchenTickets,
-        builder: (context, state) =>
-            const KitchenTicketsPage(viewState: KitchenTicketsViewState.active),
       ),
     ],
   );
