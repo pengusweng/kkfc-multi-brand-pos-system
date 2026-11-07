@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/src/components/ui/atoms/input";
 import { Button } from "@/components/ui/button";
 
 export default function LoginCard() {
@@ -25,7 +25,6 @@ export default function LoginCard() {
               <Input 
                 id="username"
                 type="text"
-                className="h-12 px-3 md:text-base"
                 placeholder="Enter your username"
                 required
               />
@@ -37,7 +36,7 @@ export default function LoginCard() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  className="h-12 pr-14 pl-3 md:text-base"
+                  className="pr-14"
                   placeholder="Enter your password"
                   required
                 />
