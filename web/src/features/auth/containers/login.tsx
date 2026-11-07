@@ -6,11 +6,21 @@ import LoginBackground from "../components/login-background";
 import LoginCard from "../components/login-card";
 import LoginSide from "../components/login-side";
 import { useLogin } from "../hooks/useLogin";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage(){
-  const { form, serverError } = useLogin();
+  const WEB_ROLES = new Set(["SUPERADMIN", "MANAGER"]);
+  const router = useRouter();
+  const { form, serverError } = useLogin(({ user }) => {
+    router.replace(
+      WEB_ROLES.has(user.role)
+        ? "/dashboard"
+        : "/unauthorized",
+    );
+  });
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const reducedMotion = useReducedMotion();
+
 
   useEffect(() => {
     if (reducedMotion !== false || !scope.current) return;

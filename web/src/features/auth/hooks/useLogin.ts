@@ -2,11 +2,12 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { loginSchema } from "../schemas/loginSchema";
+import type { LoginSession } from "../schemas/loginSessionSchema";
 import { login } from "../services/auth.service";
 
-export function useLogin() {
+export function useLogin(onSuccess: (session: LoginSession) => void) {
   const [serverError, setServerError] = useState<string | null>(null);
-  const loginMutation = useMutation({ mutationFn: login, retry: false });
+  const loginMutation = useMutation({ mutationFn: login, retry: false, onSuccess });
 
   const form = useForm({
     defaultValues: {
