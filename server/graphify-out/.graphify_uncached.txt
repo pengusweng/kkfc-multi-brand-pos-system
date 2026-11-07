@@ -1,0 +1,11 @@
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\README.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\audit-api.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\flowcharts.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\menu-item-availability-api.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\orders-api.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\pin-guard\README.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\prd.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\recipe-access.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\docs\state-diagrams\README.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\prisma\seed-data\README.md
+C:\Users\Jeremy\Documents\dlsu\stsweng\kkfc-multi-brand-pos-system\server\src\scripts\e2e\README.md
