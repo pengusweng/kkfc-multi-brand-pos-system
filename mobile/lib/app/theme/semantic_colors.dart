@@ -56,6 +56,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     this.shellRaised = KkfcColors.shellRaised,
     this.selected = KkfcColors.selected,
     this.selectedTint = KkfcColors.selectedTint,
+    this.onSelected = KkfcColors.onSelected,
+    this.onSolid = KkfcColors.onSolid,
+    this.onShellSelected = KkfcColors.onShellSelected,
+    this.shellSelected = KkfcColors.shellSelected,
+    this.onAccent = KkfcColors.onAccent,
+    this.onWarningSolid = KkfcColors.onWarningSolid,
   });
 
   final Color bgCanvas;
@@ -85,7 +91,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final KkfcTone ageCaution;
   final KkfcTone ageLate;
 
-  // Copper & Navy additions
+  // Copper & Navy tokens
   final Color action;
   final Color actionHover;
   final Color actionPressed;
@@ -96,6 +102,14 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final Color shellRaised;
   final Color selected;
   final Color selectedTint;
+
+  // Contrast pair tokens (WCAG 2.2 AA)
+  final Color onSelected;
+  final Color onSolid;
+  final Color onShellSelected;
+  final Color shellSelected;
+  final Color onAccent;
+  final Color onWarningSolid;
 
   // Light (counter), matching the Colour Language spec
   static const light = KkfcSemanticColors(
@@ -145,15 +159,15 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     ),
     actionInfo: KkfcTone(
       bg: KkfcColors.infoSolid, // --k-info-solid (#1F67AB)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
     ),
     actionReview: KkfcTone(
       bg: KkfcColors.reviewSolid, // --k-review-solid (#6346B5)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
     ),
     actionSuccess: KkfcTone(
       bg: KkfcColors.successSolid, // --k-success-solid (#187A42)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
     ),
     ageNormal: KkfcTone(
       bg: KkfcColors.neutralBg, // --k-neutral-bg (#EDF0F4)
@@ -161,11 +175,11 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     ),
     ageCaution: KkfcTone(
       bg: KkfcColors.warningSolid, // --k-warning-solid (#EDBE3D)
-      fg: KkfcColors.ink, // --k-ink (#19293E)
+      fg: KkfcColors.onWarningSolid, // --k-on-warning-solid (#19293E)
     ),
     ageLate: KkfcTone(
       bg: KkfcColors.dangerSolid, // --k-danger-solid (#B3261E)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
     ),
     action: KkfcColors.action, // --k-action (#A8562A)
     actionHover: KkfcColors.actionHover, // --k-action-hover (#8E4722)
@@ -177,6 +191,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     shellRaised: KkfcColors.shellRaised, // --k-shell-raised (#293F58)
     selected: KkfcColors.selected, // --k-selected (#1D2940)
     selectedTint: KkfcColors.selectedTint, // --k-selected-tint (#E7ECF4)
+    onSelected: KkfcColors.onSelected, // --k-on-selected (#FFFFFF)
+    onSolid: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
+    onShellSelected: KkfcColors.onShellSelected, // --k-on-shell-selected (#19293E)
+    shellSelected: KkfcColors.shellSelected, // --k-shell-selected (#F7F3EC)
+    onAccent: KkfcColors.onAccent, // --k-on-accent (#19293E)
+    onWarningSolid: KkfcColors.onWarningSolid, // --k-on-warning-solid (#19293E)
   );
 
   // Dark (kitchen), from theme/dark
@@ -227,15 +247,15 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     ),
     actionInfo: KkfcTone(
       bg: KkfcColors.infoSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
     ),
     actionReview: KkfcTone(
       bg: KkfcColors.reviewSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
     ),
     actionSuccess: KkfcTone(
       bg: KkfcColors.successSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
     ),
     ageNormal: KkfcTone(
       bg: Color(0xFF1D2940),
@@ -243,11 +263,11 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     ),
     ageCaution: KkfcTone(
       bg: KkfcColors.warningSolid,
-      fg: Color(0xFF0B111D),
+      fg: KkfcColors.onWarningSolid,
     ),
     ageLate: KkfcTone(
       bg: KkfcColors.dangerSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
     ),
     action: KkfcColors.action,
     actionHover: KkfcColors.actionHover,
@@ -259,6 +279,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     shellRaised: KkfcColors.shellRaised,
     selected: KkfcColors.selected,
     selectedTint: KkfcColors.selectedTint,
+    onSelected: KkfcColors.onSelected,
+    onSolid: KkfcColors.onSolid,
+    onShellSelected: KkfcColors.onShellSelected,
+    shellSelected: KkfcColors.shellSelected,
+    onAccent: KkfcColors.onAccent,
+    onWarningSolid: KkfcColors.onWarningSolid,
   );
 
   @override
@@ -299,6 +325,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     Color? shellRaised,
     Color? selected,
     Color? selectedTint,
+    Color? onSelected,
+    Color? onSolid,
+    Color? onShellSelected,
+    Color? shellSelected,
+    Color? onAccent,
+    Color? onWarningSolid,
   }) {
     return KkfcSemanticColors(
       bgCanvas: bgCanvas ?? this.bgCanvas,
@@ -337,6 +369,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       shellRaised: shellRaised ?? this.shellRaised,
       selected: selected ?? this.selected,
       selectedTint: selectedTint ?? this.selectedTint,
+      onSelected: onSelected ?? this.onSelected,
+      onSolid: onSolid ?? this.onSolid,
+      onShellSelected: onShellSelected ?? this.onShellSelected,
+      shellSelected: shellSelected ?? this.shellSelected,
+      onAccent: onAccent ?? this.onAccent,
+      onWarningSolid: onWarningSolid ?? this.onWarningSolid,
     );
   }
 
@@ -388,6 +426,12 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       shellRaised: Color.lerp(shellRaised, other.shellRaised, t)!,
       selected: Color.lerp(selected, other.selected, t)!,
       selectedTint: Color.lerp(selectedTint, other.selectedTint, t)!,
+      onSelected: Color.lerp(onSelected, other.onSelected, t)!,
+      onSolid: Color.lerp(onSolid, other.onSolid, t)!,
+      onShellSelected: Color.lerp(onShellSelected, other.onShellSelected, t)!,
+      shellSelected: Color.lerp(shellSelected, other.shellSelected, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      onWarningSolid: Color.lerp(onWarningSolid, other.onWarningSolid, t)!,
     );
   }
 }

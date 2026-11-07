@@ -6,7 +6,7 @@ import 'color_tokens.dart';
 const ColorScheme kkfcCounterScheme = ColorScheme(
   brightness: Brightness.light,
   primary: KkfcColors.selected, // --k-selected (#1D2940)
-  onPrimary: KkfcColors.surface, // white (#FFFFFF)
+  onPrimary: KkfcColors.onSelected, // --k-on-selected (#FFFFFF, 14.55:1)
   secondary: KkfcColors.ink2, // --k-ink-2 (#43536A)
   onSecondary: KkfcColors.surface, // white (#FFFFFF)
   secondaryContainer: KkfcColors.selectedTint, // --k-selected-tint (#E7ECF4)
@@ -14,7 +14,7 @@ const ColorScheme kkfcCounterScheme = ColorScheme(
   tertiary: KkfcColors.ink2, // --k-ink-2 (#43536A)
   onTertiary: KkfcColors.surface, // white (#FFFFFF)
   error: KkfcColors.danger, // --k-danger (#B3261E)
-  onError: KkfcColors.surface, // white (#FFFFFF)
+  onError: KkfcColors.onSolid, // --k-on-solid (#FFFFFF, 5.21:1)
   errorContainer: KkfcColors.dangerBg, // --k-danger-bg (#FCEBEA)
   onErrorContainer: KkfcColors.danger, // --k-danger (#B3261E)
   surface: KkfcColors.canvas, // --k-canvas (#F7F3EC)

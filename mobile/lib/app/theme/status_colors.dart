@@ -65,7 +65,7 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
     ),
     preparing: KkfcTone(
       bg: KkfcColors.infoSolid, // --k-info-solid (#1F67AB)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
       border: KkfcColors.infoSolid,
     ),
     checking: KkfcTone(
@@ -75,12 +75,12 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
     ),
     reworking: KkfcTone(
       bg: KkfcColors.reviewSolid, // --k-review-solid (#6346B5)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
       border: KkfcColors.reviewSolid,
     ),
     ready: KkfcTone(
       bg: KkfcColors.successSolid, // --k-success-solid (#187A42)
-      fg: KkfcColors.surface, // white
+      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
       border: KkfcColors.successSolid,
     ),
     handedOver: KkfcTone(
@@ -114,7 +114,7 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
     ),
     preparing: KkfcTone(
       bg: KkfcColors.infoSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
       border: KkfcColors.infoSolid,
     ),
     checking: KkfcTone(
@@ -124,12 +124,12 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
     ),
     reworking: KkfcTone(
       bg: KkfcColors.reviewSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
       border: KkfcColors.reviewSolid,
     ),
     ready: KkfcTone(
       bg: KkfcColors.successSolid,
-      fg: KkfcColors.surface,
+      fg: KkfcColors.onSolid,
       border: KkfcColors.successSolid,
     ),
     handedOver: KkfcTone(
