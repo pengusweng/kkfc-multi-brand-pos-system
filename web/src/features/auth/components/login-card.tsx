@@ -11,17 +11,17 @@ export default function LoginCard() {
   const [showPassword, setShowPassword] = useState(false);
 
   return(
-    <Card className="w-full max-w-md gap-6 [--card-spacing:--spacing(5)] sm:[--card-spacing:--spacing(8)]">
+    <Card className="w-full self-center justify-self-center gap-8 rounded-none ring-0 [--card-spacing:--spacing(6)] lg:max-w-132 lg:[--card-spacing:--spacing(12)]">
       <CardHeader>
         <CardTitle>
-          <h1 className="text-xl font-semibold sm:text-2xl">Sign In</h1>
+          <h1 className="text-2xl leading-8 font-semibold tracking-tight">Sign In</h1>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form id="login-form">
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="leading-5">Username</Label>
               <Input 
                 id="username"
                 type="text"
@@ -31,7 +31,7 @@ export default function LoginCard() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="leading-5">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -54,7 +54,7 @@ export default function LoginCard() {
               </div>
             </div>
 
-            <Button type="submit" form="login-form" className="h-12 w-full text-base cursor-pointer">
+            <Button type="submit" form="login-form" className="h-12 w-full cursor-pointer text-base font-semibold">
               Sign In
             </Button>
           </div>

@@ -1,14 +1,33 @@
-import PageBackground from "@/src/components/layout/page-background";
+"use client";
+
+import { useEffect } from "react";
+import { useAnimate, useReducedMotion } from "framer-motion";
+import LoginBackground from "../components/login-background";
 import LoginCard from "../components/login-card";
 import LoginSide from "../components/login-side";
 
 export default function LoginPage(){
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion !== false || !scope.current) return;
+
+    const entrance = animate(
+      scope.current,
+      { opacity: [0, 1], y: [14, 0] },
+      { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] },
+    );
+
+    return () => entrance.complete();
+  }, [animate, reducedMotion, scope]);
+
   return (
-    <div className="flex min-h-dvh flex-1 flex-col lg:flex-row">
-      <LoginSide />
-      <PageBackground>
+    <LoginBackground>
+      <div ref={scope} className="grid w-full max-w-md overflow-hidden rounded-[1rem] border border-[#e3d8cc] bg-card lg:min-h-140 lg:max-w-240 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <LoginSide />
         <LoginCard />
-      </PageBackground>
-    </div>
+      </div>
+    </LoginBackground>
   )
 }
