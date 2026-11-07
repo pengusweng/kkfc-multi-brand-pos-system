@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:mobile/app/theme/color_tokens.dart';
 import 'package:mobile/app/theme/semantic_colors.dart'; // verify path (KkfcTone)
 import 'package:mobile/app/theme/theme_context.dart';
 
@@ -72,11 +73,11 @@ KkfcBadgeColors resolveBadgeColors(
 
     case KkfcBadgeVariant.solid:
       if (family == KkfcBadgeFamily.neutral) {
-        // Not used by any status today; kept so the switch stays exhaustive.
-        return KkfcBadgeColors(
-          background: c.textPrimary,
-          border: c.textPrimary,
-          foreground: c.textInverse,
+        // Mapped to Slate solid (--k-neutral-solid)
+        return const KkfcBadgeColors(
+          background: KkfcColors.neutralSolid,
+          border: KkfcColors.neutralSolid,
+          foreground: Colors.white,
         );
       }
       final KkfcTone tone = switch (family) {

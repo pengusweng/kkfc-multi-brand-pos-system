@@ -8,7 +8,7 @@ void main() {
   test('counter theme uses the light token scheme', () {
     expect(counterTheme.colorScheme.brightness, Brightness.light);
     expect(counterTheme.colorScheme.primary, const Color(0xFF1D2940));
-    expect(counterTheme.scaffoldBackgroundColor, const Color(0xFFF2F4F8));
+    expect(counterTheme.scaffoldBackgroundColor, const Color(0xFFF7F3EC));
     expect(counterTheme.extension<KkfcSemanticColors>(), isNotNull);
   });
 

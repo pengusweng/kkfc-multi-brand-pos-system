@@ -81,7 +81,7 @@ class _FieldRow extends StatelessWidget {
                 const TextSpan(
                   text: '  ·  Required',
                   style: TextStyle(
-                    color: Color(0xFF6E7E9C),
+                    color: KkfcColors.ink3,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

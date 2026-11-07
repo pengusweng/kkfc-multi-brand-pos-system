@@ -23,6 +23,11 @@ ThemeData _buildTheme(
     textTheme: kkfcTextTheme,
     scaffoldBackgroundColor: semantic.bgCanvas,
     extensions: [semantic, status],
+    dividerColor: semantic.borderDefault,
+    dividerTheme: DividerThemeData(
+      color: semantic.borderDefault,
+      thickness: KkfcBorderWidth.thin,
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: semantic.bgSurface,
@@ -31,11 +36,22 @@ ThemeData _buildTheme(
       focusedBorder: inputBorder(semantic.borderFocus, KkfcBorderWidth.focus),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, KkfcSizing.controlMd),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(KkfcRadius.md),
+      style: ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(
+          Size(0, KkfcSizing.controlMd),
         ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(KkfcRadius.md),
+          ),
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return null;
+          if (states.contains(WidgetState.pressed)) return semantic.actionPressed;
+          if (states.contains(WidgetState.hovered)) return semantic.actionHover;
+          return semantic.action;
+        }),
+        foregroundColor: const WidgetStatePropertyAll(Colors.white),
       ),
     ),
   );

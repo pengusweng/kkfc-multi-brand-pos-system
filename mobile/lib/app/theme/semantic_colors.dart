@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'color_tokens.dart';
+
 @immutable
 class KkfcTone {
   const KkfcTone({required this.bg, required this.fg, this.border});
@@ -44,6 +46,16 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     required this.ageNormal,
     required this.ageCaution,
     required this.ageLate,
+    this.action = KkfcColors.action,
+    this.actionHover = KkfcColors.actionHover,
+    this.actionPressed = KkfcColors.actionPressed,
+    this.actionInk = KkfcColors.actionInk,
+    this.actionTint = KkfcColors.actionTint,
+    this.identity = KkfcColors.identity,
+    this.shell = KkfcColors.shell,
+    this.shellRaised = KkfcColors.shellRaised,
+    this.selected = KkfcColors.selected,
+    this.selectedTint = KkfcColors.selectedTint,
   });
 
   final Color bgCanvas;
@@ -73,73 +85,98 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final KkfcTone ageCaution;
   final KkfcTone ageLate;
 
-  // Light (counter), from theme/light
+  // Copper & Navy additions
+  final Color action;
+  final Color actionHover;
+  final Color actionPressed;
+  final Color actionInk;
+  final Color actionTint;
+  final Color identity;
+  final Color shell;
+  final Color shellRaised;
+  final Color selected;
+  final Color selectedTint;
+
+  // Light (counter), matching the Colour Language spec
   static const light = KkfcSemanticColors(
-    bgCanvas: Color(0xFFF2F4F8), // ink.50
-    bgSurface: Color(0xFFFFFFFF), // white
-    bgRaised: Color(0xFFFFFFFF), // white
-    bgSunken: Color(0xFFE3E7EF), // ink.100
-    textPrimary: Color(0xFF141D2E), // ink.900
-    textSecondary: Color(0xFF374763), // ink.600
-    textDisabled: Color(0xFF6E7E9C), // ink.400
-    textInverse: Color(0xFFFFFFFF), // white
-    borderDefault: Color(0xFFC7CFDD), // ink.200
-    borderStrong: Color(0xFF6E7E9C), // ink.400
-    borderFocus: Color(0xFF1F5FD6), // blue.600
-    borderFocusInverse: Color(0xFF93B4EE), // blue.300
-    highlights: Color(0xFFFF9248),
-    highlightsSecondary: Color(0xFFFFF0E3),
+    bgCanvas: KkfcColors.canvas, // --k-canvas (#F7F3EC)
+    bgSurface: KkfcColors.surface, // --k-surface (#FFFFFF)
+    bgRaised: KkfcColors.surface, // --k-surface (#FFFFFF)
+    bgSunken: KkfcColors.canvasSunken, // --k-canvas-sunken (#EEE8DC)
+    textPrimary: KkfcColors.ink, // --k-ink (#19293E)
+    textSecondary: KkfcColors.ink2, // --k-ink-2 (#43536A)
+    textDisabled: KkfcColors.ink3, // --k-ink-3 (#586579)
+    textInverse: KkfcColors.surface, // white (#FFFFFF)
+    borderDefault: KkfcColors.border, // --k-border (#DDD6C9)
+    borderStrong: KkfcColors.borderStrong, // --k-border-strong (#76849A)
+    borderFocus: KkfcColors.focus, // --k-focus (#1F66C9)
+    borderFocusInverse: KkfcColors.focusOnShell, // --k-focus-on-shell (#FFC18E)
+    highlights: KkfcColors.accent, // --k-accent (#FF9248)
+    highlightsSecondary: KkfcColors.actionTint, // --k-action-tint (#F9EBE2)
     tag: KkfcTone(
-      bg: Color(0xFFE3E7EF),
-      fg: Color(0xFF283650),
-      border: Color(0xFFA5B1C6),
-    ), // ink.100 / ink.700
+      bg: KkfcColors.neutralBg, // --k-neutral-bg (#EDF0F4)
+      fg: KkfcColors.neutral, // --k-neutral (#46566C)
+      border: KkfcColors.neutralBorder, // --k-neutral-border (#D3DDE2)
+    ),
     success: KkfcTone(
-      bg: Color(0xFFD9F2EC),
-      fg: Color(0xFF0A5C4E),
-      border: Color(0xFF86D5C4),
+      bg: KkfcColors.successBg, // --k-success-bg (#E3F4E9)
+      fg: KkfcColors.success, // --k-success (#166B3A)
+      border: KkfcColors.successBorder, // --k-success-border (#9ED2B0)
     ),
     warning: KkfcTone(
-      bg: Color(0xFFFFF3CC),
-      fg: Color(0xFF6E4A00),
-      border: Color(0xFFFFD24D),
+      bg: KkfcColors.warningBg, // --k-warning-bg (#FCF3CF)
+      fg: KkfcColors.warning, // --k-warning (#6A5200)
+      border: KkfcColors.warningBorder, // --k-warning-border (#DDBE55)
     ),
     danger: KkfcTone(
-      bg: Color(0xFFFCE4E1),
-      fg: Color(0xFF861B10),
-      border: Color(0xFFF4A398),
+      bg: KkfcColors.dangerBg, // --k-danger-bg (#FCEBEA)
+      fg: KkfcColors.danger, // --k-danger (#B3261E)
+      border: KkfcColors.dangerBorder, // --k-danger-border (#EDB3AF)
     ),
     info: KkfcTone(
-      bg: Color(0xFFE1EAFB),
-      fg: Color(0xFF173F8A),
-      border: Color(0xFF93B4EE),
+      bg: KkfcColors.infoBg, // --k-info-bg (#E6F0FA)
+      fg: KkfcColors.info, // --k-info (#1B5A96)
+      border: KkfcColors.infoBorder, // --k-info-border (#A5C6E8)
     ),
     review: KkfcTone(
-      bg: Color(0xFFF7E3F3),
-      fg: Color(0xFF6E1D60),
-      border: Color(0xFFEAB9E0),
+      bg: KkfcColors.reviewBg, // --k-review-bg (#F0ECFB)
+      fg: KkfcColors.review, // --k-review (#5A3EA6)
+      border: KkfcColors.reviewBorder, // --k-review-border (#C8BBEC)
     ),
     actionInfo: KkfcTone(
-      bg: Color(0xFF1F5FD6),
-      fg: Color(0xFFFFFFFF),
-    ), // blue.600 / white
-    actionReview: KkfcTone(bg: Color(0xFFB0309A), fg: Color(0xFFFFFFFF)),
+      bg: KkfcColors.infoSolid, // --k-info-solid (#1F67AB)
+      fg: KkfcColors.surface, // white
+    ),
+    actionReview: KkfcTone(
+      bg: KkfcColors.reviewSolid, // --k-review-solid (#6346B5)
+      fg: KkfcColors.surface, // white
+    ),
     actionSuccess: KkfcTone(
-      bg: Color(0xFF0E7A68),
-      fg: Color(0xFFFFFFFF),
-    ), // teal.700 / white
+      bg: KkfcColors.successSolid, // --k-success-solid (#187A42)
+      fg: KkfcColors.surface, // white
+    ),
     ageNormal: KkfcTone(
-      bg: Color(0xFFE3E7EF),
-      fg: Color(0xFF141D2E),
-    ), // ink.100 / ink.900
+      bg: KkfcColors.neutralBg, // --k-neutral-bg (#EDF0F4)
+      fg: KkfcColors.ink, // --k-ink (#19293E)
+    ),
     ageCaution: KkfcTone(
-      bg: Color(0xFFF5B400),
-      fg: Color(0xFF0B111D),
-    ), // amber.500 / ink.950
+      bg: KkfcColors.warningSolid, // --k-warning-solid (#EDBE3D)
+      fg: KkfcColors.ink, // --k-ink (#19293E)
+    ),
     ageLate: KkfcTone(
-      bg: Color(0xFFC62A1A),
-      fg: Color(0xFFFFFFFF),
-    ), // red.600 / white
+      bg: KkfcColors.dangerSolid, // --k-danger-solid (#B3261E)
+      fg: KkfcColors.surface, // white
+    ),
+    action: KkfcColors.action, // --k-action (#A8562A)
+    actionHover: KkfcColors.actionHover, // --k-action-hover (#8E4722)
+    actionPressed: KkfcColors.actionPressed, // --k-action-pressed (#743A1B)
+    actionInk: KkfcColors.actionInk, // --k-action-ink (#8E4722)
+    actionTint: KkfcColors.actionTint, // --k-action-tint (#F9EBE2)
+    identity: KkfcColors.identity, // --k-identity (#B86843)
+    shell: KkfcColors.shell, // --k-shell (#19293E)
+    shellRaised: KkfcColors.shellRaised, // --k-shell-raised (#293F58)
+    selected: KkfcColors.selected, // --k-selected (#1D2940)
+    selectedTint: KkfcColors.selectedTint, // --k-selected-tint (#E7ECF4)
   );
 
   // Dark (kitchen), from theme/dark
@@ -153,11 +190,11 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     textDisabled: Color(0xFF4C5D7D), // ink.500
     textInverse: Color(0xFF0B111D), // ink.950
     borderDefault: Color(0xFF283650), // ink.700
-    borderStrong: Color(0xFF6E7E9C), // ink.400
-    borderFocus: Color(0xFF93B4EE), // blue.300
-    borderFocusInverse: Color(0xFF1F5FD6), // blue.600
-    highlights: Color(0xFFFF9248),
-    highlightsSecondary: Color(0xFFFFF0E3),
+    borderStrong: KkfcColors.borderStrong, // --k-border-strong (#76849A)
+    borderFocus: KkfcColors.focus, // --k-focus (#1F66C9)
+    borderFocusInverse: KkfcColors.focusOnShell, // --k-focus-on-shell (#FFC18E)
+    highlights: KkfcColors.accent, // --k-accent (#FF9248)
+    highlightsSecondary: KkfcColors.actionTint, // --k-action-tint (#F9EBE2)
     tag: KkfcTone(
       bg: Color(0xFF1D2940),
       fg: Color(0xFFE3E7EF),
@@ -165,47 +202,63 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     ), // ink.800 / ink.100
     success: KkfcTone(
       bg: Color(0xFF052A24),
-      fg: Color(0xFF86D5C4),
-      border: Color(0xFF0E7A68),
+      fg: KkfcColors.successBorder,
+      border: KkfcColors.successSolid,
     ),
     warning: KkfcTone(
       bg: Color(0xFF332300),
-      fg: Color(0xFFFFD24D),
-      border: Color(0xFF6E4A00),
+      fg: KkfcColors.warningSolid,
+      border: KkfcColors.warning,
     ),
     danger: KkfcTone(
       bg: Color(0xFF3D0C06),
-      fg: Color(0xFFF4A398),
-      border: Color(0xFFC62A1A),
+      fg: KkfcColors.dangerBorder,
+      border: KkfcColors.dangerSolid,
     ),
     info: KkfcTone(
       bg: Color(0xFF0C1D3F),
-      fg: Color(0xFF93B4EE),
-      border: Color(0xFF173F8A),
+      fg: KkfcColors.infoBorder,
+      border: KkfcColors.info,
     ),
     review: KkfcTone(
       bg: Color(0xFF330D2C),
-      fg: Color(0xFFE2A0D6),
-      border: Color(0xFF6E1D60),
+      fg: KkfcColors.reviewBorder,
+      border: KkfcColors.review,
     ),
-    actionInfo: KkfcTone(bg: Color(0xFF1F5FD6), fg: Color(0xFFFFFFFF)),
-    actionReview: KkfcTone(bg: Color(0xFFB0309A), fg: Color(0xFFFFFFFF)),
+    actionInfo: KkfcTone(
+      bg: KkfcColors.infoSolid,
+      fg: KkfcColors.surface,
+    ),
+    actionReview: KkfcTone(
+      bg: KkfcColors.reviewSolid,
+      fg: KkfcColors.surface,
+    ),
     actionSuccess: KkfcTone(
-      bg: Color(0xFF0E7A68),
-      fg: Color(0xFFFFFFFF),
-    ), // teal.700 / white
+      bg: KkfcColors.successSolid,
+      fg: KkfcColors.surface,
+    ),
     ageNormal: KkfcTone(
       bg: Color(0xFF1D2940),
       fg: Color(0xFFF2F4F8),
-    ), // ink.800 / ink.50
+    ),
     ageCaution: KkfcTone(
-      bg: Color(0xFFF5B400),
+      bg: KkfcColors.warningSolid,
       fg: Color(0xFF0B111D),
-    ), // amber.500 / ink.950
+    ),
     ageLate: KkfcTone(
-      bg: Color(0xFFC62A1A),
-      fg: Color(0xFFFFFFFF),
-    ), // red.600 / white
+      bg: KkfcColors.dangerSolid,
+      fg: KkfcColors.surface,
+    ),
+    action: KkfcColors.action,
+    actionHover: KkfcColors.actionHover,
+    actionPressed: KkfcColors.actionPressed,
+    actionInk: KkfcColors.actionInk,
+    actionTint: KkfcColors.actionTint,
+    identity: KkfcColors.identity,
+    shell: KkfcColors.shell,
+    shellRaised: KkfcColors.shellRaised,
+    selected: KkfcColors.selected,
+    selectedTint: KkfcColors.selectedTint,
   );
 
   @override
@@ -236,6 +289,16 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     KkfcTone? ageNormal,
     KkfcTone? ageCaution,
     KkfcTone? ageLate,
+    Color? action,
+    Color? actionHover,
+    Color? actionPressed,
+    Color? actionInk,
+    Color? actionTint,
+    Color? identity,
+    Color? shell,
+    Color? shellRaised,
+    Color? selected,
+    Color? selectedTint,
   }) {
     return KkfcSemanticColors(
       bgCanvas: bgCanvas ?? this.bgCanvas,
@@ -264,6 +327,16 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       ageNormal: ageNormal ?? this.ageNormal,
       ageCaution: ageCaution ?? this.ageCaution,
       ageLate: ageLate ?? this.ageLate,
+      action: action ?? this.action,
+      actionHover: actionHover ?? this.actionHover,
+      actionPressed: actionPressed ?? this.actionPressed,
+      actionInk: actionInk ?? this.actionInk,
+      actionTint: actionTint ?? this.actionTint,
+      identity: identity ?? this.identity,
+      shell: shell ?? this.shell,
+      shellRaised: shellRaised ?? this.shellRaised,
+      selected: selected ?? this.selected,
+      selectedTint: selectedTint ?? this.selectedTint,
     );
   }
 
@@ -305,6 +378,16 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       ageNormal: KkfcTone.lerp(ageNormal, other.ageNormal, t),
       ageCaution: KkfcTone.lerp(ageCaution, other.ageCaution, t),
       ageLate: KkfcTone.lerp(ageLate, other.ageLate, t),
+      action: Color.lerp(action, other.action, t)!,
+      actionHover: Color.lerp(actionHover, other.actionHover, t)!,
+      actionPressed: Color.lerp(actionPressed, other.actionPressed, t)!,
+      actionInk: Color.lerp(actionInk, other.actionInk, t)!,
+      actionTint: Color.lerp(actionTint, other.actionTint, t)!,
+      identity: Color.lerp(identity, other.identity, t)!,
+      shell: Color.lerp(shell, other.shell, t)!,
+      shellRaised: Color.lerp(shellRaised, other.shellRaised, t)!,
+      selected: Color.lerp(selected, other.selected, t)!,
+      selectedTint: Color.lerp(selectedTint, other.selectedTint, t)!,
     );
   }
 }

@@ -121,38 +121,38 @@ class KitchenTicketCard extends StatelessWidget {
 
     final (statusBg, statusFg, statusText) = switch (ticket.status) {
       KkfcStatus.queued => (
-        const Color(0xFFE0F2FE),
-        const Color(0xFF0284C7),
+        KkfcColors.neutralBg,
+        KkfcColors.neutral,
         'QUEUED',
       ),
       KkfcStatus.acknowledged => (
-        const Color(0xFFE0F2FE),
-        const Color(0xFF0284C7),
+        KkfcColors.infoBg,
+        KkfcColors.info,
         'ACKNOWLEDGED',
       ),
       KkfcStatus.preparing => (
-        const Color(0xFFFEF3C7),
-        const Color(0xFFD97706),
+        KkfcColors.infoSolid,
+        KkfcColors.surface,
         'PREPARING',
       ),
       KkfcStatus.checking => (
-        const Color(0xFFEDE9FE),
-        const Color(0xFF7C3AED),
+        KkfcColors.reviewBg,
+        KkfcColors.review,
         'CHECKING',
       ),
       KkfcStatus.reworking => (
-        const Color(0xFFEDE9FE),
-        const Color(0xFF7C3AED),
+        KkfcColors.reviewSolid,
+        KkfcColors.surface,
         'REWORKING',
       ),
       KkfcStatus.ready => (
-        const Color(0xFFDCFCE7),
-        const Color(0xFF15803D),
+        KkfcColors.successSolid,
+        KkfcColors.surface,
         'READY',
       ),
       _ => (
-        const Color(0xFFF1F5F9),
-        const Color(0xFF64748B),
+        KkfcColors.neutralBg,
+        KkfcColors.neutral,
         ticket.status.name.toUpperCase(),
       ),
     };
@@ -161,7 +161,7 @@ class KitchenTicketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: KkfcColors.border, width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x08000000),
@@ -282,9 +282,9 @@ class KitchenTicketCard extends StatelessWidget {
                 onPressed: isActionEnabled ? (onAction ?? () {}) : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: isActionEnabled
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFF8E9CAE),
-                  disabledBackgroundColor: const Color(0xFF8E9CAE),
+                      ? KkfcColors.action
+                      : KkfcColors.neutralSolid,
+                  disabledBackgroundColor: KkfcColors.neutralSolid,
                   foregroundColor: Colors.white,
                   disabledForegroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
