@@ -1,12 +1,14 @@
-import { Button } from "@/components/ui/button";
 import PageBackground from "@/src/components/layout/page-background";
+import LoginCard from "../components/login-card";
+import LoginSide from "../components/login-side";
 
 export default function LoginPage(){
   return (
-    <PageBackground>
-      <Button>
-        <h1 className="font-mono">login page na malupet</h1>
-      </Button>
-    </PageBackground>
+    <div className="flex min-h-dvh flex-1 flex-col lg:flex-row">
+      <LoginSide />
+      <PageBackground>
+        <LoginCard />
+      </PageBackground>
+    </div>
   )
 }

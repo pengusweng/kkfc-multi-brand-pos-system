@@ -6,7 +6,7 @@ export default function PageBackground({
   children: ReactNode;
 }) {
   return (
-    <main className="relative isolate flex min-h-svh flex-1 items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,#fdf7f1,#fbeee2)] p-6 text-slate-800">
+    <main className="relative isolate flex min-h-0 min-w-0 flex-1 items-start justify-center overflow-x-clip bg-[radial-gradient(ellipse_at_center,#fdf7f1,#fbeee2)] px-4 py-8 text-slate-800 sm:p-8 lg:items-center">
       <svg
         aria-hidden="true"
         viewBox="0 0 786 605"
