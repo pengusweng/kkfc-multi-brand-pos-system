@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/theme_context.dart';
+import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/auth/data/models/login_status.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_notice.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_password_field.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/shared/widgets/kkfc_text_field.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_password_field.dart';
 
+/// Clean, centered Sign In card matching the updated KKFC POS design.
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({
     super.key,
@@ -15,6 +16,7 @@ class LoginFormCard extends StatelessWidget {
     required this.status,
     required this.onSubmit,
     required this.onEdited,
+    this.onWebManagementTap,
   });
 
   final TextEditingController usernameController;
@@ -22,137 +24,107 @@ class LoginFormCard extends StatelessWidget {
   final LoginStatus status;
   final VoidCallback onSubmit;
   final VoidCallback onEdited;
+  final VoidCallback? onWebManagementTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final text = theme.textTheme;
-    final compact = LoginLayout.isCompact(context);
     final enabled = !status.isSubmitting;
-    final pad = compact ? LoginLayout.gapLg : LoginLayout.gapXl;
-    final accent = context.semanticColors.highlights;
 
     return Container(
-      padding: EdgeInsets.all(compact ? LoginLayout.gapLg : LoginLayout.gapXl),
+      padding: const EdgeInsets.all(KkfcSpace.space8), // 32.0
       decoration: BoxDecoration(
-        color: scheme.onPrimary,
-        borderRadius: BorderRadius.circular(LoginLayout.radiusLg),
+        color: KkfcColors.surface, // Pure white #FFFFFF
+        borderRadius: BorderRadius.circular(KkfcRadius.md),
         border: Border.all(
-          color: scheme.outlineVariant,
-          width: LoginLayout.borderWidth,
+          color: KkfcColors.border, // #DDD6C9
+          width: KkfcBorderWidth.thin,
         ),
       ),
       child: AutofillGroup(
-        child: Stack(
-          clipBehavior: Clip.none,
-          fit: StackFit.passthrough,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'STAFF SIGN IN',
-                  style: text.labelSmall?.copyWith(color: scheme.primary),
-                ),
-                const SizedBox(height: LoginLayout.gapXs),
-                Text('Welcome back', style: text.headlineMedium),
-                const SizedBox(height: LoginLayout.gapXs),
-                Text(
-                  'Sign in with your own staff account.',
-                  style: text.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: LoginLayout.gapLg),
-                KkfcTextField(
-                  label: 'Username',
-                  hint: 'Enter username',
-                  controller: usernameController,
-                  enabled: enabled,
-                  hasError: status.fieldsInError,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.username],
-                  onChanged: (_) => onEdited(),
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                ),
-                const SizedBox(height: LoginLayout.gapMd),
-                LoginPasswordField(
-                  controller: passwordController,
-                  enabled: enabled,
-                  hasError: status.fieldsInError,
-                  onChanged: (_) => onEdited(),
-                  onSubmitted: (_) => onSubmit(),
-                ),
-                LoginNotice(status: status),
-                const SizedBox(height: LoginLayout.gapLg),
-                KkfcLoadingButton(
-                  label: 'Sign in',
-                  loadingLabel: 'Signing in…',
-                  isLoading: status.isSubmitting,
-                  onPressed: onSubmit,
-                ),
-                const SizedBox(height: LoginLayout.gapMd),
-                Center(
-                  child: Text(
-                    'Your actions are recorded under your account.',
-                    textAlign: TextAlign.center,
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: LoginLayout.gapLg),
-                Divider(
-                  height: LoginLayout.borderWidth,
-                  color: scheme.outlineVariant,
-                ),
-                const SizedBox(height: LoginLayout.gapMd),
-                Text(
-                  'SECURE STAFF WORKSPACE',
-                  style: text.labelSmall?.copyWith(color: scheme.primary),
-                ),
-                const SizedBox(height: LoginLayout.gapXs),
-                Text(
-                  'One account per person · Sign out before switching staff.',
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            // Title
+            Text(
+              'Sign in',
+              style: KkfcTypography.text2xl.copyWith(
+                color: KkfcColors.ink,
+                fontWeight: KkfcFontWeights.bold,
+              ),
             ),
-            Positioned(
-              left: -pad,
-              top: 0,
-              child: _AccentBar(color: accent),
+            const SizedBox(height: KkfcSpace.space6), // 24.0
+
+            // Username Label
+            Text(
+              'Username',
+              style: KkfcTypography.textSm.copyWith(
+                color: KkfcColors.ink,
+                fontWeight: KkfcFontWeights.semiBold,
+              ),
+            ),
+            const SizedBox(height: KkfcSpace.space2), // 8.0
+
+            // Username Input
+            KkfcTextField(
+              hint: 'Enter username',
+              controller: usernameController,
+              enabled: enabled,
+              hasError: status.fieldsInError,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.username],
+              onChanged: (_) => onEdited(),
+              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+            ),
+            const SizedBox(height: KkfcSpace.space4), // 16.0
+
+            // Password Label
+            Text(
+              'Password',
+              style: KkfcTypography.textSm.copyWith(
+                color: KkfcColors.ink,
+                fontWeight: KkfcFontWeights.semiBold,
+              ),
+            ),
+            const SizedBox(height: KkfcSpace.space2), // 8.0
+
+            // Password Input with integrated Show/Hide toggle
+            LoginPasswordField(
+              controller: passwordController,
+              enabled: enabled,
+              hasError: status.fieldsInError,
+              onChanged: (_) => onEdited(),
+              onSubmitted: onSubmit,
+            ),
+
+            // Error / Validation Notice
+            LoginNotice(status: status),
+            const SizedBox(height: KkfcSpace.space6), // 24.0
+
+            // Sign In Button
+            KkfcLoadingButton(
+              label: 'Sign in',
+              loadingLabel: 'Signing in…',
+              isLoading: status.isSubmitting,
+              onPressed: onSubmit,
+            ),
+            const SizedBox(height: KkfcSpace.space4), // 16.0
+
+            // Web Management Link
+            Center(
+              child: GestureDetector(
+                onTap: onWebManagementTap,
+                child: Text(
+                  'Use Web Management instead',
+                  style: KkfcTypography.textMd.copyWith(
+                    color: KkfcColors.ink,
+                    decoration: TextDecoration.underline,
+                    fontWeight: KkfcFontWeights.medium,
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AccentBar extends StatelessWidget {
-  const _AccentBar({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: LoginLayout.accentBarHeight),
-      duration: LoginLayout.motion(context, LoginLayout.slow),
-      curve: LoginLayout.curve,
-      builder: (context, height, _) => Container(
-        width: LoginLayout.accentBarWidth,
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: const BorderRadius.horizontal(
-            right: Radius.circular(LoginLayout.accentBarWidth),
-          ),
         ),
       ),
     );

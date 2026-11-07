@@ -67,6 +67,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => LoginScreen(),
       ),
       GoRoute(
+        path: AppRoutes.kitchenTickets,
+        builder: (context, state) => LoginScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.menu,
         builder: (context, state) => const MenuScreen(),
       ),

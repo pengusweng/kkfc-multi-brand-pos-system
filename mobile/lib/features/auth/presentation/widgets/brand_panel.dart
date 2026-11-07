@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/auth/presentation/widgets/brand_strip.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
+import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/typography.dart';
 
+/// Top navy header displaying the KKFC brand, Staff POS title,
+/// and brand labels with decorative wave arcs.
 class BrandPanel extends StatelessWidget {
   const BrandPanel({super.key, required this.compact});
 
@@ -9,118 +11,130 @@ class BrandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final text = theme.textTheme;
-    final soft = scheme.onPrimary.withValues(alpha: LoginLayout.softAlpha);
-
-    if (compact) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(
-          LoginLayout.gapLg,
-          LoginLayout.gapSm,
-          LoginLayout.gapLg,
-          LoginLayout.gapLg,
-        ),
-        color: scheme.primary, // full-bleed: no radius, no outer margin
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'One kitchen. Three brands.',
-              style: text.headlineMedium?.copyWith(color: scheme.onPrimary),
-            ),
-            const SizedBox(height: LoginLayout.gapXs),
-            Text(
-              'Sign in to your shared workspace.',
-              style: text.bodyMedium?.copyWith(color: soft),
-            ),
-            const SizedBox(height: LoginLayout.gapMd),
-            const BrandStrip(),
-          ],
-        ),
-      );
-    }
-
     return Container(
-      padding: const EdgeInsets.all(LoginLayout.gapXl),
-      decoration: BoxDecoration(
-        color: scheme.primary,
-        borderRadius: BorderRadius.circular(LoginLayout.radiusLg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      width: double.infinity,
+      color: KkfcColors.shell, // Navy #19293E
+      child: Stack(
         children: [
-          Text(
-            'ONE SHARED WORKSPACE',
-            style: text.labelSmall?.copyWith(color: soft),
-          ),
-          const SizedBox(height: LoginLayout.gapMd),
-          Text(
-            'One kitchen.\nThree brands.\nOne workspace.',
-            style: text.displaySmall?.copyWith(color: scheme.onPrimary),
-          ),
-          const SizedBox(height: LoginLayout.gapMd),
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: LoginLayout.panelCopyMaxWidth,
-            ),
-            child: Text(
-              'Confident orders, clear kitchen handoffs, and one connected team.',
-              style: text.bodyLarge?.copyWith(color: soft),
+          const Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 260,
+            child: CustomPaint(
+              painter: _HeaderWavesPainter(),
             ),
           ),
-          const SizedBox(height: LoginLayout.gapXl),
-          const _FlowSteps(),
-          const Spacer(),
-          const SizedBox(height: LoginLayout.gapXl),
-          const BrandStrip(),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? KkfcSpace.space4 : KkfcSpace.space6,
+              vertical: compact ? KkfcSpace.space3 : KkfcSpace.space4,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'KKFC',
+                  style: KkfcTypography.textLg.copyWith(
+                    color: Colors.white,
+                    fontWeight: KkfcFontWeights.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Staff POS',
+                  style: KkfcTypography.textSm.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: KkfcFontWeights.regular,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildBrands(context),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _FlowSteps extends StatelessWidget {
-  const _FlowSteps();
+  Widget _buildBrands(BuildContext context) {
+    final brandStyle = KkfcTypography.textXs.copyWith(
+      color: Colors.white.withValues(alpha: 0.65),
+      fontWeight: KkfcFontWeights.regular,
+    );
 
-  static const _steps = ['ORDER', 'PREPARE', 'CHECK', 'HANDOVER'];
+    if (compact) {
+      return Wrap(
+        spacing: KkfcSpace.space2,
+        runSpacing: 2,
+        children: [
+          Text('Gamcheon', style: brandStyle),
+          Text('·', style: brandStyle),
+          Text("Aurelia's Inasal", style: brandStyle),
+          Text('·', style: brandStyle),
+          Text('King Kungs Kafé', style: brandStyle),
+        ],
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final soft = scheme.onPrimary.withValues(alpha: LoginLayout.softAlpha);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Divider(
-          height: LoginLayout.borderWidth,
-          color: scheme.onPrimary.withValues(alpha: LoginLayout.lineAlpha),
-        ),
-        const SizedBox(height: LoginLayout.gapMd),
-        Wrap(
-          spacing: LoginLayout.gapSm,
-          runSpacing: LoginLayout.gapXs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            for (var i = 0; i < _steps.length; i++) ...[
-              if (i > 0)
-                Icon(
-                  Icons.arrow_right_alt,
-                  size: LoginLayout.iconSm,
-                  color: soft,
-                ),
-              Text(
-                _steps[i],
-                style: theme.textTheme.labelSmall?.copyWith(color: soft),
-              ),
-            ],
-          ],
-        ),
+        Text('Gamcheon', style: brandStyle),
+        const SizedBox(width: KkfcSpace.space4),
+        Text("Aurelia's Inasal", style: brandStyle),
+        const SizedBox(width: KkfcSpace.space4),
+        Text('King Kungs Kafé', style: brandStyle),
       ],
     );
   }
+}
+
+/// Draws subtle decorative copper wave/arc lines in the top right of the header.
+class _HeaderWavesPainter extends CustomPainter {
+  const _HeaderWavesPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0x35A8562A) // Soft copper tint
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final path1 = Path();
+    path1.moveTo(size.width * 0.45, 0);
+    path1.quadraticBezierTo(
+      size.width * 0.7,
+      size.height * 0.7,
+      size.width,
+      size.height * 0.35,
+    );
+    canvas.drawPath(path1, paint);
+
+    final path2 = Path();
+    path2.moveTo(size.width * 0.58, 0);
+    path2.quadraticBezierTo(
+      size.width * 0.8,
+      size.height * 0.85,
+      size.width,
+      size.height * 0.55,
+    );
+    canvas.drawPath(path2, paint);
+
+    final path3 = Path();
+    path3.moveTo(size.width * 0.72, 0);
+    path3.quadraticBezierTo(
+      size.width * 0.9,
+      size.height * 0.95,
+      size.width,
+      size.height * 0.8,
+    );
+    canvas.drawPath(path3, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

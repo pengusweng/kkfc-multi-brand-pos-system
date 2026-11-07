@@ -1,19 +1,15 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/auth/data/models/login_status.dart';
-import 'package:mobile/features/auth/providers/session_provider.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
-import 'package:mobile/features/auth/presentation/widgets/fade_slide_in.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_top_bar.dart';
 import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/app/theme/theme_context.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -97,12 +93,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _form() => LoginFormCard(
-    usernameController: _username,
-    passwordController: _password,
-    status: _status,
-    onSubmit: _submit,
-    onEdited: _clearNotice,
-  );
+        usernameController: _username,
+        passwordController: _password,
+        status: _status,
+        onSubmit: _submit,
+        onEdited: _clearNotice,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -112,105 +108,108 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _maybeShowSessionExpired();
 
     final compact = LoginLayout.isCompact(context);
-    final theme = Theme.of(context);
-
-    final footer = Text(
-      'Shared device · Sign out after your shift.',
-      textAlign: compact ? TextAlign.center : TextAlign.start,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
-    );
 
     return KkfcScaffold(
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: LoginLayout.focusBorderWidth,
-            color: context.semanticColors.highlights,
-          ),
-          const LoginTopBar(),
-          Expanded(child: compact ? _buildCompact(footer) : _buildWide(footer)),
-        ],
-      ),
-    );
-  }
+      body: Container(
+        color: KkfcColors.canvas, // Warm sand ground #F7F3EC
+        child: Column(
+          children: [
+            // Top Navy Shell Header (KKFC / Staff POS / Brands)
+            BrandPanel(compact: compact),
 
-  Widget _buildCompact(Widget footer) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const FadeSlideIn(child: BrandPanel(compact: true)),
-          Padding(
-            padding: const EdgeInsets.all(LoginLayout.gapMd),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: LoginLayout.formMaxWidth,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    FadeSlideIn(delay: LoginLayout.stagger, child: _form()),
-                    const SizedBox(height: LoginLayout.gapLg),
-                    FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWide(Widget footer) {
-    const padding = EdgeInsets.all(LoginLayout.gapXl);
-
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        padding: padding,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: math.max(0.0, constraints.maxHeight - padding.vertical),
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: LoginLayout.maxContentWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Main Canvas with fluid background waves and centered Card
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Expanded(
-                          flex: 6,
-                          child: FadeSlideIn(child: BrandPanel(compact: false)),
-                        ),
-                        const SizedBox(width: LoginLayout.gapLg),
-                        Expanded(
-                          flex: 5,
-                          child: FadeSlideIn(
-                            delay: LoginLayout.stagger,
-                            child: _form(),
-                          ),
-                        ),
-                      ],
+                  const Positioned.fill(
+                    child: CustomPaint(
+                      painter: _LoginCanvasWavesPainter(),
                     ),
                   ),
-                  const SizedBox(height: LoginLayout.gapLg),
-                  FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact
+                            ? KkfcSpace.space4
+                            : KkfcSpace.space8,
+                        vertical: KkfcSpace.space6,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 440.0,
+                        ),
+                        child: _form(),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Draws soft, elegant organic wave curves on the warm sand canvas background.
+class _LoginCanvasWavesPainter extends CustomPainter {
+  const _LoginCanvasWavesPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Wave 1: Soft sand flowing from bottom right
+    final paint1 = Paint()
+      ..color = const Color(0x35DDD6C9)
+      ..style = PaintingStyle.fill;
+
+    final path1 = Path()
+      ..moveTo(size.width * 0.45, size.height)
+      ..quadraticBezierTo(
+        size.width * 0.72,
+        size.height * 0.82,
+        size.width,
+        size.height * 0.68,
+      )
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(path1, paint1);
+
+    // Wave 2: Deeper soft curve in bottom right corner
+    final paint2 = Paint()
+      ..color = const Color(0x28C5A28D)
+      ..style = PaintingStyle.fill;
+
+    final path2 = Path()
+      ..moveTo(size.width * 0.65, size.height)
+      ..quadraticBezierTo(
+        size.width * 0.82,
+        size.height * 0.9,
+        size.width,
+        size.height * 0.78,
+      )
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(path2, paint2);
+
+    // Wave 3: Subtle top-left organic curve
+    final paint3 = Paint()
+      ..color = const Color(0x18DDD6C9)
+      ..style = PaintingStyle.fill;
+
+    final path3 = Path()
+      ..moveTo(0, size.height * 0.12)
+      ..quadraticBezierTo(
+        size.width * 0.22,
+        size.height * 0.22,
+        0,
+        size.height * 0.45,
+      )
+      ..close();
+    canvas.drawPath(path3, paint3);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
