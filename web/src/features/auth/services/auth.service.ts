@@ -42,3 +42,25 @@ export async function login(input: LoginUser): Promise<LoginSession> {
 
   return session.data;
 }
+
+export async function validateCookie(token: string): Promise<LoginSession["user"] | null> {
+  if (!token) return null;
+
+  const apiUrl = process.env.API_URL;
+  if (!apiUrl) throw new Error("API_URL is missing.");
+
+  const response = await fetch(new URL("/api/auth/me", apiUrl), {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (response.status === 401) return null;
+  if (!response.ok) throw new Error("Unable to check your session.");
+
+  const body: unknown = await response.json().catch(() => null);
+  const user = loginSessionSchema.shape.user.safeParse(body);
+  if (!user.success) throw new Error("The server returned an invalid user response.");
+
+  return user.data;
+}

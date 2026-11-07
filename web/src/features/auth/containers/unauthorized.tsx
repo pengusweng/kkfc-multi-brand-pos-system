@@ -29,7 +29,7 @@ export default function UnauthorizedPage() {
           </p>
 
           <Link
-            href="/login"
+            href="/login?switchAccount=1"
             className={cn(
               buttonVariants(),
               "mt-8 h-12 w-full gap-2 text-base font-semibold focus-visible:border-primary focus-visible:ring-primary/25",
