@@ -6,8 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/src/components/ui/atoms/input";
 import { Button } from "@/components/ui/button";
+import type { useLogin } from "../hooks/useLogin";
 
-export default function LoginCard() {
+type LoginCardProps = Pick<ReturnType<typeof useLogin>, "form" | "serverError">;
+
+export default function LoginCard({ form, serverError }: LoginCardProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return(
@@ -18,45 +21,104 @@ export default function LoginCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form id="login-form">
+        <form
+          id="login-form"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            void form.handleSubmit();
+          }}
+        >
           <div className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="username" className="leading-5">Username</Label>
-              <Input 
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
+            <form.Field name="username">
+              {(field) => {
+                const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="leading-5">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  className="pr-14"
-                  placeholder="Enter your password"
-                  required
-                />
+                return (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name} className="leading-5">Username</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="text"
+                      autoComplete="username"
+                      value={field.state.value}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={invalid}
+                      aria-describedby={invalid ? "username-error" : undefined}
+                      placeholder="Enter your username"
+                      required
+                    />
+                    {invalid && (
+                      <p id="username-error" role="alert" className="text-sm text-destructive">
+                        {field.state.meta.errors.map((error) => error?.message).join(" ")}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            </form.Field>
+
+            <form.Field name="password">
+              {(field) => {
+                const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+                return (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name} className="leading-5">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        className="pr-14"
+                        value={field.state.value}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        onBlur={field.handleBlur}
+                        aria-invalid={invalid}
+                        aria-describedby={invalid ? "password-error" : undefined}
+                        placeholder="Enter your password"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-0.5 right-0.5 size-11 cursor-pointer"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-controls="password"
+                        onClick={() => setShowPassword((visible) => !visible)}
+                      >
+                        {showPassword ? <EyeOff className="size-5" aria-hidden="true" /> : <Eye className="size-5" aria-hidden="true" />}
+                      </Button>
+                    </div>
+                    {invalid && (
+                      <p id="password-error" role="alert" className="text-sm text-destructive">
+                        {field.state.meta.errors.map((error) => error?.message).join(" ")}
+                      </p>
+                    )}
+                  </div>
+                );
+              }}
+            </form.Field>
+
+            {serverError && (
+              <p role="alert" className="text-sm text-destructive">{serverError}</p>
+            )}
+
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-0.5 right-0.5 size-11 cursor-pointer"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-controls="password"
-                  onClick={() => setShowPassword((visible) => !visible)}
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-12 w-full cursor-pointer text-base font-semibold"
                 >
-                  {showPassword ? <EyeOff className="size-5" aria-hidden="true" /> : <Eye className="size-5" aria-hidden="true" />}
+                  {isSubmitting ? "Signing in…" : "Sign In"}
                 </Button>
-              </div>
-            </div>
-
-            <Button type="submit" form="login-form" className="h-12 w-full cursor-pointer text-base font-semibold">
-              Sign In
-            </Button>
+              )}
+            </form.Subscribe>
           </div>
         </form>
       </CardContent>
