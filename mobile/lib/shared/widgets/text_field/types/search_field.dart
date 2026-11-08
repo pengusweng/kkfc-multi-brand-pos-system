@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -105,9 +106,7 @@ class _KkfcSearchFieldState extends State<KkfcSearchField> {
   Widget build(BuildContext context) {
     final idleStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.search,
-      state: KkfcTextFieldStateContext(
-        isEnabled: widget.enabled,
-      ),
+      state: KkfcTextFieldStateContext(isEnabled: widget.enabled),
       size: widget.size,
       shape: widget.shape,
       customBackground: widget.customBackground,
@@ -177,9 +176,6 @@ class _KkfcSearchFieldState extends State<KkfcSearchField> {
       ),
     );
 
-    return KkfcFormFieldContainer(
-      label: widget.label,
-      child: field,
-    );
+    return KkfcFormFieldContainer(label: widget.label, child: field);
   }
 }

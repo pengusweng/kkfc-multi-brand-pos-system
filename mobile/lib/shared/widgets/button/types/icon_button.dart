@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../button_state.dart';
 import '../button_style.dart';
 import '../button_types.dart';
@@ -71,10 +72,7 @@ class KkfcIconButton extends StatelessWidget {
             ),
           )
         : IconTheme(
-            data: IconThemeData(
-              size: style.iconSize,
-              color: style.iconColor,
-            ),
+            data: IconThemeData(size: style.iconSize, color: style.iconColor),
             child: icon,
           );
 
@@ -159,10 +157,7 @@ class KkfcIconButton extends StatelessWidget {
       );
     }
 
-    button = KkfcPressScaleWrapper(
-      enabled: isInteractive,
-      child: button,
-    );
+    button = KkfcPressScaleWrapper(enabled: isInteractive, child: button);
 
     if (tooltip != null && tooltip!.isNotEmpty) {
       button = Tooltip(message: tooltip!, child: button);

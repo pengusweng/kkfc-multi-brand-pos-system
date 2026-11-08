@@ -120,11 +120,7 @@ class KitchenTicketCard extends StatelessWidget {
         actionLabel ?? kitchenTicketActionLabel(ticket.status);
 
     final (statusBg, statusFg, statusText) = switch (ticket.status) {
-      KkfcStatus.queued => (
-        KkfcColors.neutralBg,
-        KkfcColors.neutral,
-        'QUEUED',
-      ),
+      KkfcStatus.queued => (KkfcColors.neutralBg, KkfcColors.neutral, 'QUEUED'),
       KkfcStatus.acknowledged => (
         KkfcColors.infoBg,
         KkfcColors.info,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -43,10 +44,7 @@ class KkfcSelectField<T> extends StatelessWidget {
 
     final resolvedStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.select,
-      state: KkfcTextFieldStateContext(
-        isEnabled: enabled,
-        hasError: showError,
-      ),
+      state: KkfcTextFieldStateContext(isEnabled: enabled, hasError: showError),
       size: size,
       selectTheme: selectTheme,
     );
@@ -63,7 +61,9 @@ class KkfcSelectField<T> extends StatelessWidget {
         borderRadius: resolvedStyle.borderRadius,
         border: (resolvedStyle.borderWidth > 0)
             ? Border.all(
-                color: showError ? KkfcColors.danger : resolvedStyle.borderColor,
+                color: showError
+                    ? KkfcColors.danger
+                    : resolvedStyle.borderColor,
                 width: showError
                     ? KkfcBorderWidth.thick
                     : resolvedStyle.borderWidth,

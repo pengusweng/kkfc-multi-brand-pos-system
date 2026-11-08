@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../text_field_types.dart';
 
 /// Holds the runtime interactive state of a KKFC text field.
@@ -50,10 +51,5 @@ class KkfcTextFieldStateContext {
           isHovered == other.isHovered;
 
   @override
-  int get hashCode => Object.hash(
-        isFocused,
-        hasError,
-        isEnabled,
-        isHovered,
-      );
+  int get hashCode => Object.hash(isFocused, hasError, isEnabled, isHovered);
 }

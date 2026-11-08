@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+
 import 'states/text_field_state.dart';
 import 'text_field_types.dart';
 
@@ -39,10 +40,7 @@ class KkfcResolvedTextFieldStyle {
     }
     return OutlineInputBorder(
       borderRadius: borderRadius,
-      borderSide: BorderSide(
-        color: borderColor,
-        width: borderWidth,
-      ),
+      borderSide: BorderSide(color: borderColor, width: borderWidth),
     );
   }
 }
@@ -118,7 +116,8 @@ abstract final class KkfcTextFieldStyleResolver {
         }
       }
 
-      textCol = customForeground ??
+      textCol =
+          customForeground ??
           (state.isEnabled ? KkfcColors.ink : KkfcColors.ink3);
       hintCol = KkfcColors.ink3;
     }

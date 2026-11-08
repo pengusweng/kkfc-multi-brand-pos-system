@@ -23,8 +23,10 @@ const ColorScheme kkfcCounterScheme = ColorScheme(
   surfaceContainerLowest: KkfcColors.surface, // --k-surface (#FFFFFF)
   surfaceContainerLow: KkfcColors.surfaceSubtle, // --k-surface-subtle (#FBF9F5)
   surfaceContainer: KkfcColors.surface, // --k-surface (#FFFFFF)
-  surfaceContainerHigh: KkfcColors.surfaceSubtle, // --k-surface-subtle (#FBF9F5)
-  surfaceContainerHighest: KkfcColors.canvasSunken, // --k-canvas-sunken (#EEE8DC)
+  surfaceContainerHigh:
+      KkfcColors.surfaceSubtle, // --k-surface-subtle (#FBF9F5)
+  surfaceContainerHighest:
+      KkfcColors.canvasSunken, // --k-canvas-sunken (#EEE8DC)
   outline: KkfcColors.borderStrong, // --k-border-strong (#76849A)
   outlineVariant: KkfcColors.border, // --k-border (#DDD6C9)
   inverseSurface: KkfcColors.shell, // --k-shell (#19293E)

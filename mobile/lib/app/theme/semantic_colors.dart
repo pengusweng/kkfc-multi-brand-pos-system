@@ -193,7 +193,8 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     selectedTint: KkfcColors.selectedTint, // --k-selected-tint (#E7ECF4)
     onSelected: KkfcColors.onSelected, // --k-on-selected (#FFFFFF)
     onSolid: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
-    onShellSelected: KkfcColors.onShellSelected, // --k-on-shell-selected (#19293E)
+    onShellSelected:
+        KkfcColors.onShellSelected, // --k-on-shell-selected (#19293E)
     shellSelected: KkfcColors.shellSelected, // --k-shell-selected (#F7F3EC)
     onAccent: KkfcColors.onAccent, // --k-on-accent (#19293E)
     onWarningSolid: KkfcColors.onWarningSolid, // --k-on-warning-solid (#19293E)
@@ -245,30 +246,18 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       fg: KkfcColors.reviewBorder,
       border: KkfcColors.review,
     ),
-    actionInfo: KkfcTone(
-      bg: KkfcColors.infoSolid,
-      fg: KkfcColors.onSolid,
-    ),
-    actionReview: KkfcTone(
-      bg: KkfcColors.reviewSolid,
-      fg: KkfcColors.onSolid,
-    ),
+    actionInfo: KkfcTone(bg: KkfcColors.infoSolid, fg: KkfcColors.onSolid),
+    actionReview: KkfcTone(bg: KkfcColors.reviewSolid, fg: KkfcColors.onSolid),
     actionSuccess: KkfcTone(
       bg: KkfcColors.successSolid,
       fg: KkfcColors.onSolid,
     ),
-    ageNormal: KkfcTone(
-      bg: Color(0xFF1D2940),
-      fg: Color(0xFFF2F4F8),
-    ),
+    ageNormal: KkfcTone(bg: Color(0xFF1D2940), fg: Color(0xFFF2F4F8)),
     ageCaution: KkfcTone(
       bg: KkfcColors.warningSolid,
       fg: KkfcColors.onWarningSolid,
     ),
-    ageLate: KkfcTone(
-      bg: KkfcColors.dangerSolid,
-      fg: KkfcColors.onSolid,
-    ),
+    ageLate: KkfcTone(bg: KkfcColors.dangerSolid, fg: KkfcColors.onSolid),
     action: KkfcColors.action,
     actionHover: KkfcColors.actionHover,
     actionPressed: KkfcColors.actionPressed,

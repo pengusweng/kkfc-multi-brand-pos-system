@@ -81,14 +81,9 @@ class _LoginPasswordFieldState extends State<LoginPasswordField> {
     return Container(
       height: KkfcTargets.posMinimum, // 48.0
       decoration: BoxDecoration(
-        color: widget.enabled
-            ? KkfcColors.surface
-            : KkfcColors.surfaceSubtle,
+        color: widget.enabled ? KkfcColors.surface : KkfcColors.surfaceSubtle,
         borderRadius: BorderRadius.circular(KkfcRadius.md),
-        border: Border.all(
-          color: borderColor,
-          width: borderWidth,
-        ),
+        border: Border.all(color: borderColor, width: borderWidth),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,10 +119,7 @@ class _LoginPasswordFieldState extends State<LoginPasswordField> {
               ),
             ),
           ),
-          Container(
-            width: borderWidth,
-            color: borderColor,
-          ),
+          Container(width: borderWidth, color: borderColor),
           SizedBox(
             width: 68.0,
             child: TextButton(

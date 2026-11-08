@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'button_types.dart';
 import 'types/ghost_button.dart';
 import 'types/icon_button.dart';
@@ -342,10 +343,7 @@ class _KkfcGhostButtonWrapper extends KkfcButton {
     super.loadingLabel,
     super.fullWidth = false,
     super.focusNode,
-  }) : super(
-          variant: KkfcButtonVariant.ghost,
-          customForeground: textColor,
-        );
+  }) : super(variant: KkfcButtonVariant.ghost, customForeground: textColor);
 }
 
 class _KkfcSplitButtonWrapper extends KkfcButton {

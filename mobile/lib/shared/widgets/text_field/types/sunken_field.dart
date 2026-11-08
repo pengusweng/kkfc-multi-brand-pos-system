@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -34,9 +35,7 @@ class KkfcSunkenField extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.sunken,
-      state: const KkfcTextFieldStateContext(
-        isEnabled: false,
-      ),
+      state: const KkfcTextFieldStateContext(isEnabled: false),
       size: size,
       isBold: isBold,
     );
@@ -61,12 +60,7 @@ class KkfcSunkenField extends StatelessWidget {
             prefix!,
             const SizedBox(width: KkfcSpace.space2),
           ],
-          Expanded(
-            child: Text(
-              text,
-              style: textStyle,
-            ),
-          ),
+          Expanded(child: Text(text, style: textStyle)),
           if (suffix != null) ...[
             const SizedBox(width: KkfcSpace.space2),
             suffix!,
@@ -75,9 +69,6 @@ class KkfcSunkenField extends StatelessWidget {
       ),
     );
 
-    return KkfcFormFieldContainer(
-      label: label,
-      child: field,
-    );
+    return KkfcFormFieldContainer(label: label, child: field);
   }
 }

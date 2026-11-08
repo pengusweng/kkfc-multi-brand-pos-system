@@ -7,9 +7,7 @@ void main() {
   Widget buildTestWidget(Widget child) {
     return MaterialApp(
       theme: counterTheme,
-      home: Scaffold(
-        body: Center(child: child),
-      ),
+      home: Scaffold(body: Center(child: child)),
     );
   }
 
@@ -34,8 +32,9 @@ void main() {
       expect(enteredText, 'Table 7');
     });
 
-    testWidgets('displays error message and red border on error',
-        (tester) async {
+    testWidgets('displays error message and red border on error', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const KkfcTextField(
@@ -48,12 +47,15 @@ void main() {
 
       expect(find.text('Table is currently occupied'), findsOneWidget);
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.decoration?.enabledBorder?.borderSide.color,
-          const Color(0xFFB3261E));
+      expect(
+        textField.decoration?.enabledBorder?.borderSide.color,
+        const Color(0xFFB3261E),
+      );
     });
 
-    testWidgets('respects disabled state and shows disabled text',
-        (tester) async {
+    testWidgets('respects disabled state and shows disabled text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const KkfcTextField(
@@ -83,7 +85,10 @@ void main() {
       );
 
       expect(find.text('Kitchen Feedback'), findsOneWidget);
-      expect(find.text('For example: under-cooked, missing sauce'), findsOneWidget);
+      expect(
+        find.text('For example: under-cooked, missing sauce'),
+        findsOneWidget,
+      );
 
       await tester.enterText(
         find.byType(TextField),
@@ -94,8 +99,9 @@ void main() {
   });
 
   group('KkfcSearchField', () {
-    testWidgets('renders pill search input and clear button clears text',
-        (tester) async {
+    testWidgets('renders pill search input and clear button clears text', (
+      tester,
+    ) async {
       var cleared = false;
 
       await tester.pumpWidget(
@@ -142,8 +148,9 @@ void main() {
   });
 
   group('KkfcSelectField', () {
-    testWidgets('renders dropdown with selected item and chevron',
-        (tester) async {
+    testWidgets('renders dropdown with selected item and chevron', (
+      tester,
+    ) async {
       String? selected = 'channels';
 
       await tester.pumpWidget(

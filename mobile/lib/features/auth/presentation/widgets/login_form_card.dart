@@ -54,7 +54,6 @@ class LoginFormCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: KkfcSpace.space6), // 24.0
-
             // Username Label
             Text(
               'Username',
@@ -64,7 +63,6 @@ class LoginFormCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: KkfcSpace.space2), // 8.0
-
             // Username Input
             KkfcTextField(
               hint: 'Enter username',
@@ -77,7 +75,6 @@ class LoginFormCard extends StatelessWidget {
               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: KkfcSpace.space4), // 16.0
-
             // Password Label
             Text(
               'Password',
@@ -87,7 +84,6 @@ class LoginFormCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: KkfcSpace.space2), // 8.0
-
             // Password Input with integrated Show/Hide toggle
             LoginPasswordField(
               controller: passwordController,
@@ -100,7 +96,6 @@ class LoginFormCard extends StatelessWidget {
             // Error / Validation Notice
             LoginNotice(status: status),
             const SizedBox(height: KkfcSpace.space6), // 24.0
-
             // Sign In Button
             KkfcLoadingButton(
               label: 'Sign in',
@@ -109,7 +104,6 @@ class LoginFormCard extends StatelessWidget {
               onPressed: onSubmit,
             ),
             const SizedBox(height: KkfcSpace.space4), // 16.0
-
             // Web Management Link
             Center(
               child: GestureDetector(

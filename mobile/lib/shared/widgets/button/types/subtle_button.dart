@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../button_state.dart';
 import '../button_style.dart';
 import '../button_types.dart';
@@ -100,10 +101,7 @@ class KkfcSubtleButton extends StatelessWidget {
       button = SizedBox(width: double.infinity, child: button);
     }
 
-    return KkfcPressScaleWrapper(
-      enabled: isInteractive,
-      child: button,
-    );
+    return KkfcPressScaleWrapper(enabled: isInteractive, child: button);
   }
 
   Widget _buildIdleContent(KkfcResolvedButtonStyle style) {
@@ -112,10 +110,7 @@ class KkfcSubtleButton extends StatelessWidget {
     if (leadingIcon != null) {
       children.add(
         IconTheme(
-          data: IconThemeData(
-            size: style.iconSize,
-            color: style.iconColor,
-          ),
+          data: IconThemeData(size: style.iconSize, color: style.iconColor),
           child: leadingIcon!,
         ),
       );
@@ -137,10 +132,7 @@ class KkfcSubtleButton extends StatelessWidget {
       children.add(const SizedBox(width: KkfcSpace.space2));
       children.add(
         IconTheme(
-          data: IconThemeData(
-            size: style.iconSize,
-            color: style.iconColor,
-          ),
+          data: IconThemeData(size: style.iconSize, color: style.iconColor),
           child: trailingIcon!,
         ),
       );

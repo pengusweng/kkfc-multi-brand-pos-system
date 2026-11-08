@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -51,10 +52,7 @@ class KkfcTextArea extends StatelessWidget {
 
     final idleStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.multiline,
-      state: KkfcTextFieldStateContext(
-        isEnabled: enabled,
-        hasError: showError,
-      ),
+      state: KkfcTextFieldStateContext(isEnabled: enabled, hasError: showError),
       customBackground: customBackground,
       customForeground: customForeground,
       customRadius: customRadius,
@@ -76,10 +74,7 @@ class KkfcTextArea extends StatelessWidget {
 
     final errorStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.multiline,
-      state: KkfcTextFieldStateContext(
-        hasError: true,
-        isEnabled: enabled,
-      ),
+      state: KkfcTextFieldStateContext(hasError: true, isEnabled: enabled),
       customBackground: customBackground,
       customForeground: customForeground,
       customRadius: customRadius,
@@ -88,9 +83,7 @@ class KkfcTextArea extends StatelessWidget {
 
     final disabledStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.multiline,
-      state: const KkfcTextFieldStateContext(
-        isEnabled: false,
-      ),
+      state: const KkfcTextFieldStateContext(isEnabled: false),
       customBackground: customBackground,
       customForeground: customForeground,
       customRadius: customRadius,

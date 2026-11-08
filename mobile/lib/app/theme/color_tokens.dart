@@ -326,13 +326,12 @@ abstract final class KkfcContrastPairs {
   );
 
   /// on-warning-solid on warning-solid (8.43:1)
-  static const KkfcContrastPair onWarningSolidOnWarningSolid =
-      KkfcContrastPair(
-        name: 'on-warning-solid on warning-solid',
-        foreground: KkfcColors.onWarningSolid,
-        background: KkfcColors.warningSolid,
-        contrastRatio: 8.43,
-      );
+  static const KkfcContrastPair onWarningSolidOnWarningSolid = KkfcContrastPair(
+    name: 'on-warning-solid on warning-solid',
+    foreground: KkfcColors.onWarningSolid,
+    background: KkfcColors.warningSolid,
+    contrastRatio: 8.43,
+  );
 
   /// All 15 contrast pairs in order of appearance in the specification.
   static const List<KkfcContrastPair> all = [

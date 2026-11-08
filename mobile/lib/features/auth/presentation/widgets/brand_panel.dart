@@ -21,9 +21,7 @@ class BrandPanel extends StatelessWidget {
             top: 0,
             bottom: 0,
             width: 260,
-            child: CustomPaint(
-              painter: _HeaderWavesPainter(),
-            ),
+            child: CustomPaint(painter: _HeaderWavesPainter()),
           ),
           Padding(
             padding: EdgeInsets.symmetric(
@@ -100,7 +98,8 @@ class _HeaderWavesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0x35A8562A) // Soft copper tint
+      ..color =
+          const Color(0x35A8562A) // Soft copper tint
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

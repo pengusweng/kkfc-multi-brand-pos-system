@@ -93,12 +93,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _form() => LoginFormCard(
-        usernameController: _username,
-        passwordController: _password,
-        status: _status,
-        onSubmit: _submit,
-        onEdited: _clearNotice,
-      );
+    usernameController: _username,
+    passwordController: _password,
+    status: _status,
+    onSubmit: _submit,
+    onEdited: _clearNotice,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 fit: StackFit.expand,
                 children: [
                   const Positioned.fill(
-                    child: CustomPaint(
-                      painter: _LoginCanvasWavesPainter(),
-                    ),
+                    child: CustomPaint(painter: _LoginCanvasWavesPainter()),
                   ),
                   Center(
                     child: SingleChildScrollView(
@@ -136,9 +134,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         vertical: KkfcSpace.space6,
                       ),
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 440.0,
-                        ),
+                        constraints: const BoxConstraints(maxWidth: 440.0),
                         child: _form(),
                       ),
                     ),
@@ -166,10 +162,7 @@ class _LoginCanvasWavesPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.bottomLeft,
         end: Alignment.topRight,
-        colors: [
-          Color(0x18DDD6C9),
-          Color(0x42DDD6C9),
-        ],
+        colors: [Color(0x18DDD6C9), Color(0x42DDD6C9)],
       ).createShader(rect)
       ..style = PaintingStyle.fill;
 
@@ -200,10 +193,7 @@ class _LoginCanvasWavesPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.bottomCenter,
         end: Alignment.topRight,
-        colors: [
-          Color(0x18C5A28D),
-          Color(0x38C5A28D),
-        ],
+        colors: [Color(0x18C5A28D), Color(0x38C5A28D)],
       ).createShader(rect)
       ..style = PaintingStyle.fill;
 

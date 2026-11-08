@@ -238,39 +238,19 @@ abstract final class KkfcElevation {
 
   /// shadow-1: Subtle lift
   static const List<BoxShadow> shadow1 = [
-    BoxShadow(
-      color: Color(0x0F19293E),
-      blurRadius: 4,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x0F19293E), blurRadius: 4, offset: Offset(0, 1)),
   ];
 
   /// shadow-2: Hover on a clickable card
   static const List<BoxShadow> shadow2 = [
-    BoxShadow(
-      color: Color(0x1419293E),
-      blurRadius: 8,
-      offset: Offset(0, 2),
-    ),
-    BoxShadow(
-      color: Color(0x0A19293E),
-      blurRadius: 4,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x1419293E), blurRadius: 8, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x0A19293E), blurRadius: 4, offset: Offset(0, 1)),
   ];
 
   /// shadow-3: Dialogs, sheets, drawers, toasts
   static const List<BoxShadow> shadow3 = [
-    BoxShadow(
-      color: Color(0x2419293E),
-      blurRadius: 24,
-      offset: Offset(0, 8),
-    ),
-    BoxShadow(
-      color: Color(0x1419293E),
-      blurRadius: 8,
-      offset: Offset(0, 2),
-    ),
+    BoxShadow(color: Color(0x2419293E), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x1419293E), blurRadius: 8, offset: Offset(0, 2)),
   ];
 }
 

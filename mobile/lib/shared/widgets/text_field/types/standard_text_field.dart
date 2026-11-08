@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -73,10 +74,7 @@ class KkfcStandardTextField extends StatelessWidget {
 
     final idleStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.standard,
-      state: KkfcTextFieldStateContext(
-        isEnabled: enabled,
-        hasError: showError,
-      ),
+      state: KkfcTextFieldStateContext(isEnabled: enabled, hasError: showError),
       size: size,
       shape: shape,
       customBackground: customBackground,
@@ -102,10 +100,7 @@ class KkfcStandardTextField extends StatelessWidget {
 
     final errorStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.standard,
-      state: KkfcTextFieldStateContext(
-        hasError: true,
-        isEnabled: enabled,
-      ),
+      state: KkfcTextFieldStateContext(hasError: true, isEnabled: enabled),
       size: size,
       shape: shape,
       customBackground: customBackground,
@@ -116,9 +111,7 @@ class KkfcStandardTextField extends StatelessWidget {
 
     final disabledStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.standard,
-      state: const KkfcTextFieldStateContext(
-        isEnabled: false,
-      ),
+      state: const KkfcTextFieldStateContext(isEnabled: false),
       size: size,
       shape: shape,
       customBackground: customBackground,

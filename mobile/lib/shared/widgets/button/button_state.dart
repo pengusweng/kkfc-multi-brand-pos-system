@@ -1,14 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// Interactive states a button can be in.
-enum KkfcButtonState {
-  idle,
-  hovered,
-  pressed,
-  focused,
-  disabled,
-  loading,
-}
+enum KkfcButtonState { idle, hovered, pressed, focused, disabled, loading }
 
 /// Holds the runtime interactive state of a KKFC button.
 @immutable
@@ -68,11 +61,6 @@ class KkfcButtonStateContext {
           isFocused == other.isFocused;
 
   @override
-  int get hashCode => Object.hash(
-        isDisabled,
-        isLoading,
-        isPressed,
-        isHovered,
-        isFocused,
-      );
+  int get hashCode =>
+      Object.hash(isDisabled, isLoading, isPressed, isHovered, isFocused);
 }

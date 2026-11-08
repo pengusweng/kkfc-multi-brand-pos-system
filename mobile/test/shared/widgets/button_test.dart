@@ -7,9 +7,7 @@ void main() {
   Widget buildTestWidget(Widget child) {
     return MaterialApp(
       theme: counterTheme,
-      home: Scaffold(
-        body: Center(child: child),
-      ),
+      home: Scaffold(body: Center(child: child)),
     );
   }
 
@@ -19,10 +17,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          KkfcPrimaryButton(
-            label: 'Sign in',
-            onPressed: () => tapped = true,
-          ),
+          KkfcPrimaryButton(label: 'Sign in', onPressed: () => tapped = true),
         ),
       );
 
@@ -31,8 +26,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('shows loading spinner and ignores tap when loading',
-        (tester) async {
+    testWidgets('shows loading spinner and ignores tap when loading', (
+      tester,
+    ) async {
       var tapped = false;
 
       await tester.pumpWidget(
@@ -146,8 +142,9 @@ void main() {
   });
 
   group('KkfcGhostButton', () {
-    testWidgets('renders ghost button with underline and danger intent',
-        (tester) async {
+    testWidgets('renders ghost button with underline and danger intent', (
+      tester,
+    ) async {
       var tapped = false;
 
       await tester.pumpWidget(
@@ -211,24 +208,18 @@ void main() {
     testWidgets('KkfcButton.primary builds KkfcPrimaryButton', (tester) async {
       await tester.pumpWidget(
         buildTestWidget(
-          KkfcButton.primary(
-            label: 'Continue',
-            onPressed: () {},
-          ),
+          KkfcButton.primary(label: 'Continue', onPressed: () {}),
         ),
       );
 
       expect(find.byType(KkfcPrimaryButton), findsOneWidget);
     });
 
-    testWidgets('KkfcButton.outlined builds KkfcOutlinedButton', (tester) async {
+    testWidgets('KkfcButton.outlined builds KkfcOutlinedButton', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestWidget(
-          KkfcButton.outlined(
-            label: 'Back',
-            onPressed: () {},
-          ),
-        ),
+        buildTestWidget(KkfcButton.outlined(label: 'Back', onPressed: () {})),
       );
 
       expect(find.byType(KkfcOutlinedButton), findsOneWidget);

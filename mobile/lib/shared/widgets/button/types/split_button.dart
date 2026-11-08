@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+
 import '../button_state.dart';
 import '../button_style.dart';
 import '../button_types.dart';
@@ -163,10 +164,7 @@ class KkfcSplitButton extends StatelessWidget {
       button = SizedBox(width: double.infinity, child: button);
     }
 
-    return KkfcPressScaleWrapper(
-      enabled: isInteractive,
-      child: button,
-    );
+    return KkfcPressScaleWrapper(enabled: isInteractive, child: button);
   }
 
   Widget _buildIdleContent(KkfcResolvedButtonStyle style) {

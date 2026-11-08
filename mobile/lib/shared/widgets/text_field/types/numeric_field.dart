@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../states/text_field_container.dart';
 import '../states/text_field_state.dart';
 import '../text_field_style.dart';
@@ -53,10 +54,7 @@ class KkfcNumericField extends StatelessWidget {
 
     final idleStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.numeric,
-      state: KkfcTextFieldStateContext(
-        isEnabled: enabled,
-        hasError: showError,
-      ),
+      state: KkfcTextFieldStateContext(isEnabled: enabled, hasError: showError),
       size: size,
       isNumeric: true,
       isBold: isBold,
@@ -80,10 +78,7 @@ class KkfcNumericField extends StatelessWidget {
 
     final errorStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.numeric,
-      state: KkfcTextFieldStateContext(
-        hasError: true,
-        isEnabled: enabled,
-      ),
+      state: KkfcTextFieldStateContext(hasError: true, isEnabled: enabled),
       size: size,
       isNumeric: true,
       isBold: isBold,
@@ -93,9 +88,7 @@ class KkfcNumericField extends StatelessWidget {
 
     final disabledStyle = KkfcTextFieldStyleResolver.resolve(
       variant: KkfcTextFieldVariant.numeric,
-      state: const KkfcTextFieldStateContext(
-        isEnabled: false,
-      ),
+      state: const KkfcTextFieldStateContext(isEnabled: false),
       size: size,
       isNumeric: true,
       isBold: isBold,
@@ -112,7 +105,8 @@ class KkfcNumericField extends StatelessWidget {
       style: idleStyle.textStyle,
       onChanged: onChanged,
       onSubmitted: onSubmitted,
-      inputFormatters: inputFormatters ??
+      inputFormatters:
+          inputFormatters ??
           [
             FilteringTextInputFormatter.allow(
               allowDecimal ? RegExp(r'^\d*\.?\d*') : RegExp(r'^\d*'),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+
 import 'button_state.dart';
 import 'button_types.dart';
 
@@ -141,7 +142,8 @@ abstract final class KkfcButtonStyleResolver {
         if (intent == KkfcButtonIntent.danger) {
           fg = state.isDisabled ? const Color(0x80B3261E) : KkfcColors.danger;
         } else {
-          fg = customForeground ??
+          fg =
+              customForeground ??
               (state.isDisabled ? KkfcColors.ink3 : KkfcColors.ink);
         }
 
