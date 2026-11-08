@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/tokens.dart';
-import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
-import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge.dart';
 
-/// "GrabFood  #GF-1001"
+/// "🛍 Takeaway · Call: Ana"
 class KitchenTicketChannelLine extends StatelessWidget {
   const KitchenTicketChannelLine({
     super.key,
@@ -19,18 +16,24 @@ class KitchenTicketChannelLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Wrap(
-      spacing: KkfcSpace.s8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    final label = reference.isNotEmpty ? '$channel · $reference' : channel;
+    return Row(
       children: [
-        Text(channel, style: text.labelSmall?.copyWith(color: muted)),
-        Text(
-          reference,
-          style: text.labelMedium?.copyWith(
-            fontFamily: KkfcFonts.mono,
-            fontWeight: FontWeight.w600,
+        const Icon(
+          Icons.shopping_bag_outlined,
+          size: 16,
+          color: Color(0xFF102A43),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF102A43),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -38,28 +41,7 @@ class KitchenTicketChannelLine extends StatelessWidget {
   }
 }
 
-/// Status badge that cross-fades when the status changes.
-class KitchenTicketStatusRow extends StatelessWidget {
-  const KitchenTicketStatusRow({super.key, required this.status});
-
-  final KkfcStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: AnimatedSwitcher(
-        duration: KkfcMotion.base,
-        child: KeyedSubtree(
-          key: ValueKey(status),
-          child: KkfcStatusBadge(status: status),
-        ),
-      ),
-    );
-  }
-}
-
-/// [AI] Aurelia's Inasal
+/// [KK] King Kungs Kafé
 class KitchenTicketBrandRow extends StatelessWidget {
   const KitchenTicketBrandRow({super.key, required this.brand});
 
@@ -69,16 +51,49 @@ class KitchenTicketBrandRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        KkfcBrandTag(label: brand.code),
-        const SizedBox(width: KkfcSpace.s8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFF64748B), width: 1),
+          ),
+          child: Text(
+            brand.code,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF102A43),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             brand.name,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF475569),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Status badge helper
+class KitchenTicketStatusRow extends StatelessWidget {
+  const KitchenTicketStatusRow({super.key, required this.status});
+
+  final KkfcStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: KkfcStatusBadge(status: status),
     );
   }
 }

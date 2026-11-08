@@ -46,10 +46,15 @@ ThemeData _buildTheme(
           ),
         ),
         backgroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) return null;
-          if (states.contains(WidgetState.pressed))
+          if (states.contains(WidgetState.disabled)) {
+            return null;
+          }
+          if (states.contains(WidgetState.pressed)) {
             return semantic.actionPressed;
-          if (states.contains(WidgetState.hovered)) return semantic.actionHover;
+          }
+          if (states.contains(WidgetState.hovered)) {
+            return semantic.actionHover;
+          }
           return semantic.action;
         }),
         foregroundColor: const WidgetStatePropertyAll(Colors.white),
