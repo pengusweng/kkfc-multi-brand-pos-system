@@ -5,6 +5,12 @@ Once installed there, it reports failures for PRs into **both** `development`
 and `main`; PR authors do not need to merge their feature into `main` first.
 Installing it only on `development` does not activate the `workflow_run` event.
 
+The standalone reporter test workflow supplies the required `CI` check while
+`main` contains only repository automation. When the application CI workflow
+is promoted to `main`, remove `ci-reporter-tests.yml` in that release so the
+application's aggregate `CI` job remains the only check with that name. The
+application workflow already runs the reporter tests.
+
 `Report CI failures` runs after the main `CI` workflow finishes unsuccessfully.
 It creates a separate issue for each failing area: Backend, Flutter, or CI setup.
 It reports failed tests, formatting, lint, builds, and infrastructure failures;

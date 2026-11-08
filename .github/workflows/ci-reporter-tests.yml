@@ -19,7 +19,9 @@ permissions:
 
 jobs:
   test:
-    name: Test issue reporting
+    # main currently contains only repository automation. This test job is its
+    # CI gate; retain a single job named CI when application CI reaches main.
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
