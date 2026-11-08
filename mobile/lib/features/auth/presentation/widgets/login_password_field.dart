@@ -108,7 +108,13 @@ class _LoginPasswordFieldState extends State<LoginPasswordField> {
               style: inputStyle,
               decoration: InputDecoration(
                 isDense: true,
+                filled: false, // theme may set a fill color
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: KkfcSpace.space4,
                   vertical: KkfcSpace.space3,
