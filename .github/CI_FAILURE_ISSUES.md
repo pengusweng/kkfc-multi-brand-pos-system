@@ -90,5 +90,11 @@ For a live check, use a same-repository PR into `development` whose CI includes
 this workflow. A failing check should start `Report CI failures`, which should
 link the newly created or updated assigned issue in its Actions job summary.
 
+Live verification on 2026-11-09: a temporary deliberately failing check on
+PR #180 automatically created [issue #181](https://github.com/pengusweng/kkfc-multi-brand-pos-system/issues/181)
+and assigned `sys-te-mika` and `gbrlgrg` using the repository variables. The
+reporting job passed while its workflow was still in progress. The temporary
+verification workflow was then removed and its test issue closed.
+
 References: [job permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idpermissions),
 [creating issues](https://docs.github.com/en/rest/issues/issues#create-an-issue).
