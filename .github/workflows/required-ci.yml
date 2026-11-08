@@ -15,6 +15,19 @@ permissions:
   contents: read
 
 jobs:
+  automation-tests:
+    name: CI automation tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test failure issue reporting
+        run: node --test .github/scripts/*.test.cjs
+
   detect-changes:
     name: Detect Changes
     runs-on: ubuntu-latest
@@ -62,18 +75,24 @@ jobs:
 
   ci:
     name: CI
-    needs: [detect-changes, backend, frontend]
+    needs: [automation-tests, detect-changes, backend, frontend]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Verify required pipelines
         env:
+          AUTOMATION_RESULT: ${{ needs.automation-tests.result }}
           DETECTION_RESULT: ${{ needs.detect-changes.result }}
           BACKEND_REQUIRED: ${{ needs.detect-changes.outputs.backend }}
           FRONTEND_REQUIRED: ${{ needs.detect-changes.outputs.frontend }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
         run: |
+          if [ "$AUTOMATION_RESULT" != "success" ]; then
+            echo "CI automation tests did not succeed."
+            exit 1
+          fi
+
           if [ "$DETECTION_RESULT" != "success" ]; then
             echo "Change detection did not succeed."
             exit 1

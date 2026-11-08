@@ -1,5 +1,8 @@
 # Frontend + backend testing — Discord copy/paste guide
 
+Automatic CI failure issue setup and assignment are documented in
+[`.github/CI_FAILURE_ISSUES.md`](.github/CI_FAILURE_ISSUES.md).
+
 Copy each numbered section below into a separate Discord message. Commands use
 Windows PowerShell. Start from the repository root unless a step says otherwise.
 Run setup commands individually and continue once each succeeds. This guide
