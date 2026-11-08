@@ -1,5 +1,8 @@
 # Frontend + backend testing — Discord copy/paste guide
 
+Automatic CI failure issue setup and assignment are documented in
+[`.github/CI_FAILURE_ISSUES.md`](.github/CI_FAILURE_ISSUES.md).
+
 Copy each numbered section below into a separate Discord message. Commands use
 Windows PowerShell. Start from the repository root unless a step says otherwise.
 Run setup commands individually and continue once each succeeds. This guide
@@ -197,7 +200,7 @@ Backend Jest HTML reports embed their JavaScript and result data, so they can be
 
 Frontend reports are timestamped; Jest/Robot default output paths are reused on later runs. Zip the whole report folder to share its supporting files. A failed test requires investigation; an assertion failure alone does not identify its root cause.
 
-Current CI runs backend unit/integration and frontend unit/widget/golden tests. Flutter-to-API suites remain local, and the Robot E2E CI stage is disabled. This guide does not change CI.
+Current CI runs backend unit/integration and Robot E2E tests, plus frontend unit/widget/golden tests. Flutter-to-API suites remain local. Robot E2E uses an isolated PostgreSQL database and excludes the external-storage case.
 
 ---
 
