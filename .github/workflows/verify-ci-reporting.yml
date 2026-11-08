@@ -1,0 +1,45 @@
+name: Verify CI issue reporting
+
+on:
+  pull_request:
+    branches: [development]
+
+permissions:
+  contents: read
+
+jobs:
+  simulated-failure:
+    name: Temporary issue reporting verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deliberate verification failure; removed after checking assignment
+        run: exit 1
+  report:
+    name: Verify issue creation and assignment
+    needs: simulated-failure
+    if: >-
+      always() && needs.simulated-failure.result == 'failure' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - uses: actions/github-script@v7
+        env:
+          CI_BACKEND_ASSIGNEES: ${{ vars.CI_BACKEND_ASSIGNEES }}
+          CI_FLUTTER_ASSIGNEES: ${{ vars.CI_FLUTTER_ASSIGNEES }}
+          CI_DEFAULT_ASSIGNEES: ${{ vars.CI_DEFAULT_ASSIGNEES }}
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const report = require('./.github/scripts/report-ci-failure.cjs');
+            await report({ github, context, core,
+              dependencyResults: JSON.parse(process.env.CI_JOB_RESULTS) });

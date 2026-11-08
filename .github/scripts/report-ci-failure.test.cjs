@@ -4,6 +4,139 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const report = require("./report-ci-failure.cjs");
 
+function runningFixture() {
+  const f = fixture();
+  f.state.current = {
+    ...f.context.payload.workflow_run,
+    status: "in_progress",
+    conclusion: null,
+    head_sha: "synthetic-merge-commit",
+  };
+  Object.assign(f.context, {
+    eventName: "pull_request",
+    runId: 10,
+    runAttempt: 1,
+    actor: "author",
+    payload: {
+      pull_request: {
+        ...f.state.pr,
+        head: { ...f.state.pr.head, repo: { full_name: "org/pos" } },
+      },
+    },
+  });
+  f.core.notice = (message) => f.calls.warnings.push(message);
+  f.dependencyResults = {
+    backend: { result: "failure" },
+    frontend: { result: "success" },
+  };
+  return f;
+}
+
+test("reports failures inside an unfinished PR CI run using the PR head SHA", async () => {
+  const f = runningFixture();
+  f.env.GITHUB_RUN_ATTEMPT = "1";
+  delete f.context.runAttempt;
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.deepEqual(f.calls.created[0].assignees, ["backend-owner"]);
+  assert.match(f.calls.created[0].body, /commit\/abc123/);
+  assert.doesNotMatch(f.calls.created[0].body, /synthetic-merge-commit/);
+});
+
+test("uses dependency results when failed jobs have not appeared in the API yet", async () => {
+  const f = runningFixture();
+  f.state.jobs = [];
+  f.dependencyResults = {
+    backend: { result: "failure" },
+    frontend: { result: "failure" },
+  };
+  await report(f);
+  assert.deepEqual(
+    f.calls.created.map((issue) => issue.title),
+    ["[CI] Backend failure — PR #42", "[CI] Flutter failure — PR #42"],
+  );
+});
+
+test("does not report a dependency run with only passing, skipped, or cancelled jobs", async () => {
+  for (const result of ["success", "skipped", "cancelled"]) {
+    const f = runningFixture();
+    f.dependencyResults = { backend: { result } };
+    await report(f);
+    assert.equal(f.calls.created.length, 0);
+  }
+});
+
+test("does not write issues for fork or Dependabot PRs", async () => {
+  for (const fork of [true, false]) {
+    const f = runningFixture();
+    if (fork)
+      f.context.payload.pull_request.head.repo.full_name = "outside/pos";
+    else f.context.actor = "dependabot[bot]";
+    await report(f);
+    assert.equal(f.calls.created.length, 0);
+    assert.equal(f.calls.warnings.length, 1);
+  }
+});
+
+test("ignores obsolete, queued, successful, and cancelled current runs", async () => {
+  const changes = [
+    (f) => {
+      f.state.current.run_attempt = 2;
+    },
+    (f) => {
+      f.state.current.status = "queued";
+    },
+    (f) => {
+      Object.assign(f.state.current, {
+        status: "completed",
+        conclusion: "success",
+      });
+    },
+    (f) => {
+      Object.assign(f.state.current, {
+        status: "completed",
+        conclusion: "cancelled",
+      });
+    },
+    (f) => {
+      f.state.pr.head.sha = "newer-head";
+    },
+  ];
+  for (const change of changes) {
+    const f = runningFixture();
+    change(f);
+    await report(f);
+    assert.equal(f.calls.created.length, 0);
+  }
+});
+
+test("reports a current development push using default ownership for CI failures", async () => {
+  const f = runningFixture();
+  f.context.eventName = "push";
+  f.context.payload = {};
+  Object.assign(f.state.current, {
+    head_branch: "development",
+    head_sha: "abc123",
+  });
+  f.state.jobs = [{ name: "CI automation tests", conclusion: "failure" }];
+  f.dependencyResults = { "automation-tests": { result: "failure" } };
+  await report(f);
+  assert.equal(f.calls.created[0].title, "[CI] CI failure — development");
+  assert.deepEqual(f.calls.created[0].assignees, ["qa-owner"]);
+});
+
+test("updates a current-run issue and ignores a repeated call for the same attempt", async () => {
+  const f = runningFixture();
+  await report(f);
+  await report(f);
+  f.context.runAttempt = 2;
+  f.state.current.run_attempt = 2;
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.equal(f.calls.updated.length, 1);
+  assert.equal(f.calls.comments.length, 1);
+});
+
 function fixture() {
   const calls = {
     created: [],
