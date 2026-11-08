@@ -91,13 +91,16 @@ verified by the local API simulation.
 
 ## Current test scope
 
-Backend Robot Framework E2E remains commented out in `workflows/ci.yml`.
+Backend Robot Framework E2E is enabled in `workflows/ci.yml` after integration
+tests, using a separate PostgreSQL service and excluding external-storage tests.
 Active backend CI runs reporting tools, traceability, unit tests, build, and
 database-backed integration tests. Flutter CI runs formatting, analysis,
 unit/widget/golden tests, and an Android debug build. Flutter-to-API emulator
 integration suites remain separate local runs.
 
 Local audit on 2026-11-08:
+
+The subsequent local Robot E2E run passed all 24 tests with none skipped.
 
 | Check                                  | Result                                                                |
 | -------------------------------------- | --------------------------------------------------------------------- |
