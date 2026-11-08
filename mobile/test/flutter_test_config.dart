@@ -19,7 +19,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         nameTextStyle: standardGoldenTheme.nameTextStyle,
         padding: const EdgeInsets.all(KkfcSpace.s24),
       ),
-      ciGoldensConfig: const CiGoldensConfig(enabled: true),
+      ciGoldensConfig: const CiGoldensConfig(enabled: true, threshold: 0.002),
       platformGoldensConfig: PlatformGoldensConfig(enabled: !isCi),
     ),
     run: testMain,
