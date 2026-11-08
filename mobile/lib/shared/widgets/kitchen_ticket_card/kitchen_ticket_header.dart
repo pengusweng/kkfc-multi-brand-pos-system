@@ -32,15 +32,19 @@ class KitchenTicketHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(
-              ticketNumber,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF102A43),
-                letterSpacing: -0.5,
+            Flexible(
+              child: Text(
+                ticketNumber,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF102A43),
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               time,
               style: const TextStyle(

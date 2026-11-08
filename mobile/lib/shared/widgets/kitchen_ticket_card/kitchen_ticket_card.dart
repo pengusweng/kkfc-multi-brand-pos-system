@@ -132,8 +132,12 @@ class KitchenTicketCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (showAction)
-                FilledButton(
+              if (showAction) ...[
+                const SizedBox(width: 8),
+                // Flexible so long labels wrap instead of overflowing at
+                // large text scales.
+                Flexible(
+                  child: FilledButton(
                   onPressed: isActionEnabled && !isActionLoading
                       ? onAction
                       : null,
@@ -163,13 +167,16 @@ class KitchenTicketCard extends StatelessWidget {
                         )
                       : Text(
                           resolvedLabel,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
+                  ),
                 ),
+              ],
             ],
           ),
         ],
