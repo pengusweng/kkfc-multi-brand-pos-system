@@ -28,6 +28,7 @@ class KitchenTicketData {
     required this.reference,
     required this.brand,
     required this.items,
+    this.paymentStatus = 'Paid',
   });
 
   final String ticketNumber; // "T-014"
@@ -38,4 +39,5 @@ class KitchenTicketData {
   final String reference; // "#GF-1001"
   final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
+  final String paymentStatus;
 }

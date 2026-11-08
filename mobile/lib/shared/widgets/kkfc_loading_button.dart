@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/tokens.dart';
 
+import 'button/button.dart';
+
+export 'button/button.dart';
+
+/// Legacy shared loading button updated to use the unified KKFC button system.
+/// Preserves full backwards compatibility for all existing call sites and tests.
 class KkfcLoadingButton extends StatelessWidget {
   const KkfcLoadingButton({
     super.key,
@@ -17,43 +22,13 @@ class KkfcLoadingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-
-    return FilledButton(
-      onPressed: isLoading ? null : onPressed,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(KkfcSizing.controlLg),
-        disabledBackgroundColor: isLoading ? scheme.primary : null,
-        disabledForegroundColor: isLoading ? scheme.onPrimary : null,
-      ),
-      child: AnimatedSwitcher(
-        duration: reduceMotion ? Duration.zero : KkfcMotion.fast,
-        child: isLoading
-            ? Row(
-                key: const ValueKey('loading'),
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: KkfcSizing.iconSm,
-                    height: KkfcSizing.iconSm,
-                    child: CircularProgressIndicator(
-                      strokeWidth: KkfcBorderWidth.thick,
-                      color: scheme.onPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: KkfcSpace.s8),
-                  Flexible(
-                    child: Text(
-                      loadingLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              )
-            : Text(label, key: const ValueKey('idle')),
-      ),
+    return KkfcPrimaryButton(
+      label: label,
+      loadingLabel: loadingLabel,
+      isLoading: isLoading,
+      onPressed: onPressed,
+      fullWidth: true,
+      size: KkfcButtonSize.primary,
     );
   }
 }
