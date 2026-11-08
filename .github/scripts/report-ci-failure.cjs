@@ -29,23 +29,66 @@ module.exports = async function report({
   context,
   core,
   env = process.env,
+  dependencyResults,
 }) {
-  const run = context.payload.workflow_run;
-  if (!["failure", "timed_out"].includes(run.conclusion)) return;
-  if (!["pull_request", "push"].includes(run.event)) return;
   const repo = context.repo;
+  let run;
+  if (dependencyResults !== undefined) {
+    // Reporting runs inside CI, after its dependencies but before CI completes.
+    if (
+      !Object.values(dependencyResults).some((job) => job.result === "failure")
+    )
+      return;
+    if (!["pull_request", "push"].includes(context.eventName)) return;
+    if (
+      context.actor === "dependabot[bot]" ||
+      (context.eventName === "pull_request" &&
+        context.payload.pull_request.head.repo.full_name !==
+          `${repo.owner}/${repo.repo}`)
+    ) {
+      core.notice(
+        "Automatic issue reporting is unavailable for fork and Dependabot PRs with read-only tokens.",
+      );
+      return;
+    }
+    const { data: current } = await github.rest.actions.getWorkflowRun({
+      ...repo,
+      run_id: context.runId,
+    });
+    const runAttempt = Number(env.GITHUB_RUN_ATTEMPT ?? context.runAttempt);
+    if (
+      current.run_attempt !== runAttempt ||
+      !["in_progress", "completed"].includes(current.status) ||
+      (current.status === "completed" && !failures.has(current.conclusion))
+    )
+      return;
+    run = {
+      ...current,
+      event: context.eventName,
+      conclusion: "failure",
+      // PR CI executes a merge ref; issue tracking must use the actual head SHA.
+      head_sha: context.payload.pull_request?.head.sha ?? current.head_sha,
+      pull_requests: context.payload.pull_request
+        ? [{ number: context.payload.pull_request.number }]
+        : current.pull_requests,
+    };
+  } else {
+    // Also accept a completed run when replaying an older failure with this script.
+    run = context.payload.workflow_run;
+    if (!["failure", "timed_out"].includes(run.conclusion)) return;
+    if (!["pull_request", "push"].includes(run.event)) return;
 
-  // Ignore delayed completion events from an earlier attempt of this run.
-  const { data: current } = await github.rest.actions.getWorkflowRun({
-    ...repo,
-    run_id: run.id,
-  });
-  if (
-    current.status !== "completed" ||
-    current.run_attempt !== run.run_attempt ||
-    current.conclusion !== run.conclusion
-  )
-    return;
+    const { data: current } = await github.rest.actions.getWorkflowRun({
+      ...repo,
+      run_id: run.id,
+    });
+    if (
+      current.status !== "completed" ||
+      current.run_attempt !== run.run_attempt ||
+      current.conclusion !== run.conclusion
+    )
+      return;
+  }
 
   let pr;
   if (run.event === "pull_request") {
@@ -107,6 +150,13 @@ module.exports = async function report({
         : "CI";
     if (!groups.has(category)) groups.set(category, []);
     groups.get(category).push(job);
+  }
+  // The jobs API can lag the scheduler; dependency results are authoritative.
+  for (const [name, job] of Object.entries(dependencyResults ?? {})) {
+    if (job.result !== "failure") continue;
+    const category =
+      name === "backend" ? "Backend" : name === "frontend" ? "Flutter" : "CI";
+    if (!groups.has(category)) groups.set(category, []);
   }
   if (!groups.size) groups.set("CI", []);
 

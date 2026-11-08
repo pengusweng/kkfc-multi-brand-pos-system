@@ -1,123 +1,100 @@
-# Automatic CI failure issues
+﻿# Automatic CI failure issues
 
-`Report CI failures` runs after the main `CI` workflow finishes unsuccessfully.
-It creates a separate issue for each failing area: Backend, Flutter, or CI setup.
-It reports failed tests, formatting, lint, builds, and infrastructure failures;
-a failed check is recorded as requiring investigation, not as a confirmed bug.
-Cancelled runs and passing runs do not create issues.
+Issue creation and assignment run **inside the existing CI workflow** in
+`workflows/required-ci.yml`. Failed PRs targeting `development` or `main`, and
+failed pushes to those branches, can create issues. No listener or merge into
+the default branch is required.
 
-## Enable and configure
+## Activate on development
 
-1. Merge the workflow and `.github/scripts/` files into the repository's
-   **default branch**. GitHub only triggers `workflow_run` workflows that exist
-   there. This change does not publish the workflow by itself.
-2. Ensure GitHub Issues is enabled for the repository and repository or
-   organization policy permits the workflow's `issues: write` permission.
-3. In **Settings → Secrets and variables → Actions → Variables**, optionally
-   create these repository variables. Values are GitHub usernames, separated
-   by commas or spaces; a leading `@` is accepted. No personal access token
-   is required.
+Merge this change into `development`. New CI runs that include the updated
+workflow use its `Report CI failures` job. Existing completed runs do not gain
+new jobs retroactively; update an existing PR with the latest `development`
+and trigger a new run to use the reporter. Rerunning an old workflow revision
+does not install the new reporting job.
 
-| Variable               | Purpose                         | Example value       |
-| ---------------------- | ------------------------------- | ------------------- |
-| `CI_BACKEND_ASSIGNEES` | Backend tests and builds        | `backend-developer` |
-| `CI_FLUTTER_ASSIGNEES` | Flutter checks and builds       | `mobile-developer`  |
-| `CI_DEFAULT_ASSIGNEES` | CI setup and fallback ownership | `qa-lead`           |
+The earlier main-targeted activation PR #179 is superseded by this approach.
+The separate `workflow_run` listener is removed to avoid duplicate reporters.
 
-The examples are placeholders; use actual eligible repository users. The script
-checks assignment eligibility before creating the issue. It tries area owners,
-then default owners, then the PR author, workflow actor, and repository owner
-in that order. Organization accounts cannot themselves be issue assignees;
-set `CI_DEFAULT_ASSIGNEES` for reliable ownership in an organization repository.
-If no account is eligible, it still creates the report, explicitly marks it
-unassigned, and emits an Actions warning. At most ten users are assigned.
-Assignment notifications follow each user's GitHub notification settings.
+## Assignment
 
-## Issue format and lifecycle
+In **Settings > Secrets and variables > Actions > Variables**, set eligible
+GitHub usernames, separated by commas or spaces. A leading `@` is accepted.
 
-Example title: **[CI] Backend failure — PR #42**
+| Variable               | Receives                                 |
+| ---------------------- | ---------------------------------------- |
+| `CI_BACKEND_ASSIGNEES` | Backend test and build failures          |
+| `CI_FLUTTER_ASSIGNEES` | Flutter test and build failures          |
+| `CI_DEFAULT_ASSIGNEES` | CI setup failures and fallback ownership |
 
-The issue includes:
+The reporter checks assignment eligibility. It tries area owners, default
+owners, then the first eligible PR author, workflow actor, or repository owner.
+Organization accounts cannot themselves receive assignments; configure a real
+user as the default owner. Up to ten users can be assigned. If none is eligible,
+the issue is still created with an explicit unassigned notice and an Actions
+warning. GitHub notification preferences determine delivery to each assignee.
 
-- Execution: PR or branch, commit, workflow run, attempt, and owner.
-- Failed checks: a table linking failed jobs and naming their failed steps.
-- Test reports: links to available test, golden image, and coverage artifacts.
-- Investigation checklist: reproduce, check requirements, classify the cause,
-  link the fix, and verify the checks before closing.
+## Execution and permissions
 
-If tests never started, the issue explains that no reports are available and
-links the run logs. Artifacts remain subject to GitHub's retention settings.
+The reporting job waits for automation tests, change detection, backend, and
+Flutter. It runs when a dependency fails, even if subsequent stages are skipped.
+It reads the current attempt's job results while the workflow is still running.
+The final required `CI` job waits for reporting and still fails if any required
+pipeline failed. Reporting problems are visible as failed jobs too.
 
-There is one **open** issue per PR (or push branch) and failing area. Repeated
-failures update it and retain the previous report in a comment. A duplicate
-delivery for the same run attempt makes no changes. Manual reassignment is
-preserved. After an issue is closed, a later failure creates a new issue.
-Passing runs do not close issues automatically: the assigned person reviews
-the cause and fix before closing them. A PR failure and a post-merge branch
-failure have different tracking scopes and can produce separate issues.
+Only the reporting job receives `issues: write`, with read access to repository,
+Actions, and PR metadata. Test jobs retain their existing permissions. The
+reporter uses the built-in `GITHUB_TOKEN`; no personal access token is needed.
 
-Superseded PR commits, closed PRs, and outdated rerun completion events are
-ignored. The final aggregate `CI` failure does not create a second issue when
-a specific failed job already explains it. Notifications are serialized by
-source repository and branch to avoid concurrent duplicate creation. GitHub
-concurrency may replace a pending notification when several runs finish in
-quick succession; the newest failure still reports the current branch state.
+Same-repository PRs and branch pushes support automatic issue writing. Fork
+and Dependabot PRs are excluded from the write-enabled reporting job because
+their tokens can be read-only. Their normal CI checks still run. The reporter
+does not use `pull_request_target` or a separate default-branch listener.
+Repository and organization policy must allow the requested token permissions,
+and GitHub Issues must be enabled.
 
-## Verification and security
+## Reports and duplicates
 
-Run from the repository root:
+Each issue has a consistent title, such as **[CI] Flutter failure - PR #178**,
+and contains the source PR or branch, head commit, run attempt, assigned owners,
+failed jobs and steps, available test-report links, and an investigation
+checklist. A failed check is recorded for investigation, not as proof of an
+application bug. If reports are unavailable, the issue links the run logs.
+Artifacts remain subject to GitHub retention settings.
+
+One open issue is maintained per PR or branch and area. Later failures update
+it and retain the earlier report in a comment. Repeated execution for the same
+attempt creates no duplicate. Manual reassignment is preserved. Superseded PR
+commits, closed PRs, obsolete reruns, success, and cancellation are ignored.
+Reporting jobs are serialized per PR or branch to avoid concurrent duplicates.
+GitHub may replace a pending reporting job when several runs finish quickly.
+
+Passing runs do not close issues automatically. The assigned person verifies
+the cause and fix before closing. A later failure after closure creates a new
+issue. PR and post-merge branch failures have distinct tracking scopes.
+
+## Verification
+
+From the repository root:
 
 ```powershell
 node --test .github/scripts/*.test.cjs
 ```
 
-These tests use a simulated GitHub API; they create no real issues. The main CI
-workflow runs them as a required part of its aggregate check. They cover owner
-routing and fallback, repeated failures, duplicate delivery, evidence links,
-manual reassignment, missing reports, fork PR lookup, outdated runs, and API
-permission failures.
+Tests simulate the GitHub API and create no real issues. They cover current
+in-progress runs, merge-ref versus PR head commits, area owners and fallback,
+job API lag, duplicate prevention, reruns, manual reassignment, missing reports,
+fork/Dependabot restrictions, superseded runs, and permission failures.
 
-The reporting workflow executes only the script from the trusted default
-branch. It does not check out a PR head, execute test artifacts, or read secrets
-from test output. API data is passed as data, not shell commands. It uses the
-built-in `GITHUB_TOKEN`, with read access to Actions and PR metadata and write
-access to Issues.
+For a live check, use a same-repository PR into `development` whose CI includes
+this workflow. A failing check should start `Report CI failures`, which should
+link the newly created or updated assigned issue in its Actions job summary.
 
-For an end-to-end verification after merge, use a temporary PR targeting
-`development` with a deliberate failing assertion. Check the issue's owner,
-failed-step links, and reports; rerun to check deduplication, then fix the
-assertion and close the test issue. A live GitHub notification has not been
-verified by the local API simulation.
+Live verification on 2026-11-09: a temporary deliberately failing check on
+PR #180 automatically created [issue #181](https://github.com/pengusweng/kkfc-multi-brand-pos-system/issues/181)
+and assigned `sys-te-mika` and `gbrlgrg` using the repository variables. The
+reporting job passed while its workflow was still in progress. The temporary
+verification workflow was then removed and its test issue closed.
 
-## Current test scope
-
-Backend Robot Framework E2E is enabled in `workflows/ci.yml` after integration
-tests, using a separate PostgreSQL service and excluding external-storage tests.
-Active backend CI runs reporting tools, traceability, unit tests, build, and
-database-backed integration tests. Flutter CI runs formatting, analysis,
-unit/widget/golden tests, and an Android debug build. Flutter-to-API emulator
-integration suites remain separate local runs.
-
-Local audit on 2026-11-08:
-
-The subsequent local Robot E2E run passed all 24 tests with none skipped.
-
-| Check                                  | Result                                                                |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| Backend reporting tests                | 14 passed                                                             |
-| CI issue reporting tests               | 11 passed using simulated GitHub responses                            |
-| Backend Gherkin traceability           | 643 declarations mapped                                               |
-| Backend unit tests                     | 733 passed, 21 suites                                                 |
-| Backend integration tests              | 1,188 passed, 21 suites; 23 migrations applied to isolated PostgreSQL |
-| Backend lint, formatting, build        | Passed                                                                |
-| Flutter unit/widget/golden tests       | 231 passed, none skipped; Windows baselines                           |
-| Flutter analysis and source formatting | Passed                                                                |
-| Android debug APK build                | Passed                                                                |
-
-The local Windows run does not verify Linux golden rendering. CI remains the
-verification environment for those platform-specific baselines. Passing these
-checks establishes the tested scenarios, not an absence of all possible bugs.
-
-References: [workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run),
-[creating issues](https://docs.github.com/en/rest/issues/issues#create-an-issue),
-[assignment eligibility](https://docs.github.com/en/rest/issues/assignees#check-if-a-user-can-be-assigned).
+References: [job permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idpermissions),
+[creating issues](https://docs.github.com/en/rest/issues/issues#create-an-issue).
