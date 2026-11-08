@@ -159,35 +159,71 @@ class _LoginCanvasWavesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Wave 1: Soft sand flowing from bottom right
+    final rect = Offset.zero & size;
+
+    // Wave 1: Soft sand flowing from bottom right with multi-crest fluid waves
     final paint1 = Paint()
-      ..color = const Color(0x35DDD6C9)
+      ..shader = const LinearGradient(
+        begin: Alignment.bottomLeft,
+        end: Alignment.topRight,
+        colors: [
+          Color(0x18DDD6C9),
+          Color(0x42DDD6C9),
+        ],
+      ).createShader(rect)
       ..style = PaintingStyle.fill;
 
     final path1 = Path()
-      ..moveTo(size.width * 0.45, size.height)
-      ..quadraticBezierTo(
-        size.width * 0.72,
-        size.height * 0.82,
+      ..moveTo(size.width * 0.30, size.height)
+      ..cubicTo(
+        size.width * 0.48,
+        size.height * 0.84, // First crest
+        size.width * 0.62,
+        size.height * 0.94, // Trough dip
+        size.width * 0.76,
+        size.height * 0.80, // Second crest
+      )
+      ..cubicTo(
+        size.width * 0.86,
+        size.height * 0.70, // Upward slope
+        size.width * 0.94,
+        size.height * 0.74, // Subtle wave ripple
         size.width,
-        size.height * 0.68,
+        size.height * 0.58, // Edge finish
       )
       ..lineTo(size.width, size.height)
       ..close();
     canvas.drawPath(path1, paint1);
 
-    // Wave 2: Deeper soft curve in bottom right corner
+    // Wave 2: Deeper soft wavy curve in bottom right corner
     final paint2 = Paint()
-      ..color = const Color(0x28C5A28D)
+      ..shader = const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topRight,
+        colors: [
+          Color(0x18C5A28D),
+          Color(0x38C5A28D),
+        ],
+      ).createShader(rect)
       ..style = PaintingStyle.fill;
 
     final path2 = Path()
-      ..moveTo(size.width * 0.65, size.height)
-      ..quadraticBezierTo(
-        size.width * 0.82,
-        size.height * 0.9,
-        size.width,
+      ..moveTo(size.width * 0.52, size.height)
+      ..cubicTo(
+        size.width * 0.66,
+        size.height * 0.88, // Inner crest
+        size.width * 0.75,
+        size.height * 0.96, // Inner trough
+        size.width * 0.84,
+        size.height * 0.86, // Second inner crest
+      )
+      ..cubicTo(
+        size.width * 0.92,
         size.height * 0.78,
+        size.width * 0.97,
+        size.height * 0.80,
+        size.width,
+        size.height * 0.72,
       )
       ..lineTo(size.width, size.height)
       ..close();
@@ -200,9 +236,11 @@ class _LoginCanvasWavesPainter extends CustomPainter {
 
     final path3 = Path()
       ..moveTo(0, size.height * 0.12)
-      ..quadraticBezierTo(
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.18,
         size.width * 0.22,
-        size.height * 0.22,
+        size.height * 0.32,
         0,
         size.height * 0.45,
       )
