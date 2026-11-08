@@ -53,10 +53,7 @@ class KitchenTicketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -138,42 +135,42 @@ class KitchenTicketCard extends StatelessWidget {
                 // large text scales.
                 Flexible(
                   child: FilledButton(
-                  onPressed: isActionEnabled && !isActionLoading
-                      ? onAction
-                      : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: KkfcColors.action, // #A8562A
-                    disabledBackgroundColor: const Color(0xFFCBD5E1),
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    onPressed: isActionEnabled && !isActionLoading
+                        ? onAction
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: KkfcColors.action, // #A8562A
+                      disabledBackgroundColor: const Color(0xFFCBD5E1),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
+                      minimumSize: const Size(100, 42),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    minimumSize: const Size(100, 42),
-                  ),
-                  child: isActionLoading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                    child: isActionLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            resolvedLabel,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
-                        )
-                      : Text(
-                          resolvedLabel,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
                   ),
                 ),
               ],

@@ -57,10 +57,7 @@ class KitchenTicketHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        KitchenTicketProgressBar(
-          elapsed: elapsed,
-          age: age,
-        ),
+        KitchenTicketProgressBar(elapsed: elapsed, age: age),
       ],
     );
   }
@@ -81,20 +78,14 @@ class KitchenTicketProgressBar extends StatelessWidget {
     return SizedBox(
       height: 12,
       child: CustomPaint(
-        painter: _ProgressBarPainter(
-          elapsed: elapsed,
-          age: age,
-        ),
+        painter: _ProgressBarPainter(elapsed: elapsed, age: age),
       ),
     );
   }
 }
 
 class _ProgressBarPainter extends CustomPainter {
-  const _ProgressBarPainter({
-    required this.elapsed,
-    required this.age,
-  });
+  const _ProgressBarPainter({required this.elapsed, required this.age});
 
   final Duration elapsed;
   final KitchenTicketAge age;
