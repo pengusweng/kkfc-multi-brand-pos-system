@@ -109,9 +109,15 @@ void main() {
 
       expect(find.byType(ChannelRepricingScreen), findsNothing);
 
-      await tester.ensureVisible(find.text('GrabFood'));
+      // Open Choose Menu modal from CurrentMenuCard
+      await tester.tap(find.byKey(const ValueKey('current-menu-selector-card')));
       await tester.pumpAndSettle();
+
+      // Select GrabFood and tap Switch menu
       await tester.tap(find.text('GrabFood'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('switch-menu-button')));
       await tester.pumpAndSettle();
 
       expect(find.byType(ChannelRepricingScreen), findsOneWidget);
