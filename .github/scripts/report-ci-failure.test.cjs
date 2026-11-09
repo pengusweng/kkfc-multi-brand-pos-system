@@ -66,6 +66,19 @@ test("does not report a dependency run with only passing, skipped, or cancelled 
   }
 });
 
+test("groups web failures with web owners, including when the jobs API lags", async () => {
+  for (const jobs of [[], [{ name: "Web / Lint, tests, build and browser smoke", conclusion: "failure" }]]) {
+    const f = runningFixture();
+    f.state.jobs = jobs;
+    f.dependencyResults = { web: { result: "failure" } };
+    f.env.CI_WEB_ASSIGNEES = "qa-owner";
+    await report(f);
+    assert.equal(f.calls.created.length, 1);
+    assert.match(f.calls.created[0].title, /Web failure/);
+    assert.deepEqual(f.calls.created[0].assignees, ["qa-owner"]);
+  }
+});
+
 test("does not write issues for fork or Dependabot PRs", async () => {
   for (const fork of [true, false]) {
     const f = runningFixture();

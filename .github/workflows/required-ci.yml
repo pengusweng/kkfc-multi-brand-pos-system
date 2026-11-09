@@ -37,6 +37,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,6 +61,10 @@ jobs:
               - 'features/mobile/**'
               - '.github/workflows/flutter-ci.yml'
               - '.github/workflows/required-ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/web-ci.yml'
+              - '.github/workflows/required-ci.yml'
 
   backend:
     name: Backend
@@ -73,9 +78,15 @@ jobs:
     if: needs.detect-changes.outputs.frontend == 'true'
     uses: ./.github/workflows/flutter-ci.yml
 
+  web:
+    name: Web
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web == 'true'
+    uses: ./.github/workflows/web-ci.yml
+
   report-failures:
     name: Report CI failures
-    needs: [automation-tests, detect-changes, backend, frontend]
+    needs: [automation-tests, detect-changes, backend, frontend, web]
     if: >-
       always() && !cancelled() && contains(needs.*.result, 'failure') &&
       github.actor != 'dependabot[bot]' &&
@@ -103,6 +114,7 @@ jobs:
         env:
           CI_BACKEND_ASSIGNEES: ${{ vars.CI_BACKEND_ASSIGNEES }}
           CI_FLUTTER_ASSIGNEES: ${{ vars.CI_FLUTTER_ASSIGNEES }}
+          CI_WEB_ASSIGNEES: ${{ vars.CI_WEB_ASSIGNEES }}
           CI_DEFAULT_ASSIGNEES: ${{ vars.CI_DEFAULT_ASSIGNEES }}
           CI_JOB_RESULTS: ${{ toJSON(needs) }}
         with:
@@ -114,7 +126,7 @@ jobs:
   ci:
     name: CI
     needs:
-      [automation-tests, detect-changes, backend, frontend, report-failures]
+      [automation-tests, detect-changes, backend, frontend, web, report-failures]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -126,6 +138,8 @@ jobs:
           FRONTEND_REQUIRED: ${{ needs.detect-changes.outputs.frontend }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
+          WEB_REQUIRED: ${{ needs.detect-changes.outputs.web }}
+          WEB_RESULT: ${{ needs.web.result }}
           REPORT_RESULT: ${{ needs.report-failures.result }}
         run: |
           if [ "$REPORT_RESULT" = "failure" ]; then
@@ -158,4 +172,5 @@ jobs:
 
           check_pipeline Backend "$BACKEND_REQUIRED" "$BACKEND_RESULT"
           check_pipeline Flutter "$FRONTEND_REQUIRED" "$FRONTEND_RESULT"
+          check_pipeline Web "$WEB_REQUIRED" "$WEB_RESULT"
           echo "All required pipelines passed."

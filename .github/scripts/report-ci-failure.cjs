@@ -147,7 +147,9 @@ module.exports = async function report({
       ? "Backend"
       : job.name.startsWith("Flutter /")
         ? "Flutter"
-        : "CI";
+        : job.name.startsWith("Web /")
+          ? "Web"
+          : "CI";
     if (!groups.has(category)) groups.set(category, []);
     groups.get(category).push(job);
   }
@@ -155,7 +157,13 @@ module.exports = async function report({
   for (const [name, job] of Object.entries(dependencyResults ?? {})) {
     if (job.result !== "failure") continue;
     const category =
-      name === "backend" ? "Backend" : name === "frontend" ? "Flutter" : "CI";
+      name === "backend"
+        ? "Backend"
+        : name === "frontend"
+          ? "Flutter"
+          : name === "web"
+            ? "Web"
+            : "CI";
     if (!groups.has(category)) groups.set(category, []);
   }
   if (!groups.size) groups.set("CI", []);
@@ -195,7 +203,9 @@ module.exports = async function report({
         ? env.CI_BACKEND_ASSIGNEES
         : category === "Flutter"
           ? env.CI_FLUTTER_ASSIGNEES
-          : env.CI_DEFAULT_ASSIGNEES,
+          : category === "Web"
+            ? env.CI_WEB_ASSIGNEES
+            : env.CI_DEFAULT_ASSIGNEES,
     );
     const defaults = usernames(env.CI_DEFAULT_ASSIGNEES);
     const fallback = [pr?.user?.login, run.actor?.login, repo.owner].filter(
