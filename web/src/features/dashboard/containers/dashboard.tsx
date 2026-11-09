@@ -1,12 +1,9 @@
-import Navbar from "../components/navbar";
-import PageBackground from "@/src/components/layout/page-background";
-import type { LoginSession } from "@/src/features/auth/schemas/loginSessionSchema";
+import PageTitle from "../components/atoms/page-title";
 
-export default function DashboardPage({ user }: { user: LoginSession["user"] }) {
+export default function WorkspacePage() {
   return (
-    <div className="flex min-h-dvh flex-1 flex-col lg:flex-row">
-      <Navbar user={{ name: `${user.first_name} ${user.last_name}`.trim() || user.username, role: user.role, username: user.username }} />
-      <PageBackground className="flex-col justify-start p-4 lg:items-stretch" />
-    </div>
+    <section className="motion-safe:animate-page-in">
+      <PageTitle>Workspace</PageTitle>
+    </section>
   );
 }

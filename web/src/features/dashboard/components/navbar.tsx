@@ -1,11 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import NavSection from "./molecules/nav-section";
+import NavIndicator from "./atoms/nav-indicator";
 import NavUser, { type NavUserProps } from "./molecules/nav-user";
 import { railFade } from "../utils/railFade";
 import { NAV_GROUPS } from "../utils/navItems";
@@ -20,6 +21,34 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
   const [collapsed, setCollapsed] = useState(false);
   const close = () => setOpen(false);
   const logout = useLogout();
+
+  // The clicked link becomes active immediately, before the route finishes
+  // loading. It's tied to the pathname it was clicked from, so it lapses on its
+  // own once the navigation lands (or if some other navigation happens).
+  const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
+  const activeHref = pending && pending.from === pathname ? pending.href : pathname;
+  const navigate = (href: string) => {
+    close();
+    setPending({ href, from: pathname });
+  };
+
+  // Slide the indicator to the active link. The rail's labels keep the same
+  // height when collapsed, so offsets only change when the active link does.
+  const navRef = useRef<HTMLElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const indicator = indicatorRef.current;
+    const link = navRef.current?.querySelector<HTMLElement>(`[data-nav-href="${activeHref}"]`);
+    if (!indicator) return;
+    if (!link) {
+      indicator.style.visibility = "hidden";
+      return;
+    }
+    indicator.style.visibility = "";
+    indicator.style.transform = `translateY(${link.offsetTop}px)`;
+    // Enable the transition only after the first placement.
+    if (!indicator.dataset.ready) requestAnimationFrame(() => (indicator.dataset.ready = ""));
+  }, [activeHref]);
 
   // Close the mobile menu when the page is hidden so it isn't open on return.
   useLayoutEffect(() => () => setOpen(false), []);
@@ -89,15 +118,17 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
         <nav
           id="dashboard-nav"
           aria-label="Dashboard"
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4"
+          ref={navRef}
+          className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4"
         >
+          <NavIndicator ref={indicatorRef} />
           {NAV_GROUPS.map((group) => (
             <NavSection
               key={group.label ?? "main"}
               {...group}
-              pathname={pathname}
+              activeHref={activeHref}
               collapsed={collapsed}
-              onNavigate={close}
+              onNavigate={navigate}
             />
           ))}
         </nav>

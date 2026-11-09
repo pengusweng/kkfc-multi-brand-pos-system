@@ -3,12 +3,12 @@ import NavSectionLabel from "../atoms/nav-section-label";
 import type { NavGroup } from "../../utils/navItems";
 
 type NavSectionProps = NavGroup & {
-  pathname: string;
+  activeHref: string;
   collapsed: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (href: string) => void;
 };
 
-export default function NavSection({ label, items, pathname, collapsed, onNavigate }: NavSectionProps) {
+export default function NavSection({ label, items, activeHref, collapsed, onNavigate }: NavSectionProps) {
   const labelId = label ? `nav-${label.toLowerCase()}` : undefined;
 
   return (
@@ -21,7 +21,7 @@ export default function NavSection({ label, items, pathname, collapsed, onNaviga
           <li key={item.href}>
             <NavLink
               {...item}
-              active={pathname === item.href}
+              active={activeHref === item.href}
               collapsed={collapsed}
               onNavigate={onNavigate}
             />
