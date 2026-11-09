@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
-import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
-import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
@@ -78,14 +76,28 @@ final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   ref,
 ) async {
   final activeBrand = ref.watch(activeBrandProvider);
-  try {
-    final brandId = await ref.watch(authenticatedBrandIdProvider.future);
-    final items = await ref.watch(menuRepositoryProvider).getByBrand(brandId);
-    if (items.isNotEmpty) return items;
-  } catch (_) {
-    // Fall back to sample menu if backend is unavailable or empty
+  var targetBrandId = activeBrand.id;
+
+  // Ensure targetBrandId is a valid UUID before sending to the backend.
+  // If activeBrand.id is still a placeholder slug (e.g. 'gamcheon'),
+  // wait for the backend brands to load and resolve the matching UUID.
+  final isUuid = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(targetBrandId);
+  if (!isUuid) {
+    try {
+      final brands = await ref.watch(brandsListProvider.future);
+      final match = brands.firstWhere(
+        (b) =>
+            b.code.toUpperCase() == activeBrand.code.toUpperCase() ||
+            b.name.toLowerCase() == activeBrand.name.toLowerCase(),
+        orElse: () => brands.first,
+      );
+      targetBrandId = match.id;
+    } catch (_) {
+      // In tests with mock IDs, leave targetBrandId as-is
+    }
   }
-  return sampleMenuForBrand(activeBrand.code);
+
+  return ref.watch(menuRepositoryProvider).getByBrand(targetBrandId);
 });
 
 /// Channels to show as tabs: those the loaded menu items are sold on, in

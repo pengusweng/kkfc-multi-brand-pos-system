@@ -20,6 +20,8 @@ class ResponsiveCardGrid extends StatelessWidget {
         final rows = (itemCount / columns).ceil();
 
         return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(MenuSpace.lg),
           itemCount: rows,
           itemBuilder: (context, row) {

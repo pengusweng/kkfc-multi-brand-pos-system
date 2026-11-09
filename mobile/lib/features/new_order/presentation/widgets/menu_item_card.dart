@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/item_customization_dialog.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 class MenuItemCard extends ConsumerStatefulWidget {
   const MenuItemCard({
@@ -37,6 +39,26 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
   }
 
   Future<void> _onAdd(MenuItem item) async {
+    HapticFeedback.lightImpact();
+
+    if (item.modifierGroups.isEmpty) {
+      ref.read(cartProvider.notifier).add(item);
+      if (mounted) {
+        setState(() {
+          _buttonPressed = false;
+          _justAdded = true;
+        });
+
+        _flashTimer?.cancel();
+        _flashTimer = Timer(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            setState(() => _justAdded = false);
+          }
+        });
+      }
+      return;
+    }
+
     final brand = ref.read(activeBrandProvider);
     final added = await showItemCustomizationDialog(
       context,
@@ -111,17 +133,28 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Item name
-                Text(
-                  item.name,
-                  maxLines: widget.compact ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: KkfcFonts.ibmPlexSans,
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF19293E),
-                  ),
+                // Item name and availability badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        maxLines: widget.compact ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF19293E),
+                        ),
+                      ),
+                    ),
+                    if (!orderable) ...[
+                      const SizedBox(width: 8),
+                      _AvailabilityBadge(availability),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 6),
 
@@ -288,6 +321,55 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvailabilityBadge extends StatelessWidget {
+  const _AvailabilityBadge(this.availability);
+  final MenuAvailability availability;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg, label) = switch (availability) {
+      MenuAvailability.stockout => (
+        const Color(0xFFFEE4E2),
+        const Color(0xFFB42318),
+        'STOCKOUT',
+      ),
+      MenuAvailability.manualOff => (
+        const Color(0xFFFEE4E2),
+        const Color(0xFFB42318),
+        'MANUAL OFF',
+      ),
+      MenuAvailability.inactive => (
+        const Color(0xFFF2F4F7),
+        const Color(0xFF475467),
+        'INACTIVE',
+      ),
+      MenuAvailability.available => (
+        Colors.transparent,
+        Colors.transparent,
+        '',
+      ),
+    };
+    if (label.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: KkfcFonts.ibmPlexSans,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: fg,
         ),
       ),
     );

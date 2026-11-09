@@ -149,4 +149,57 @@ void main() {
       expect(inactive.availabilityFor(channel), MenuAvailability.inactive);
     }
   });
+
+  test('MenuRepository loads bundled channels and modifiers from /menu-catalog/brand/:id', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) {
+      if (options.path == '/menu-catalog/brand/brand-1') {
+        return ResponseBody.fromString(
+          '{"data":['
+          '{'
+          '  "menu_item_id": "bibimbap-1",'
+          '  "name": "Bibimbap",'
+          '  "description": "Korean rice bowl",'
+          '  "base_price": "229.00",'
+          '  "is_available": true,'
+          '  "is_active": true,'
+          '  "menuChannels": ['
+          '    {"order_channel": "GRABFOOD", "price": "259.00", "is_available": true},'
+          '    {"order_channel": "FOODPANDA", "price": "259.00", "is_available": true}'
+          '  ],'
+          '  "menuItemModifiers": ['
+          '    {"additional_price": "20.00", "is_available": true, "modifier": {"name": "Add egg", "code": "MOD-EGG"}},'
+          '    {"additional_price": "25.00", "is_available": true, "modifier": {"name": "Extra rice", "code": "MOD-RICE"}}'
+          '  ]'
+          '}'
+          '],'
+          '"meta":{"page":1,"limit":100,"total":1,"totalPages":1}}',
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      throw StateError('Unexpected request: ${options.path}');
+    });
+
+    final repository = MenuRepository(dio);
+    final items = await repository.getByBrand('brand-1');
+
+    expect(items, hasLength(1));
+    final item = items.single;
+    expect(item.name, 'Bibimbap');
+    expect(item.priceFor(MenuChannel.dineIn), 22900);
+    expect(item.priceFor(MenuChannel.grabFood), 25900);
+    expect(item.channels, containsAll([MenuChannel.dineIn, MenuChannel.grabFood, MenuChannel.foodpanda]));
+
+    expect(item.modifierGroups, hasLength(2));
+    expect(item.modifierGroups[0].title, 'Add egg');
+    expect(item.modifierGroups[0].isAddOn, isTrue);
+    expect(item.modifierGroups[0].options[1].priceDeltaCentavos, 2000);
+
+    expect(item.modifierGroups[1].title, 'Extra rice');
+    expect(item.modifierGroups[1].isAddOn, isTrue);
+    expect(item.modifierGroups[1].options[1].priceDeltaCentavos, 2500);
+  });
 }

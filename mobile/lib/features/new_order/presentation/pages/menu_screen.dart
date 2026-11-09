@@ -390,12 +390,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
           ),
           sliver: visibleItems.when(
             loading: () => const SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
-                ),
-              ),
+              child: MenuGridSkeleton(),
             ),
             error: (_, _) => SliverToBoxAdapter(
               child: MenuMessageCard(
@@ -408,29 +403,46 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
             ),
             data: (items) {
               if (items.isEmpty) {
-                return SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.search_off,
-                            size: 40,
-                            color: Color(0xFF76849A),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'No items in this category or matching search',
-                            style: TextStyle(
-                              color: Color(0xFF586579),
-                              fontSize: 14,
+                final isSearching =
+                    ref.watch(menuSearchProvider).trim().isNotEmpty;
+                final isCategoryFiltered =
+                    ref.watch(menuCategoryProvider) != 'All';
+
+                if (isSearching || isCategoryFiltered) {
+                  return SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.search_off,
+                              size: 40,
+                              color: Color(0xFF76849A),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 12),
+                            Text(
+                              'No items in this category or matching search',
+                              style: TextStyle(
+                                color: Color(0xFF586579),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  );
+                }
+
+                return SliverToBoxAdapter(
+                  child: MenuMessageCard(
+                    icon: Icons.restaurant_menu_outlined,
+                    title: 'No menu items available',
+                    body: 'No items found in this brand catalog.',
+                    actionLabel: 'Refresh catalog',
+                    onAction: () => ref.invalidate(menuItemsProvider),
                   ),
                 );
               }

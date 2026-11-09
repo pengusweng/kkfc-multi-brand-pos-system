@@ -129,15 +129,18 @@ void main() {
       );
       await _pump(tester, container, const MenuScreen());
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(SearchBar), 'missing');
+      await tester.enterText(find.byType(TextField), 'missing');
       await tester.pumpAndSettle();
-      expect(find.text('No items match "missing"'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Clear search'));
+      expect(
+        find.text('No items in this category or matching search'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
       expect(container.read(menuSearchProvider), isEmpty);
       expect(find.byType(MenuItemCard), findsOneWidget);
       expect(
-        tester.widget<SearchBar>(find.byType(SearchBar)).controller?.text,
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
         isEmpty,
       );
     },

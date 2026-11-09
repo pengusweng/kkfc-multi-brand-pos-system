@@ -139,7 +139,8 @@ class MenuItem {
             : MenuAvailability.stockout,
     };
 
-    final channelRows = json['menu_item_channels_menu_item'];
+    final channelRows =
+        json['menuChannels'] ?? json['menu_item_channels_menu_item'];
     final listed = <MenuChannel>{};
     if (isActive && channelRows is List) {
       listed.addAll(const [MenuChannel.dineIn, MenuChannel.takeaway]);
@@ -156,6 +157,38 @@ class MenuItem {
       }
     }
 
+    final modifierRows =
+        json['menuItemModifiers'] ?? json['menu_item_modifiers'];
+    final groups = <ModifierGroup>[];
+    if (modifierRows is List) {
+      for (final row in modifierRows) {
+        if (row is! Map<String, dynamic>) continue;
+        if (row['is_available'] == false) continue;
+        final mod = row['modifier'] as Map<String, dynamic>?;
+        final name = mod?['name'] as String? ?? row['name'] as String?;
+        final modId =
+            row['menu_item_modifier_id'] as String? ??
+            row['modifier_id'] as String? ??
+            mod?['modifier_id'] as String? ??
+            mod?['code'] as String? ??
+            row['code'] as String? ??
+            'mod_${groups.length}';
+        final addPrice = row['additional_price'];
+        if (name == null || addPrice == null) continue;
+        groups.add(
+          ModifierGroup.addOn(
+            id: modId,
+            name: name,
+            priceCentavos: decimalToCentavos(addPrice),
+          ),
+        );
+      }
+    }
+    final existingGroups = json['modifier_groups'] ?? json['modifierGroups'];
+    if (existingGroups is List<ModifierGroup>) {
+      groups.addAll(existingGroups);
+    }
+
     return MenuItem(
       id: id,
       name: name,
@@ -164,6 +197,7 @@ class MenuItem {
       availability: availability,
       channels: listed,
       category: json['category'] as String? ?? json['category_name'] as String?,
+      modifierGroups: groups,
     );
   }
 
