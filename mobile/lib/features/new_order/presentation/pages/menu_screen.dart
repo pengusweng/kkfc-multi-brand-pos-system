@@ -61,7 +61,8 @@ class _ResponsiveMenuLayout extends ConsumerWidget {
                         color: const Color(0xFFF7F3EC), // Canvas background
                         child: _MenuCatalogView(
                           isWide: isWide,
-                          bottomPadding: (!isWide && cartCount > 0) ? 72.0 : 16.0,
+                          bottomPadding:
+                              (!isWide && cartCount > 0) ? 72.0 : 16.0,
                         ),
                       ),
                     ),
@@ -113,10 +114,38 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
     'Snacks',
   ];
 
+  int _slideDirection = 1;
+  String? _lastBrandId;
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onChannelSelected(MenuChannel newChannel) {
+    final current = ref.read(menuChannelProvider);
+    if (current == newChannel) return;
+
+    final cart = ref.read(cartProvider);
+
+    // Update active channel in notifier
+    ref.read(menuChannelProvider.notifier).select(newChannel);
+
+    // If cart has items and any price differs between channels, navigate to repricing screen
+    if (cart.isNotEmpty) {
+      var hasPriceChange = false;
+      for (final line in cart) {
+        if (line.totalCentavos(current) != line.totalCentavos(newChannel)) {
+          hasPriceChange = true;
+          break;
+        }
+      }
+
+      if (hasPriceChange) {
+        context.go(AppRoutes.channelChange);
+      }
+    }
   }
 
   @override
@@ -133,6 +162,14 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
     final selectedCategory = ref.watch(menuCategoryProvider);
     final visibleItems = ref.watch(visibleMenuItemsProvider);
 
+    // Track sliding animation direction for brand switching
+    if (_lastBrandId != null && _lastBrandId != activeBrand.id) {
+      final oldIndex = assignedBrands.indexWhere((b) => b.id == _lastBrandId);
+      final newIndex = assignedBrands.indexWhere((b) => b.id == activeBrand.id);
+      _slideDirection = (newIndex >= oldIndex) ? 1 : -1;
+    }
+    _lastBrandId = activeBrand.id;
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -146,7 +183,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Brands segmented tabs
+                // 1. Brands segmented tabs with sliding animation
                 _BrandSegmentedBar(
                   brands: assignedBrands,
                   selectedBrand: activeBrand,
@@ -155,11 +192,10 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                 ),
                 const SizedBox(height: 10),
 
-                // 2. Channel segmented tabs
+                // 2. Channel segmented tabs with sliding indicator and repricing trigger
                 _ChannelSegmentedBar(
                   selectedChannel: selectedChannel,
-                  onSelect: (c) =>
-                      ref.read(menuChannelProvider.notifier).select(c),
+                  onSelect: _onChannelSelected,
                 ),
                 const SizedBox(height: 12),
 
@@ -290,7 +326,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
           ),
         ),
 
-        // 5. Menu Items Grid / List
+        // 5. Menu Items Grid / List with sliding animation on brand switch
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             widget.isWide ? 20.0 : 16.0,
@@ -324,16 +360,16 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                       padding: const EdgeInsets.all(40.0),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
+                        children: const [
+                          Icon(
                             Icons.search_off,
                             size: 40,
                             color: Color(0xFF76849A),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'No items in this category or matching search',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Color(0xFF586579),
                               fontSize: 14,
                             ),
@@ -345,35 +381,61 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                 );
               }
 
-              if (widget.isWide) {
-                // Tablet / Desktop 2-column grid
-                return SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                    mainAxisExtent: 140.0,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => MenuItemCard(
-                      item: items[index],
-                      channel: selectedChannel,
-                      compact: false,
-                    ),
-                    childCount: items.length,
-                  ),
-                );
-              }
+              return SliverToBoxAdapter(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
+                    final inAnimation = Tween<Offset>(
+                      begin: Offset(_slideDirection * 0.15, 0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ));
 
-              // Phone 1-column list
-              return SliverList.separated(
-                itemCount: items.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12.0),
-                itemBuilder: (context, index) => MenuItemCard(
-                  item: items[index],
-                  channel: selectedChannel,
-                  compact: true,
+                    return SlideTransition(
+                      position: inAnimation,
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey('brand-${activeBrand.id}'),
+                    child: widget.isWide
+                        ? GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16.0,
+                              mainAxisSpacing: 16.0,
+                              mainAxisExtent: 140.0,
+                            ),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) => MenuItemCard(
+                              item: items[index],
+                              channel: selectedChannel,
+                              compact: false,
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12.0),
+                            itemBuilder: (context, index) => MenuItemCard(
+                              item: items[index],
+                              channel: selectedChannel,
+                              compact: true,
+                            ),
+                          ),
+                  ),
                 ),
               );
             },
@@ -384,7 +446,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
   }
 }
 
-/// Brand segmented bar matching the design
+/// Brand segmented bar with sliding indicator animation
 class _BrandSegmentedBar extends StatelessWidget {
   const _BrandSegmentedBar({
     required this.brands,
@@ -398,6 +460,11 @@ class _BrandSegmentedBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (brands.isEmpty) return const SizedBox.shrink();
+
+    final selectedIndex = brands.indexWhere((b) => b.id == selectedBrand.id);
+    final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
+
     return Container(
       height: 44.0,
       padding: const EdgeInsets.all(3.0),
@@ -405,47 +472,77 @@ class _BrandSegmentedBar extends StatelessWidget {
         color: const Color(0xFFEEE8DC), // Canvas sunken ground
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Row(
-        children: [
-          for (final b in brands)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => onSelect(b),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / brands.length;
+
+          return Stack(
+            children: [
+              // Smooth sliding pill indicator
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                left: safeIndex * tabWidth,
+                top: 0,
+                bottom: 0,
+                width: tabWidth,
+                child: Container(
                   decoration: BoxDecoration(
-                    color: b.id == selectedBrand.id
-                        ? const Color(0xFF1D2940) // Selected Navy
-                        : Colors.transparent,
+                    color: const Color(0xFF1D2940), // Selected Navy
                     borderRadius: BorderRadius.circular(6.0),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    b.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: 13.5,
-                      fontWeight: b.id == selectedBrand.id
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      color: b.id == selectedBrand.id
-                          ? Colors.white
-                          : const Color(0xFF19293E),
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-        ],
+
+              // Brand labels row
+              Row(
+                children: [
+                  for (var i = 0; i < brands.length; i++)
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onSelect(brands[i]),
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 13.5,
+                              fontWeight: i == safeIndex
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: i == safeIndex
+                                  ? Colors.white
+                                  : const Color(0xFF19293E),
+                            ),
+                            child: Text(
+                              brands[i].name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-/// Channel segmented bar matching the design
+/// Channel segmented bar with sliding indicator animation
 class _ChannelSegmentedBar extends StatelessWidget {
   const _ChannelSegmentedBar({
     required this.selectedChannel,
@@ -458,6 +555,8 @@ class _ChannelSegmentedBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final channels = MenuChannel.values;
+    final selectedIndex = channels.indexOf(selectedChannel);
+    final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     return Container(
       height: 44.0,
@@ -466,41 +565,71 @@ class _ChannelSegmentedBar extends StatelessWidget {
         color: const Color(0xFFEEE8DC), // Canvas sunken ground
         borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Row(
-        children: [
-          for (final c in channels)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => onSelect(c),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / channels.length;
+
+          return Stack(
+            children: [
+              // Smooth sliding pill indicator
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                left: safeIndex * tabWidth,
+                top: 0,
+                bottom: 0,
+                width: tabWidth,
+                child: Container(
                   decoration: BoxDecoration(
-                    color: c == selectedChannel
-                        ? const Color(0xFF1D2940) // Selected Navy
-                        : Colors.transparent,
+                    color: const Color(0xFF1D2940), // Selected Navy
                     borderRadius: BorderRadius.circular(6.0),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    c.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: 13.5,
-                      fontWeight: c == selectedChannel
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      color: c == selectedChannel
-                          ? Colors.white
-                          : const Color(0xFF19293E),
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-        ],
+
+              // Channel labels row
+              Row(
+                children: [
+                  for (var i = 0; i < channels.length; i++)
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onSelect(channels[i]),
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 13.5,
+                              fontWeight: i == safeIndex
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              color: i == safeIndex
+                                  ? Colors.white
+                                  : const Color(0xFF19293E),
+                            ),
+                            child: Text(
+                              channels[i].label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
