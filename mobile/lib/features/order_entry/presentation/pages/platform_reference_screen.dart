@@ -6,7 +6,6 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
-import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -96,7 +95,6 @@ class _PlatformReferenceScreenState
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final showRail = constraints.maxWidth >= MenuLayout.compactMax;
 
           return Column(
             children: [

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/app/theme/tokens.dart';
-import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 
@@ -51,7 +50,6 @@ class OrderNotSentScreen extends StatelessWidget {
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final showRail = constraints.maxWidth >= MenuLayout.compactMax;
 
           return Column(
             children: [
