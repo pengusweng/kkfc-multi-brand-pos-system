@@ -509,39 +509,50 @@ class _ItemCustomizationDialogState
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8.0),
-                            border: Border.all(
-                              color: const Color(0xFF76849A),
-                              width: 1.0,
-                            ),
+                        TextField(
+                          controller: _kitchenNoteController,
+                          maxLines: 2,
+                          maxLength: 100,
+                          style: const TextStyle(
+                            fontFamily: KkfcFonts.text,
+                            fontSize: 14.0,
+                            color: Color(0xFF19293E),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          child: TextField(
-                            controller: _kitchenNoteController,
-                            maxLines: 2,
-                            maxLength: 100,
-                            style: const TextStyle(
+                          decoration: InputDecoration(
+                            hintText: 'For example: no onions',
+                            hintStyle: const TextStyle(
                               fontFamily: KkfcFonts.text,
                               fontSize: 14.0,
-                              color: Color(0xFF19293E),
+                              color: Color(0xFF8C97A5),
                             ),
-                            decoration: const InputDecoration(
-                              hintText: 'For example: no onions',
-                              hintStyle: TextStyle(
-                                fontFamily: KkfcFonts.text,
-                                fontSize: 14.0,
-                                color: Color(0xFF8C97A5),
+                            filled: true,
+                            fillColor: Colors.white,
+                            isDense: true,
+                            counterText: '',
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF76849A),
+                                width: 1.0,
                               ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              counterText: '',
-                              contentPadding: EdgeInsets.zero,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF76849A),
+                                width: 1.0,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF19293E),
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),

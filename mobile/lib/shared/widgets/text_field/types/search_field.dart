@@ -170,6 +170,7 @@ class _KkfcSearchFieldState extends State<KkfcSearchField> {
         constraints: idleStyle.height != null
             ? BoxConstraints(minHeight: idleStyle.height!)
             : null,
+        border: idleStyle.toOutlineInputBorder(),
         enabledBorder: idleStyle.toOutlineInputBorder(),
         focusedBorder: focusedStyle.toOutlineInputBorder(),
         disabledBorder: idleStyle.toOutlineInputBorder(),

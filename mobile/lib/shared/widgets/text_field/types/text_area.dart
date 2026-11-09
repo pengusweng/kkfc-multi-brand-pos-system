@@ -107,6 +107,7 @@ class KkfcTextArea extends StatelessWidget {
         hintStyle: idleStyle.hintStyle,
         contentPadding: idleStyle.contentPadding,
         constraints: BoxConstraints(minHeight: minHeight),
+        border: idleStyle.toOutlineInputBorder(),
         enabledBorder: showError
             ? errorStyle.toOutlineInputBorder()
             : idleStyle.toOutlineInputBorder(),

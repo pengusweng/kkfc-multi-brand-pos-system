@@ -281,9 +281,13 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                                     },
                                   )
                                 : null,
+                            filled: false,
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
                               vertical: 10.0,
                             ),

@@ -134,29 +134,53 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(color: const Color(0xFF76849A)),
+                      TextField(
+                        controller: _referenceController,
+                        onChanged: (val) {
+                          ref
+                              .read(orderReferenceProvider.notifier)
+                              .set(val);
+                        },
+                        style: const TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 14.0,
+                          color: Color(0xFF19293E),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: TextField(
-                          controller: _referenceController,
-                          onChanged: (val) {
-                            ref
-                                .read(orderReferenceProvider.notifier)
-                                .set(val);
-                          },
-                          decoration: InputDecoration(
-                            hintText: channel == MenuChannel.dineIn
-                                ? 'e.g. Table 12'
-                                : 'e.g. Order #1042',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF8C97A5),
-                              fontSize: 14,
+                        decoration: InputDecoration(
+                          hintText: channel == MenuChannel.dineIn
+                              ? 'e.g. Table 12'
+                              : 'e.g. Order #1042',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF8C97A5),
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF76849A),
+                              width: 1.0,
                             ),
-                            border: InputBorder.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF76849A),
+                              width: 1.0,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF19293E),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -171,26 +195,49 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(color: const Color(0xFF76849A)),
+                      TextField(
+                        controller: _customerNotesController,
+                        maxLines: 2,
+                        maxLength: 120,
+                        style: const TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 14.0,
+                          color: Color(0xFF19293E),
                         ),
-                        padding: const EdgeInsets.all(12),
-                        child: TextField(
-                          controller: _customerNotesController,
-                          maxLines: 2,
-                          maxLength: 120,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. Priority order, pack separately',
-                            hintStyle: TextStyle(
-                              color: Color(0xFF8C97A5),
-                              fontSize: 14,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Priority order, pack separately',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF8C97A5),
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          isDense: true,
+                          counterText: '',
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF76849A),
+                              width: 1.0,
                             ),
-                            border: InputBorder.none,
-                            counterText: '',
-                            contentPadding: EdgeInsets.zero,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF76849A),
+                              width: 1.0,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF19293E),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),

@@ -148,6 +148,7 @@ class KkfcStandardTextField extends StatelessWidget {
         constraints: idleStyle.height != null
             ? BoxConstraints(minHeight: idleStyle.height!)
             : null,
+        border: idleStyle.toOutlineInputBorder(),
         enabledBorder: showError
             ? errorStyle.toOutlineInputBorder()
             : idleStyle.toOutlineInputBorder(),
