@@ -29,53 +29,144 @@ class MenuScreen extends StatelessWidget {
   }
 }
 
-class _ResponsiveMenuLayout extends ConsumerWidget {
+class _ResponsiveMenuLayout extends ConsumerStatefulWidget {
   const _ResponsiveMenuLayout();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ResponsiveMenuLayout> createState() =>
+      _ResponsiveMenuLayoutState();
+}
+
+class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final Animation<double> _headerFade;
+  late final Animation<Offset> _headerSlide;
+  late final Animation<double> _catalogFade;
+  late final Animation<Offset> _catalogSlide;
+  late final Animation<double> _cartPanelFade;
+  late final Animation<Offset> _cartPanelSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+
+    // Choreographed entrance:
+    // 1. App Header drops down subtly and fades in
+    _headerFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.60, curve: Curves.easeOut),
+    );
+    _headerSlide = Tween<Offset>(
+      begin: const Offset(0.0, -0.06),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
+    ));
+
+    // 2. Catalog view rises up smoothly and dissolves in
+    _catalogFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.10, 0.85, curve: Curves.easeOut),
+    );
+    _catalogSlide = Tween<Offset>(
+      begin: const Offset(0.0, 0.04),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.10, 0.90, curve: Curves.easeOutCubic),
+    ));
+
+    // 3. Tablet/Desktop Cart Panel glides in from the right edge
+    _cartPanelFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.18, 1.0, curve: Curves.easeOut),
+    );
+    _cartPanelSlide = Tween<Offset>(
+      begin: const Offset(0.06, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.18, 1.0, curve: Curves.easeOutCubic),
+    ));
+
+    _entranceController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _kWideBreakpoint;
     final cartCount = ref.watch(cartCountProvider);
 
     return Column(
       children: [
-        // App header
-        AppHeader(title: 'Orders', compact: !isWide),
+        // App header with entrance transition
+        SlideTransition(
+          position: _headerSlide,
+          child: FadeTransition(
+            opacity: _headerFade,
+            child: AppHeader(title: 'Orders', compact: !isWide),
+          ),
+        ),
 
-        // Main body
+        // Main body with choreographed entrance
         Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Left / Center catalog
               Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Container(
-                        color: const Color(0xFFF7F3EC), // Canvas background
-                        child: _MenuCatalogView(
-                          isWide: isWide,
-                          bottomPadding: (!isWide && cartCount > 0)
-                              ? 72.0
-                              : 16.0,
+                child: SlideTransition(
+                  position: _catalogSlide,
+                  child: FadeTransition(
+                    opacity: _catalogFade,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Container(
+                            color: const Color(0xFFF7F3EC), // Canvas background
+                            child: _MenuCatalogView(
+                              isWide: isWide,
+                              bottomPadding: (!isWide && cartCount > 0)
+                                  ? 72.0
+                                  : 16.0,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
 
-                    // Phone-only floating cart bar
-                    if (!isWide)
-                      const Align(
-                        alignment: Alignment.bottomCenter,
-                        child: CartBar(),
-                      ),
-                  ],
+                        // Phone-only floating cart bar
+                        if (!isWide)
+                          const Align(
+                            alignment: Alignment.bottomCenter,
+                            child: CartBar(),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 
               // Tablet / Desktop-only right cart panel
-              if (isWide) const SizedBox(width: 380.0, child: CartPanel()),
+              if (isWide)
+                SlideTransition(
+                  position: _cartPanelSlide,
+                  child: FadeTransition(
+                    opacity: _cartPanelFade,
+                    child: const SizedBox(width: 380.0, child: CartPanel()),
+                  ),
+                ),
             ],
           ),
         ),
