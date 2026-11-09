@@ -10,6 +10,7 @@ import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
+import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -116,6 +117,13 @@ class _RepricingBody extends ConsumerWidget {
           Text(
             'Channel change and undo',
             style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: MenuSpace.md),
+          ChannelTabs(
+            selected: channel,
+            onSelected: (newChannel) {
+              ref.read(menuChannelProvider.notifier).select(newChannel);
+            },
           ),
           const SizedBox(height: MenuSpace.lg),
           const RepricingNotice(

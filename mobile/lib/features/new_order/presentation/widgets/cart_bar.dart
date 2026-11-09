@@ -60,80 +60,94 @@ class _CartBarState extends ConsumerState<CartBar> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Left: [Cart Icon]  "X items" with spring pop
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.shopping_cart_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              transitionBuilder: (child, animation) {
-                                return ScaleTransition(
-                                  scale: animation,
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                '$count item${count == 1 ? '' : 's'}',
-                                key: ValueKey('cart-count-$count'),
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.shopping_cart_outlined,
                                   color: Colors.white,
+                                  size: 20,
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) {
+                                    return ScaleTransition(
+                                      scale: animation,
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    '$count item${count == 1 ? '' : 's'}',
+                                    key: ValueKey('cart-count-$count'),
+                                    style: const TextStyle(
+                                      fontFamily: KkfcFonts.ibmPlexSans,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
 
+                        const SizedBox(width: 8),
+
                         // Right: "View order · ₱XXX.XX" with slide & fade
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'View order · ',
-                              style: TextStyle(
-                                fontFamily: KkfcFonts.ibmPlexSans,
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              transitionBuilder: (child, animation) {
-                                return SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(0, 0.3),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'View order · ',
+                                  style: TextStyle(
+                                    fontFamily: KkfcFonts.ibmPlexSans,
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
-                                );
-                              },
-                              child: Text(
-                                formatPeso(total),
-                                key: ValueKey('cart-total-$total'),
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  fontFeatures: [FontFeature.tabularFigures()],
                                 ),
-                              ),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(0, 0.3),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    formatPeso(total),
+                                    key: ValueKey('cart-total-$total'),
+                                    style: const TextStyle(
+                                      fontFamily: KkfcFonts.ibmPlexSans,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      fontFeatures: [FontFeature.tabularFigures()],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
