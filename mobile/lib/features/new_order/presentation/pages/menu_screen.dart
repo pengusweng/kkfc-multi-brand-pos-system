@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
@@ -202,21 +203,43 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Brands segmented tabs with sliding animation
-                _BrandSegmentedBar(
-                  brands: assignedBrands,
-                  selectedBrand: activeBrand,
-                  onSelect: (b) =>
-                      ref.read(activeBrandProvider.notifier).select(b),
-                ),
+                // 1 & 2. Brand and Channel segmented tabs with responsive layout
+                if (widget.isWide)
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: _BrandSegmentedBar(
+                          brands: assignedBrands,
+                          selectedBrand: activeBrand,
+                          onSelect: (b) =>
+                              ref.read(activeBrandProvider.notifier).select(b),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 6,
+                        child: _ChannelSegmentedBar(
+                          selectedChannel: selectedChannel,
+                          onSelect: _onChannelSelected,
+                        ),
+                      ),
+                    ],
+                  )
+                else ...[
+                  _BrandSegmentedBar(
+                    brands: assignedBrands,
+                    selectedBrand: activeBrand,
+                    onSelect: (b) =>
+                        ref.read(activeBrandProvider.notifier).select(b),
+                  ),
+                  const SizedBox(height: 8),
+                  _ChannelSegmentedBar(
+                    selectedChannel: selectedChannel,
+                    onSelect: _onChannelSelected,
+                  ),
+                ],
                 const SizedBox(height: 10),
-
-                // 2. Channel segmented tabs with sliding indicator and repricing trigger
-                _ChannelSegmentedBar(
-                  selectedChannel: selectedChannel,
-                  onSelect: _onChannelSelected,
-                ),
-                const SizedBox(height: 12),
 
                 // 3. Search field + Unavailable button
                 Row(
@@ -514,7 +537,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
   }
 }
 
-/// Brand segmented bar with sliding indicator animation
+/// Compact brand segmented bar with sliding indicator animation and refined styling
 class _BrandSegmentedBar extends StatelessWidget {
   const _BrandSegmentedBar({
     required this.brands,
@@ -534,11 +557,12 @@ class _BrandSegmentedBar extends StatelessWidget {
     final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     return Container(
-      height: 44.0,
-      padding: const EdgeInsets.all(3.0),
+      height: 36.0,
+      padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEE8DC), // Canvas sunken ground
+        color: const Color(0xFFEFE8DD), // Refined sunken canvas ground
         borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -548,7 +572,7 @@ class _BrandSegmentedBar extends StatelessWidget {
             children: [
               // Smooth sliding pill indicator
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOutCubic,
                 left: safeIndex * tabWidth,
                 top: 0,
@@ -556,46 +580,66 @@ class _BrandSegmentedBar extends StatelessWidget {
                 width: tabWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1D2940), // Selected Navy
+                    color: const Color(0xFF19293E), // Selected Navy
                     borderRadius: BorderRadius.circular(6.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
+                        color: const Color(0xFF19293E).withValues(alpha: 0.16),
                         blurRadius: 4,
-                        offset: const Offset(0, 1),
+                        offset: const Offset(0, 1.5),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Brand labels row
+              // Brand labels row with icon
               Row(
                 children: [
                   for (var i = 0; i < brands.length; i++)
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => onSelect(brands[i]),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onSelect(brands[i]);
+                        },
                         child: Container(
                           alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 200),
-                            style: TextStyle(
-                              fontFamily: KkfcFonts.ibmPlexSans,
-                              fontSize: 13.5,
-                              fontWeight: i == safeIndex
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              color: i == safeIndex
-                                  ? Colors.white
-                                  : const Color(0xFF19293E),
-                            ),
-                            child: Text(
-                              brands[i].name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.storefront_outlined,
+                                size: 13.5,
+                                color: i == safeIndex
+                                    ? Colors.white
+                                    : const Color(0xFF586579),
+                              ),
+                              const SizedBox(width: 5.0),
+                              Flexible(
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 180),
+                                  style: TextStyle(
+                                    fontFamily: KkfcFonts.ibmPlexSans,
+                                    fontSize: 12.5,
+                                    fontWeight: i == safeIndex
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: i == safeIndex
+                                        ? Colors.white
+                                        : const Color(0xFF43536A),
+                                  ),
+                                  child: Text(
+                                    brands[i].name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -610,7 +654,7 @@ class _BrandSegmentedBar extends StatelessWidget {
   }
 }
 
-/// Channel segmented bar with sliding indicator animation
+/// Compact channel segmented bar with sliding indicator animation and fulfillment icons
 class _ChannelSegmentedBar extends StatelessWidget {
   const _ChannelSegmentedBar({
     required this.selectedChannel,
@@ -620,6 +664,19 @@ class _ChannelSegmentedBar extends StatelessWidget {
   final MenuChannel selectedChannel;
   final ValueChanged<MenuChannel> onSelect;
 
+  static IconData _channelIcon(MenuChannel channel) {
+    switch (channel) {
+      case MenuChannel.dineIn:
+        return Icons.table_restaurant_outlined;
+      case MenuChannel.takeaway:
+        return Icons.shopping_bag_outlined;
+      case MenuChannel.grabFood:
+        return Icons.delivery_dining_outlined;
+      case MenuChannel.foodpanda:
+        return Icons.moped_outlined;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final channels = MenuChannel.values;
@@ -627,11 +684,12 @@ class _ChannelSegmentedBar extends StatelessWidget {
     final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     return Container(
-      height: 44.0,
-      padding: const EdgeInsets.all(3.0),
+      height: 36.0,
+      padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEE8DC), // Canvas sunken ground
+        color: const Color(0xFFEFE8DD), // Refined sunken canvas ground
         borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -641,7 +699,7 @@ class _ChannelSegmentedBar extends StatelessWidget {
             children: [
               // Smooth sliding pill indicator
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOutCubic,
                 left: safeIndex * tabWidth,
                 top: 0,
@@ -649,46 +707,66 @@ class _ChannelSegmentedBar extends StatelessWidget {
                 width: tabWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1D2940), // Selected Navy
+                    color: const Color(0xFF19293E), // Selected Navy
                     borderRadius: BorderRadius.circular(6.0),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
+                        color: const Color(0xFF19293E).withValues(alpha: 0.16),
                         blurRadius: 4,
-                        offset: const Offset(0, 1),
+                        offset: const Offset(0, 1.5),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Channel labels row
+              // Channel labels row with fulfillment icons
               Row(
                 children: [
                   for (var i = 0; i < channels.length; i++)
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => onSelect(channels[i]),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onSelect(channels[i]);
+                        },
                         child: Container(
                           alignment: Alignment.center,
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 200),
-                            style: TextStyle(
-                              fontFamily: KkfcFonts.ibmPlexSans,
-                              fontSize: 13.5,
-                              fontWeight: i == safeIndex
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              color: i == safeIndex
-                                  ? Colors.white
-                                  : const Color(0xFF19293E),
-                            ),
-                            child: Text(
-                              channels[i].label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _channelIcon(channels[i]),
+                                size: 13.0,
+                                color: i == safeIndex
+                                    ? Colors.white
+                                    : const Color(0xFF586579),
+                              ),
+                              const SizedBox(width: 4.0),
+                              Flexible(
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 180),
+                                  style: TextStyle(
+                                    fontFamily: KkfcFonts.ibmPlexSans,
+                                    fontSize: 12.0,
+                                    fontWeight: i == safeIndex
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: i == safeIndex
+                                        ? Colors.white
+                                        : const Color(0xFF43536A),
+                                  ),
+                                  child: Text(
+                                    channels[i].label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

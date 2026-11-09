@@ -179,6 +179,13 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
             onConfirm: () {
               setState(() => _currentStep = 5);
             },
+            onCancelOrder: () {
+              ref.read(cartProvider.notifier).clear();
+              ref.read(orderReferenceProvider.notifier).clear();
+              ref.read(activeOrderDraftProvider.notifier).clear();
+              ref.read(clientOrderIdProvider.notifier).regenerate();
+              _closeFlow();
+            },
           ),
         );
       case 5:

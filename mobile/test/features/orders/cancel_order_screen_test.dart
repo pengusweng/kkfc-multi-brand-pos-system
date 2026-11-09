@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
-import 'package:mobile/features/orders/cancel/data/models/cancel_order_models.dart';
 import 'package:mobile/features/orders/cancel/data/models/cancel_order_outcome.dart';
 import 'package:mobile/features/orders/cancel/data/repositories/cancel_order_repository.dart';
 import 'package:mobile/features/orders/cancel/presentation/pages/cancel_order_screen.dart';
@@ -31,9 +30,12 @@ class _FakeCancelRepository implements CancelOrderRepository {
 void main() {
   Future<void> pumpCancelOrder(
     WidgetTester tester, {
-    CancelOrderStep step = CancelOrderStep.review,
+    String? orderCode,
+    String? ticketNumber,
+    VoidCallback? onKeepOrder,
+    VoidCallback? onBackToMenu,
   }) async {
-    tester.view.physicalSize = const Size(1280, 1000);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -41,7 +43,12 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           theme: counterTheme,
-          home: CancelOrderScreen(initialStep: step),
+          home: CancelOrderScreen(
+            orderCode: orderCode,
+            ticketNumber: ticketNumber,
+            onKeepOrder: onKeepOrder,
+            onBackToMenu: onBackToMenu,
+          ),
         ),
       ),
     );
@@ -50,9 +57,11 @@ void main() {
 
   Future<void> pumpLiveCancelOrder(
     WidgetTester tester,
-    _FakeCancelRepository repository,
-  ) async {
-    tester.view.physicalSize = const Size(1280, 1000);
+    _FakeCancelRepository repository, {
+    String orderCode = 'ORD-2026-1105-017',
+    String ticketNumber = 'T-017',
+  }) async {
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -64,9 +73,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: counterTheme,
-          home: const CancelOrderScreen(
+          home: CancelOrderScreen(
             orderId: _liveOrderId,
-            orderCode: 'GC-00007',
+            orderCode: orderCode,
+            ticketNumber: ticketNumber,
           ),
         ),
       ),
@@ -75,157 +85,167 @@ void main() {
   }
 
   testWidgets(
-    'IT-MOB-CANCEL-001 Given the review step Then the reason request and both actions are shown',
+    'State 1: Initial state shows title, order details, reason field, disclaimer, and action buttons',
     (tester) async {
-      await pumpCancelOrder(tester);
+      await pumpCancelOrder(
+        tester,
+        orderCode: 'ORD-2026-1105-017',
+        ticketNumber: 'T-017',
+      );
 
-      expect(find.text('Cancel this order?'), findsOneWidget);
-      expect(find.text('REVIEW REQUEST'), findsWidgets);
-      expect(find.text('T-014'), findsWidgets);
-      expect(find.text('Cancellation reason *'), findsOneWidget);
-      expect(find.text('Keep order'), findsOneWidget);
-      expect(find.text('Cancel order'), findsOneWidget);
-    },
-  );
+      // Top title and button both have "Cancel order"
+      expect(find.text('Cancel order'), findsNWidgets(2));
 
-  testWidgets(
-    'IT-MOB-CANCEL-002 Given an empty reason When Cancel order is pressed Then the validation step is shown',
-    (tester) async {
-      await pumpCancelOrder(tester);
+      // Order info card
+      expect(find.text('Order'), findsOneWidget);
+      expect(find.text('ORD-2026-1105-017'), findsOneWidget);
+      expect(find.text('Kitchen ticket'), findsOneWidget);
+      expect(find.text('T-017'), findsOneWidget);
+      expect(find.text('Kitchen stage'), findsOneWidget);
+      expect(find.text('Queued · preparation not started'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '');
-      await tester.tap(find.text('Cancel order'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Reason is required'), findsOneWidget);
+      // Reason section
+      expect(find.text('Reason for cancelling'), findsOneWidget);
       expect(
-        find.text('Error: Cancellation reason is required.'),
+        find.text('For example: guest changed their mind'),
         findsOneWidget,
       );
-      expect(find.text('Not cancelled'), findsOneWidget);
+      expect(find.text('0/280 characters'), findsOneWidget);
+
+      // Disclaimer
+      expect(
+        find.text('Cancelling does not refund a payment or change stock.'),
+        findsOneWidget,
+      );
+
+      // Bottom buttons
+      expect(find.byKey(const ValueKey('keep-order-button')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+        findsOneWidget,
+      );
     },
   );
 
   testWidgets(
-    'IT-MOB-CANCEL-003 Given a reason When Cancel order is pressed Then the pending step is shown',
+    'State 2: Tapping "Cancel order" without reason triggers validation error message and red border',
     (tester) async {
       await pumpCancelOrder(tester);
 
-      await tester.tap(find.text('Cancel order'));
+      // Tap Cancel order with empty reason
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cancelling order'), findsOneWidget);
-      expect(find.text('Checking…'), findsOneWidget);
-      expect(find.text('Cancelling…'), findsOneWidget);
-      expect(find.text('Sample: Confirmed'), findsOneWidget);
-      expect(find.text('Sample: Denied'), findsOneWidget);
+      expect(
+        find.text('Enter a reason for cancelling (up to 280 characters).'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     },
   );
 
   testWidgets(
-    'IT-MOB-CANCEL-004 Given the pending step When the sample is confirmed Then the outcome step is shown',
+    'State 3: Active typing clears validation error and updates character counter',
     (tester) async {
-      await pumpCancelOrder(tester, step: CancelOrderStep.processing);
+      await pumpCancelOrder(tester);
 
-      await tester.tap(find.text('Sample: Confirmed'));
+      // Trigger error first
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
       await tester.pumpAndSettle();
+      expect(
+        find.text('Enter a reason for cancelling (up to 280 characters).'),
+        findsOneWidget,
+      );
 
-      expect(find.text('Order cancelled'), findsOneWidget);
-      expect(find.text('CANCELLED'), findsWidgets);
-      expect(find.text('SAMPLE OUTCOME'), findsOneWidget);
-      expect(find.text('Back to menu'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'IT-MOB-CANCEL-005 Given the pending step When the sample is denied Then the denied step is shown',
-    (tester) async {
-      await pumpCancelOrder(tester, step: CancelOrderStep.processing);
-
-      await tester.tap(find.text('Sample: Denied'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Cancellation denied'), findsOneWidget);
-      expect(find.text('ACTION NOT COMPLETED'), findsWidgets);
-      expect(find.text('Refresh order status'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'IT-MOB-CANCEL-006 Given the approval step Then the restricted action cannot be confirmed',
-    (tester) async {
-      await pumpCancelOrder(tester, step: CancelOrderStep.approvalRequired);
-
-      expect(find.text('Approval needed'), findsOneWidget);
-      expect(find.text('PREPARING'), findsOneWidget);
-      expect(find.text('Not authorized'), findsOneWidget);
-      expect(find.text('Return to order'), findsOneWidget);
-      expect(find.text('Cancel order'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'IT-MOB-CANCEL-007 Given a phone width Then the review step lays out without overflow',
-    (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: counterTheme,
-            home: const CancelOrderScreen(),
-          ),
-        ),
+      // Enter text
+      await tester.enterText(
+        find.byType(TextField),
+        'Duplicate entry at counter',
       );
       await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Cancel this order?'), findsOneWidget);
-      expect(find.text('Keep order'), findsOneWidget);
-      expect(find.text('Cancel order'), findsOneWidget);
+      // Error message is cleared
+      expect(
+        find.text('Enter a reason for cancelling (up to 280 characters).'),
+        findsNothing,
+      );
+
+      // Counter dynamically updated (length of "Duplicate entry at counter" is 26)
+      expect(find.text('26/280 characters'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'IT-MOB-CANCEL-008 Given a live order When the reason is submitted Then the server result is shown',
+    'State 4: Submitting cancellation navigates to "Order cancelled" success state with "Back to menu" button',
+    (tester) async {
+      await pumpCancelOrder(
+        tester,
+        orderCode: 'ORD-2026-1105-017',
+        ticketNumber: 'T-017',
+      );
+
+      await tester.enterText(
+        find.byType(TextField),
+        'Duplicate entry at counter',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.pumpAndSettle();
+
+      // Success card
+      expect(find.text('Order cancelled'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(
+        find.text('No refund or stock change was made.'),
+        findsOneWidget,
+      );
+
+      // Check order code and ticket number in RichText
+      expect(find.byType(RichText), findsWidgets);
+
+      // Action button switches to "Back to menu"
+      expect(find.byKey(const ValueKey('back-to-menu-button')), findsOneWidget);
+      expect(find.byKey(const ValueKey('keep-order-button')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Live cancellation: Calls backend repository with brandId, orderId, and reason',
     (tester) async {
       final repository = _FakeCancelRepository(
         CancelOrderAccepted(
           const CancelOrderOutcome(
             orderId: _liveOrderId,
             status: 'CANCELLED',
-            orderCode: 'GC-00007',
-            cancellationReason: 'Customer changed their mind.',
+            orderCode: 'ORD-2026-1105-017',
+            cancellationReason: 'Guest changed their mind',
           ),
         ),
       );
-      await pumpLiveCancelOrder(tester, repository);
 
-      // Live mode never shows the demo outcome controls.
-      expect(find.text('Sample: Confirmed'), findsNothing);
+      await pumpLiveCancelOrder(tester, repository);
 
       await tester.enterText(
         find.byType(TextField),
-        'Customer changed their mind.',
+        'Guest changed their mind',
       );
-      await tester.tap(find.text('Cancel order'));
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Order cancelled'), findsOneWidget);
-      expect(find.text('SERVER CONFIRMED'), findsOneWidget);
-      expect(find.text('SAMPLE OUTCOME'), findsNothing);
-      expect(find.text('No kitchen ticket'), findsOneWidget);
       expect(repository.calls, hasLength(1));
       expect(repository.calls.single.brandId, 'brand-1');
       expect(repository.calls.single.orderId, _liveOrderId);
-      expect(repository.calls.single.reason, 'Customer changed their mind.');
+      expect(repository.calls.single.reason, 'Guest changed their mind');
+
+      // Success screen shown
+      expect(find.text('Order cancelled'), findsOneWidget);
+      expect(find.byKey(const ValueKey('back-to-menu-button')), findsOneWidget);
     },
   );
 
   testWidgets(
-    'IT-MOB-CANCEL-009 Given a live order When the server rejects the cancellation Then the denied step shows the message',
+    'Live cancellation: Displays server denial message if backend rejects',
     (tester) async {
       final repository = _FakeCancelRepository(
         const CancelOrderDenied(
@@ -233,60 +253,48 @@ void main() {
           statusCode: 409,
         ),
       );
+
       await pumpLiveCancelOrder(tester, repository);
 
-      await tester.enterText(find.byType(TextField), 'Customer request.');
-      await tester.tap(find.text('Cancel order'));
+      await tester.enterText(find.byType(TextField), 'Guest changed mind');
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cancellation denied'), findsOneWidget);
-      expect(find.text('HTTP 409'), findsOneWidget);
       expect(
         find.text(
           'Completed orders or handed-over tickets cannot be cancelled.',
         ),
-        findsWidgets,
+        findsOneWidget,
       );
-      expect(find.text('Retry cancellation'), findsNothing);
-      expect(find.text('Back to orders'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'IT-MOB-CANCEL-010 Given a denied live order When retrying Then the same request is sent again',
+    'Callback verification: "Keep order" and "Back to menu" trigger appropriate callbacks',
     (tester) async {
-      final repository = _FakeCancelRepository(
-        const CancelOrderDenied('Could not reach the server.', retryable: true),
+      var keepOrderCalled = false;
+      var backToMenuCalled = false;
+
+      await pumpCancelOrder(
+        tester,
+        onKeepOrder: () => keepOrderCalled = true,
+        onBackToMenu: () => backToMenuCalled = true,
       );
-      await pumpLiveCancelOrder(tester, repository);
 
-      await tester.enterText(find.byType(TextField), 'Customer request.');
-      await tester.tap(find.text('Cancel order'));
+      // Tap Keep order
+      await tester.tap(find.byKey(const ValueKey('keep-order-button')));
       await tester.pumpAndSettle();
-      expect(repository.calls, hasLength(1));
+      expect(keepOrderCalled, isTrue);
 
-      await tester.tap(find.text('Retry cancellation'));
-      await tester.pumpAndSettle();
-
-      expect(repository.calls, hasLength(2));
-      expect(repository.calls.last.orderId, _liveOrderId);
-      expect(repository.calls.last.reason, 'Customer request.');
-    },
-  );
-
-  testWidgets(
-    'IT-MOB-CANCEL-011 Given a live order with no reason Then nothing is sent to the server',
-    (tester) async {
-      final repository = _FakeCancelRepository(
-        const CancelOrderDenied('Unused.'),
-      );
-      await pumpLiveCancelOrder(tester, repository);
-
-      await tester.tap(find.text('Cancel order'));
+      // Enter text and cancel
+      await tester.enterText(find.byType(TextField), 'Wrong item');
+      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Reason is required'), findsOneWidget);
-      expect(repository.calls, isEmpty);
+      // Tap Back to menu
+      await tester.tap(find.byKey(const ValueKey('back-to-menu-button')));
+      await tester.pumpAndSettle();
+      expect(backToMenuCalled, isTrue);
     },
   );
 }

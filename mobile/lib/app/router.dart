@@ -96,6 +96,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return CancelOrderScreen(
             orderId: query['orderId'],
             orderCode: query['orderCode'],
+            ticketNumber: query['ticketNumber'],
           );
         },
       ),

@@ -5,7 +5,6 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
-import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
 
 /// Step 5: Order confirmation view matching the "Kitchen ticket confirmed" visual design.
 class ConfirmationStepView extends ConsumerWidget {
@@ -21,52 +20,6 @@ class ConfirmationStepView extends ConsumerWidget {
   final String ticketNumber;
   final String orderId;
   final VoidCallback? onCancelOrder;
-
-  void _showCancelDialog(BuildContext context, WidgetRef ref) {
-    showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel this order?'),
-        content: const Text(
-          'This will cancel the order and notify the kitchen.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Keep order'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFB42318),
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Cancel order'),
-          ),
-        ],
-      ),
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        final draft = ref.read(activeOrderDraftProvider);
-        if (draft != null) {
-          try {
-            await ref.read(orderEntryRepositoryProvider).cancelDraftOrder(
-                  brandId: draft.brandId,
-                  orderId: draft.orderId,
-                  cancellationReason: 'Cancelled from confirmation screen',
-                );
-          } catch (_) {
-            // Ignore cancellation error if ticket is already queued/accepted
-          }
-        }
-        ref.read(cartProvider.notifier).clear();
-        ref.read(orderReferenceProvider.notifier).clear();
-        ref.read(activeOrderDraftProvider.notifier).clear();
-        ref.read(clientOrderIdProvider.notifier).regenerate();
-        onCancelOrder?.call();
-        onDone();
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,13 +117,15 @@ class ConfirmationStepView extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text(
-                              'Kitchen ticket',
-                              style: TextStyle(
-                                fontFamily: KkfcFonts.ibmPlexSans,
-                                fontSize: 15.0,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF586579),
+                            const Flexible(
+                              child: Text(
+                                'Kitchen ticket',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 15.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF586579),
+                                ),
                               ),
                             ),
                             Text(
@@ -200,13 +155,16 @@ class ConfirmationStepView extends ConsumerWidget {
                               color: Color(0xFF586579),
                             ),
                           ),
-                          Text(
-                            displayOrderCode,
-                            style: const TextStyle(
-                              fontFamily: KkfcFonts.ibmPlexSans,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF19293E),
+                          Flexible(
+                            child: Text(
+                              displayOrderCode,
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF19293E),
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -354,22 +312,6 @@ class ConfirmationStepView extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Secondary: "Cancel this order"
-                TextButton(
-                  onPressed: () => _showCancelDialog(context, ref),
-                  child: const Text(
-                    'Cancel this order',
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFB42318),
                     ),
                   ),
                 ),

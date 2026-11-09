@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/models/order_draft_models.dart';
@@ -9,13 +11,19 @@ import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
 import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
+import 'package:mobile/features/orders/cancel/presentation/pages/cancel_order_screen.dart';
 
 /// Step 4: Review order details and line items before confirming.
 /// Sends confirmation via POST /brands/:brandId/orders/:orderId/confirm.
 class ReviewOrderStepView extends ConsumerStatefulWidget {
-  const ReviewOrderStepView({super.key, required this.onConfirm});
+  const ReviewOrderStepView({
+    super.key,
+    required this.onConfirm,
+    this.onCancelOrder,
+  });
 
   final VoidCallback onConfirm;
+  final VoidCallback? onCancelOrder;
 
   @override
   ConsumerState<ReviewOrderStepView> createState() =>
@@ -79,6 +87,50 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
       return error.message;
     }
     return 'Could not confirm order. Please try again.';
+  }
+
+  void _navigateToCancelOrder(BuildContext context) {
+    final draft = ref.read(activeOrderDraftProvider);
+    final displayTicketNumber = draft?.ticketNumber ?? 'T-017';
+    final displayOrderCode = (draft != null && draft.orderCode.isNotEmpty)
+        ? draft.orderCode
+        : 'ORD-2026-1105-017';
+    final realOrderId = draft?.orderId;
+
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      final queryParams = <String, String>{
+        'orderCode': displayOrderCode,
+        'ticketNumber': displayTicketNumber,
+      };
+      if (realOrderId != null) {
+        queryParams['orderId'] = realOrderId;
+      }
+      final uri = Uri(
+        path: AppRoutes.cancelOrder,
+        queryParameters: queryParams,
+      );
+      router.push(uri.toString());
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => CancelOrderScreen(
+            orderId: realOrderId,
+            orderCode: displayOrderCode,
+            ticketNumber: displayTicketNumber,
+            onKeepOrder: () => Navigator.of(ctx).pop(),
+            onBackToMenu: () {
+              ref.read(cartProvider.notifier).clear();
+              ref.read(orderReferenceProvider.notifier).clear();
+              ref.read(activeOrderDraftProvider.notifier).clear();
+              ref.read(clientOrderIdProvider.notifier).regenerate();
+              widget.onCancelOrder?.call();
+              Navigator.of(ctx).pop();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _onConfirmAndSend() async {
@@ -497,57 +549,78 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
           ),
         ),
 
-        // Bottom Action Bar: "Confirm and send"
+        // Bottom Action Bar: "Confirm and send" & "Cancel order"
         Container(
           color: const Color(0xFFF7F3EC),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 52,
-              width: double.infinity,
-              child: Material(
-                color: _isSubmitting
-                    ? const Color(0xFF8B4722)
-                    : const Color(0xFFA8562A),
-                borderRadius: BorderRadius.circular(10.0),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10.0),
-                  onTap: _isSubmitting ? null : _onConfirmAndSend,
-                  child: Center(
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.restaurant,
-                                color: Colors.white,
-                                size: 18.0,
-                              ),
-                              SizedBox(width: 8.0),
-                              Text(
-                                'Confirm and send',
-                                style: TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 52,
+                  width: double.infinity,
+                  child: Material(
+                    color: _isSubmitting
+                        ? const Color(0xFF8B4722)
+                        : const Color(0xFFA8562A),
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10.0),
+                      onTap: _isSubmitting ? null : _onConfirmAndSend,
+                      child: Center(
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.restaurant,
+                                    color: Colors.white,
+                                    size: 18.0,
+                                  ),
+                                  SizedBox(width: 8.0),
+                                  Text(
+                                    'Confirm and send',
+                                    style: TextStyle(
+                                      fontFamily: KkfcFonts.ibmPlexSans,
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 8.0),
+                TextButton(
+                  key: const ValueKey('cancel-order-button'),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _navigateToCancelOrder(context),
+                  child: const Text(
+                    'Cancel order',
+                    style: TextStyle(
+                      fontFamily: KkfcFonts.ibmPlexSans,
+                      fontSize: 15.0,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFB42318),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

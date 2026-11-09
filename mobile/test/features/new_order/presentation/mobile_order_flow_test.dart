@@ -309,6 +309,7 @@ void main() {
       expect(find.text('1 line · 3 items'), findsOneWidget);
       expect(find.text('3×'), findsOneWidget);
       expect(find.text('Confirm and send'), findsOneWidget);
+      expect(find.text('Cancel order'), findsOneWidget);
 
       // Proceed: Step 4 -> Step 5 (Kitchen ticket confirmed)
       await tester.tap(find.text('Confirm and send'));
@@ -321,7 +322,7 @@ void main() {
       expect(find.text('T-017'), findsOneWidget);
       expect(find.text('ORD-2026-1105-017'), findsOneWidget);
       expect(find.text('New order'), findsOneWidget);
-      expect(find.text('Cancel this order'), findsOneWidget);
+      expect(find.text('Cancel order'), findsNothing);
     },
   );
 }
