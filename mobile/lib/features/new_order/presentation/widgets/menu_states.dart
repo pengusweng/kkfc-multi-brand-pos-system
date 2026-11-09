@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/shared/shared_layout.dart';
-import 'package:mobile/shared/widgets/responsive_card_grid.dart';
 
+/// Loading skeleton that mirrors the exact layout, dimensions, borders, and
+/// visual rhythm of [MenuItemCard] across both wide tablet/desktop and phone layouts.
 class MenuGridSkeleton extends StatefulWidget {
-  const MenuGridSkeleton({super.key});
+  const MenuGridSkeleton({super.key, this.isWide});
+
+  final bool? isWide;
 
   @override
   State<MenuGridSkeleton> createState() => _MenuGridSkeletonState();
@@ -17,9 +20,9 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
     vsync: this,
     duration: const Duration(milliseconds: 1100),
   );
-  late final Animation<double> _opacity = Tween<double>(
-    begin: 0.45,
-    end: 1,
+  late final Animation<double> _shimmer = Tween<double>(
+    begin: 0.35,
+    end: 0.90,
   ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
   @override
@@ -27,7 +30,7 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
     super.didChangeDependencies();
     if (context.reduceMotion) {
       _controller.stop();
-      _controller.value = 1;
+      _controller.value = 0.6;
     } else if (!_controller.isAnimating) {
       _controller.repeat(reverse: true);
     }
@@ -41,48 +44,174 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    Widget bar(double h, {double? w}) => Container(
-      height: h,
-      width: w,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(MenuRadius.sm),
-      ),
-    );
+    final isWide = widget.isWide ?? (MediaQuery.sizeOf(context).width >= 850.0);
 
     return Semantics(
       label: 'Loading menu',
-      child: FadeTransition(
-        opacity: _opacity,
-        child: ResponsiveCardGrid(
-          itemCount: 8,
-          itemBuilder: (context, _) => DecoratedBox(
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(MenuRadius.md),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(MenuSpace.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 10,
-                    child: bar(double.infinity),
+      child: AnimatedBuilder(
+        animation: _shimmer,
+        builder: (context, _) {
+          return isWide
+              ? GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    mainAxisExtent: 140.0,
                   ),
-                  const SizedBox(height: MenuSpace.md),
-                  bar(14, w: 90),
-                  const SizedBox(height: MenuSpace.sm),
-                  bar(10),
-                  const SizedBox(height: MenuSpace.md),
-                  bar(14, w: 60),
-                ],
-              ),
-            ),
-          ),
+                  itemCount: 6,
+                  itemBuilder: (context, index) => _SkeletonCard(
+                    index: index,
+                    shimmerValue: _shimmer.value,
+                    compact: false,
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 4,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12.0),
+                  itemBuilder: (context, index) => _SkeletonCard(
+                    index: index,
+                    shimmerValue: _shimmer.value,
+                    compact: true,
+                  ),
+                );
+        },
+      ),
+    );
+  }
+}
+
+/// A skeleton placeholder item matching [MenuItemCard]'s structure.
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({
+    required this.index,
+    required this.shimmerValue,
+    required this.compact,
+  });
+
+  final int index;
+  final double shimmerValue;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    // Vary title and description widths slightly across cards for organic realism
+    final titleWidths = [150.0, 180.0, 130.0, 165.0, 140.0, 175.0];
+    final titleWidth = titleWidths[index % titleWidths.length];
+
+    final descWidths = [0.85, 0.70, 0.90, 0.60, 0.75, 0.80];
+    final descWidthFactor = descWidths[index % descWidths.length];
+
+    final shimmerColor = Color.lerp(
+      const Color(0xFFEEE8DC),
+      const Color(0xFFDDD6C9),
+      shimmerValue,
+    )!;
+
+    final subtleShimmer = Color.lerp(
+      const Color(0xFFF7F3EC),
+      const Color(0xFFEBE5DA),
+      shimmerValue,
+    )!;
+
+    Widget bar(double h, {double? w, double radius = 4.0}) => Container(
+      height: h,
+      width: w,
+      decoration: BoxDecoration(
+        color: shimmerColor,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+
+    return Container(
+      height: compact ? null : 140.0,
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: const Color(0xFFDDD6C9),
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Top section: Title and Description placeholders
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              bar(18.0, w: titleWidth, radius: 4.0),
+              const SizedBox(height: 8.0),
+              FractionallySizedBox(
+                widthFactor: descWidthFactor,
+                child: bar(12.0, radius: 4.0),
+              ),
+              if (!compact) ...[
+                const SizedBox(height: 5.0),
+                FractionallySizedBox(
+                  widthFactor: (descWidthFactor * 0.65).clamp(0.3, 0.55),
+                  child: bar(12.0, radius: 4.0),
+                ),
+              ],
+            ],
+          ),
+
+          if (compact) const SizedBox(height: 16.0),
+
+          // Bottom section: Price and Add button placeholders
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              bar(20.0, w: 68.0, radius: 4.0),
+              Container(
+                height: 32.0,
+                width: 74.0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: subtleShimmer,
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: const Color(0xFFDDD6C9),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 14.0,
+                      height: 14.0,
+                      decoration: BoxDecoration(
+                        color: shimmerColor,
+                        borderRadius: BorderRadius.circular(3.0),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    bar(10.0, w: 26.0, radius: 3.0),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

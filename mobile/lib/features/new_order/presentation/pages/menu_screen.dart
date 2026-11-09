@@ -503,8 +503,8 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
             widget.bottomPadding,
           ),
           sliver: visibleItems.when(
-            loading: () => const SliverToBoxAdapter(
-              child: MenuGridSkeleton(),
+            loading: () => SliverToBoxAdapter(
+              child: MenuGridSkeleton(isWide: widget.isWide),
             ),
             error: (_, _) => SliverToBoxAdapter(
               child: MenuMessageCard(
