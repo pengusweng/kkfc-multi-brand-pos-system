@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,11 +10,19 @@ import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Right-hand "Current order" panel for tablet and desktop views.
-class CartPanel extends ConsumerWidget {
+class CartPanel extends ConsumerStatefulWidget {
   const CartPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartPanel> createState() => _CartPanelState();
+}
+
+class _CartPanelState extends ConsumerState<CartPanel> {
+  bool _clearPressed = false;
+  bool _continuePressed = false;
+
+  @override
+  Widget build(BuildContext context) {
     final lines = ref.watch(cartProvider);
     final brand = ref.watch(activeBrandProvider);
     final channel = ref.watch(menuChannelProvider);
@@ -26,9 +32,7 @@ class CartPanel extends ConsumerWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          left: BorderSide(color: Color(0xFFEDE8DF), width: 1.0),
-        ),
+        border: Border(left: BorderSide(color: Color(0xFFEDE8DF), width: 1.0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,43 +57,60 @@ class CartPanel extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      lines.isEmpty
-                          ? channel.label
-                          : '${lines.length} line${lines.length == 1 ? '' : 's'} · $count item${count == 1 ? '' : 's'} · ${channel.label}',
-                      style: const TextStyle(
-                        fontSize: 13.0,
-                        color: Color(0xFF586579),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        lines.isEmpty
+                            ? channel.label
+                            : '${lines.length} line${lines.length == 1 ? '' : 's'} · $count item${count == 1 ? '' : 's'} · ${channel.label}',
+                        key: ValueKey(
+                          'cart-header-subtitle-${lines.length}-$count-${channel.label}',
+                        ),
+                        style: const TextStyle(
+                          fontSize: 13.0,
+                          color: Color(0xFF586579),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 if (lines.isNotEmpty)
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8.0),
-                      onTap: () => ref.read(cartProvider.notifier).clear(),
-                      child: Ink(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(
-                            color: const Color(0xFFEDB3AF),
-                            width: 1.0,
+                  AnimatedScale(
+                    scale: _clearPressed ? 0.94 : 1.0,
+                    duration: const Duration(milliseconds: 90),
+                    curve: Curves.easeOut,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8.0),
+                        onTapDown: (_) => setState(() => _clearPressed = true),
+                        onTapCancel: () =>
+                            setState(() => _clearPressed = false),
+                        onTapUp: (_) => setState(() => _clearPressed = false),
+                        onTap: () {
+                          ref.read(cartProvider.notifier).clear();
+                        },
+                        child: Ink(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
                           ),
-                        ),
-                        child: const Text(
-                          'Clear',
-                          style: TextStyle(
-                            fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: 13.0,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFB3261E),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8.0),
+                            border: Border.all(
+                              color: const Color(0xFFEDB3AF),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: const Text(
+                            'Clear',
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 13.0,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFB3261E),
+                            ),
                           ),
                         ),
                       ),
@@ -162,16 +183,34 @@ class CartPanel extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    formatPeso(line.totalCentavos(channel)),
-                                    style: const TextStyle(
-                                      fontFamily: KkfcFonts.ibmPlexSans,
-                                      fontSize: 15.0,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF19293E),
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    transitionBuilder: (child, animation) {
+                                      return SlideTransition(
+                                        position: Tween<Offset>(
+                                          begin: const Offset(0, 0.2),
+                                          end: Offset.zero,
+                                        ).animate(animation),
+                                        child: FadeTransition(
+                                          opacity: animation,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      formatPeso(line.totalCentavos(channel)),
+                                      key: ValueKey(
+                                        'line-total-${line.id}-${line.totalCentavos(channel)}',
+                                      ),
+                                      style: const TextStyle(
+                                        fontFamily: KkfcFonts.ibmPlexSans,
+                                        fontSize: 15.0,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF19293E),
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -205,6 +244,9 @@ class CartPanel extends ConsumerWidget {
                                     style: const TextStyle(
                                       fontSize: 12.0,
                                       color: Color(0xFF586579),
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -234,18 +276,35 @@ class CartPanel extends ConsumerWidget {
                                         .decrementLine(line.id),
                                   ),
                                   SizedBox(
-                                    width: 28,
+                                    width: 32,
                                     child: Center(
-                                      child: Text(
-                                        '${line.quantity}',
-                                        style: const TextStyle(
-                                          fontFamily: KkfcFonts.ibmPlexSans,
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF19293E),
-                                          fontFeatures: [
-                                            FontFeature.tabularFigures(),
-                                          ],
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        transitionBuilder: (child, animation) {
+                                          return ScaleTransition(
+                                            scale: animation,
+                                            child: FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          '${line.quantity}',
+                                          key: ValueKey(
+                                            'qty-${line.id}-${line.quantity}',
+                                          ),
+                                          style: const TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF19293E),
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -260,40 +319,12 @@ class CartPanel extends ConsumerWidget {
                                   const SizedBox(width: 8),
 
                                   // Edit button
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                      onTap: () => openCustomize(
-                                        context,
-                                        ref,
-                                        item: line.item,
-                                        editing: line,
-                                      ),
-                                      child: Ink(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          border: Border.all(
-                                            color: const Color(0xFF76849A),
-                                            width: 1.0,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Edit',
-                                          style: TextStyle(
-                                            fontFamily: KkfcFonts.ibmPlexSans,
-                                            fontSize: 13.0,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF19293E),
-                                          ),
-                                        ),
-                                      ),
+                                  _EditButton(
+                                    onTap: () => openCustomize(
+                                      context,
+                                      ref,
+                                      item: line.item,
+                                      editing: line,
                                     ),
                                   ),
                                   const Spacer(),
@@ -349,14 +380,30 @@ class CartPanel extends ConsumerWidget {
                           color: Color(0xFF586579),
                         ),
                       ),
-                      Text(
-                        formatPeso(total),
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 14.0,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF19293E),
-                          fontFeatures: [FontFeature.tabularFigures()],
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.25),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          formatPeso(total),
+                          key: ValueKey('cart-subtotal-$total'),
+                          style: const TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 14.0,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF19293E),
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ],
@@ -374,39 +421,70 @@ class CartPanel extends ConsumerWidget {
                           color: Color(0xFF19293E),
                         ),
                       ),
-                      Text(
-                        formatPeso(total),
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
-                          fontFeatures: [FontFeature.tabularFigures()],
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.25),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          formatPeso(total),
+                          key: ValueKey('cart-total-$total'),
+                          style: const TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF19293E),
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50.0,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFA8562A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                      onPressed: () {
-                        context.go(AppRoutes.orderEntry);
-                      },
-                      child: const Text(
-                        'Continue to order details',
-                        style: TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                  Listener(
+                    onPointerDown: (_) =>
+                        setState(() => _continuePressed = true),
+                    onPointerUp: (_) =>
+                        setState(() => _continuePressed = false),
+                    onPointerCancel: (_) =>
+                        setState(() => _continuePressed = false),
+                    child: AnimatedScale(
+                      scale: _continuePressed ? KkfcMotion.pressScale : 1.0,
+                      duration: KkfcMotion.durPress,
+                      curve: Curves.easeOut,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50.0,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFFA8562A,
+                            ), // Burnished copper
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                          ),
+                          onPressed: () {
+                            context.go(AppRoutes.orderEntry);
+                          },
+                          child: const Text(
+                            'Continue to order details',
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -421,34 +499,101 @@ class CartPanel extends ConsumerWidget {
   }
 }
 
-class _QtyButton extends StatelessWidget {
+class _EditButton extends StatefulWidget {
+  const _EditButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_EditButton> createState() => _EditButtonState();
+}
+
+class _EditButtonState extends State<_EditButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _pressed ? 0.94 : 1.0,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8.0),
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTap: widget.onTap,
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: _pressed ? const Color(0xFFEEE8DC) : Colors.white,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(
+                color: _pressed
+                    ? const Color(0xFF19293E)
+                    : const Color(0xFF76849A),
+                width: 1.0,
+              ),
+            ),
+            child: const Text(
+              'Edit',
+              style: TextStyle(
+                fontFamily: KkfcFonts.ibmPlexSans,
+                fontSize: 13.0,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF19293E),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QtyButton extends StatefulWidget {
   const _QtyButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
 
   @override
+  State<_QtyButton> createState() => _QtyButtonState();
+}
+
+class _QtyButtonState extends State<_QtyButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6.0),
-        onTap: onTap,
-        child: Ink(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(6.0),
-            border: Border.all(
-              color: const Color(0xFF76849A),
-              width: 1.0,
+    return AnimatedScale(
+      scale: _pressed ? 0.90 : 1.0,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6.0),
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTap: widget.onTap,
+          child: Ink(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _pressed ? const Color(0xFFEEE8DC) : Colors.white,
+              borderRadius: BorderRadius.circular(6.0),
+              border: Border.all(
+                color: _pressed
+                    ? const Color(0xFF19293E)
+                    : const Color(0xFF76849A),
+                width: 1.0,
+              ),
             ),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: const Color(0xFF19293E),
+            child: Icon(widget.icon, size: 16, color: const Color(0xFF19293E)),
           ),
         ),
       ),

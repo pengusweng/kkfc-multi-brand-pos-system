@@ -4,8 +4,7 @@ const sampleGamcheonMenu = <MenuItem>[
   MenuItem(
     id: 'gamcheon-samgyupsal',
     name: 'Gamcheon Samgyupsal Rice Bowl',
-    description:
-        'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and spring onions.',
+    description: 'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and spring onions.',
     category: 'Rice bowls',
     pricesCentavos: {
       MenuChannel.dineIn: 22000,
@@ -46,8 +45,7 @@ const sampleGamcheonMenu = <MenuItem>[
   MenuItem(
     id: 'spicy-pork-bulgogi',
     name: 'Spicy Pork Bulgogi Set',
-    description:
-        'Tender pork tenderloin bulgogi stir-fried with onion and cabbage. Served with side dishes and soup.',
+    description: 'Tender pork tenderloin bulgogi stir-fried with onion and cabbage. Served with side dishes and soup.',
     category: 'Sets',
     pricesCentavos: {
       MenuChannel.dineIn: 24000,
@@ -59,8 +57,7 @@ const sampleGamcheonMenu = <MenuItem>[
   MenuItem(
     id: 'korean-kimchi-pancake',
     name: 'Korean Kimchi Pancake',
-    description:
-        'Crispy savory pancake with aged house kimchi and spring onions, accompanied by seasoned soy dip.',
+    description: 'Crispy savory pancake with aged house kimchi and spring onions, accompanied by seasoned soy dip.',
     category: 'Snacks',
     pricesCentavos: {
       MenuChannel.dineIn: 15000,

@@ -24,9 +24,7 @@ class MenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const KkfcScaffold(
-      body: _ResponsiveMenuLayout(),
-    );
+    return const KkfcScaffold(body: _ResponsiveMenuLayout());
   }
 }
 
@@ -42,10 +40,7 @@ class _ResponsiveMenuLayout extends ConsumerWidget {
     return Column(
       children: [
         // App header
-        AppHeader(
-          title: 'Orders',
-          compact: !isWide,
-        ),
+        AppHeader(title: 'Orders', compact: !isWide),
 
         // Main body
         Expanded(
@@ -61,8 +56,9 @@ class _ResponsiveMenuLayout extends ConsumerWidget {
                         color: const Color(0xFFF7F3EC), // Canvas background
                         child: _MenuCatalogView(
                           isWide: isWide,
-                          bottomPadding:
-                              (!isWide && cartCount > 0) ? 72.0 : 16.0,
+                          bottomPadding: (!isWide && cartCount > 0)
+                              ? 72.0
+                              : 16.0,
                         ),
                       ),
                     ),
@@ -78,11 +74,7 @@ class _ResponsiveMenuLayout extends ConsumerWidget {
               ),
 
               // Tablet / Desktop-only right cart panel
-              if (isWide)
-                const SizedBox(
-                  width: 380.0,
-                  child: CartPanel(),
-                ),
+              if (isWide) const SizedBox(width: 380.0, child: CartPanel()),
             ],
           ),
         ),
@@ -92,10 +84,7 @@ class _ResponsiveMenuLayout extends ConsumerWidget {
 }
 
 class _MenuCatalogView extends ConsumerStatefulWidget {
-  const _MenuCatalogView({
-    required this.isWide,
-    required this.bottomPadding,
-  });
+  const _MenuCatalogView({required this.isWide, required this.bottomPadding});
 
   final bool isWide;
   final double bottomPadding;
@@ -106,6 +95,9 @@ class _MenuCatalogView extends ConsumerStatefulWidget {
 
 class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  bool _searchFocused = false;
+  bool _unavailablePressed = false;
 
   final List<String> _categories = const [
     'All',
@@ -116,10 +108,23 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
 
   int _slideDirection = 1;
   String? _lastBrandId;
+  String _lastCategory = 'All';
+  int _categorySlideDirection = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(() {
+      if (mounted) {
+        setState(() => _searchFocused = _searchFocusNode.hasFocus);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -163,12 +168,26 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
     final visibleItems = ref.watch(visibleMenuItemsProvider);
 
     // Track sliding animation direction for brand switching
+    var isBrandSwitch = false;
     if (_lastBrandId != null && _lastBrandId != activeBrand.id) {
       final oldIndex = assignedBrands.indexWhere((b) => b.id == _lastBrandId);
       final newIndex = assignedBrands.indexWhere((b) => b.id == activeBrand.id);
       _slideDirection = (newIndex >= oldIndex) ? 1 : -1;
+      isBrandSwitch = true;
     }
     _lastBrandId = activeBrand.id;
+
+    // Track category switch animation
+    if (!isBrandSwitch && _lastCategory != selectedCategory) {
+      final oldIndex = _categories.indexOf(_lastCategory);
+      final newIndex = _categories.indexOf(selectedCategory);
+      _categorySlideDirection = (newIndex >= oldIndex) ? 1 : -1;
+    }
+    _lastCategory = selectedCategory;
+
+    final currentSlide = isBrandSwitch
+        ? _slideDirection
+        : _categorySlideDirection;
 
     return CustomScrollView(
       slivers: [
@@ -202,20 +221,35 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                 // 3. Search field + Unavailable button
                 Row(
                   children: [
-                    // Search bar
+                    // Search bar with animated focus ring
                     Expanded(
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOut,
                         height: 44.0,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8.0),
                           border: Border.all(
-                            color: const Color(0xFF76849A),
-                            width: 1.0,
+                            color: _searchFocused
+                                ? const Color(0xFF1F66C9) // Focus Blue
+                                : const Color(0xFF76849A),
+                            width: _searchFocused ? 1.5 : 1.0,
                           ),
+                          boxShadow: _searchFocused
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF1F66C9)
+                                        .withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: TextField(
                           controller: _searchController,
+                          focusNode: _searchFocusNode,
                           onChanged: ref.read(menuSearchProvider.notifier).set,
                           textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(
@@ -259,42 +293,59 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                     ),
                     const SizedBox(width: 10),
 
-                    // Unavailable button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(8.0),
-                        onTap: () => context.go(AppRoutes.availability),
-                        child: Ink(
-                          height: 44.0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8.0),
-                            border: Border.all(
-                              color: const Color(0xFF76849A),
-                              width: 1.0,
+                    // Unavailable button with tactile press
+                    AnimatedScale(
+                      scale: _unavailablePressed ? KkfcMotion.pressScale : 1.0,
+                      duration: KkfcMotion.durPress,
+                      curve: Curves.easeOut,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8.0),
+                          onTapDown: (_) =>
+                              setState(() => _unavailablePressed = true),
+                          onTapCancel: () =>
+                              setState(() => _unavailablePressed = false),
+                          onTapUp: (_) =>
+                              setState(() => _unavailablePressed = false),
+                          onTap: () => context.go(AppRoutes.availability),
+                          child: Ink(
+                            height: 44.0,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14.0,
                             ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.block_outlined,
-                                size: 18,
-                                color: Color(0xFF19293E),
+                            decoration: BoxDecoration(
+                              color: _unavailablePressed
+                                  ? const Color(0xFFEEE8DC)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8.0),
+                              border: Border.all(
+                                color: _unavailablePressed
+                                    ? const Color(0xFF19293E)
+                                    : const Color(0xFF76849A),
+                                width: 1.0,
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                'Unavailable',
-                                style: TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 14.0,
-                                  fontWeight: FontWeight.w700,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.block_outlined,
+                                  size: 18,
                                   color: Color(0xFF19293E),
                                 ),
-                              ),
-                            ],
+                                SizedBox(width: 8),
+                                Text(
+                                  'Unavailable',
+                                  style: TextStyle(
+                                    fontFamily: KkfcFonts.ibmPlexSans,
+                                    fontSize: 14.0,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF19293E),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -312,9 +363,8 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                         _CategoryChip(
                           label: cat,
                           selected: selectedCategory == cat,
-                          onTap: () => ref
-                              .read(menuCategoryProvider.notifier)
-                              .set(cat),
+                          onTap: () =>
+                              ref.read(menuCategoryProvider.notifier).set(cat),
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -383,39 +433,41 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
 
               return SliverToBoxAdapter(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 260),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
                   transitionBuilder: (child, animation) {
-                    final inAnimation = Tween<Offset>(
-                      begin: Offset(_slideDirection * 0.15, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ));
+                    final inAnimation =
+                        Tween<Offset>(
+                          begin: Offset(currentSlide * 0.08, 0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        );
 
                     return SlideTransition(
                       position: inAnimation,
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
+                      child: FadeTransition(opacity: animation, child: child),
                     );
                   },
                   child: KeyedSubtree(
-                    key: ValueKey('brand-${activeBrand.id}'),
+                    key: ValueKey(
+                      'catalog-${activeBrand.id}-$selectedCategory-${ref.watch(menuSearchProvider)}',
+                    ),
                     child: widget.isWide
                         ? GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16.0,
-                              mainAxisSpacing: 16.0,
-                              mainAxisExtent: 140.0,
-                            ),
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16.0,
+                                  mainAxisSpacing: 16.0,
+                                  mainAxisExtent: 140.0,
+                                ),
                             itemCount: items.length,
                             itemBuilder: (context, index) => MenuItemCard(
                               item: items[index],
@@ -635,8 +687,8 @@ class _ChannelSegmentedBar extends StatelessWidget {
   }
 }
 
-/// Category pill chip matching the design
-class _CategoryChip extends StatelessWidget {
+/// Category pill chip matching the design with tactile press feedback
+class _CategoryChip extends StatefulWidget {
   const _CategoryChip({
     required this.label,
     required this.selected,
@@ -648,30 +700,53 @@ class _CategoryChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_CategoryChip> createState() => _CategoryChipState();
+}
+
+class _CategoryChipState extends State<_CategoryChip> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF1D2940) : Colors.transparent,
-          borderRadius: BorderRadius.circular(999.0), // Full pill
-          border: selected
-              ? null
-              : Border.all(
-                  color: const Color(0xFF76849A),
-                  width: 1.0,
-                ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: KkfcFonts.ibmPlexSans,
-            fontSize: 14.0,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF19293E),
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? KkfcMotion.pressScale : 1.0,
+        duration: KkfcMotion.durPress,
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: widget.selected
+                ? const Color(0xFF1D2940)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(999.0), // Full pill
+            border: widget.selected
+                ? null
+                : Border.all(color: const Color(0xFF76849A), width: 1.0),
+            boxShadow: widget.selected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF1D2940).withValues(alpha: 0.18),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontFamily: KkfcFonts.ibmPlexSans,
+              fontSize: 14.0,
+              fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w600,
+              color: widget.selected ? Colors.white : const Color(0xFF19293E),
+            ),
           ),
         ),
       ),

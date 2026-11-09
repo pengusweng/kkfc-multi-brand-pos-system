@@ -110,8 +110,9 @@ class MenuCategoryNotifier extends Notifier<String> {
   void set(String category) => state = category;
 }
 
-final menuCategoryProvider =
-    NotifierProvider<MenuCategoryNotifier, String>(MenuCategoryNotifier.new);
+final menuCategoryProvider = NotifierProvider<MenuCategoryNotifier, String>(
+  MenuCategoryNotifier.new,
+);
 
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
@@ -121,10 +122,12 @@ final visibleMenuItemsProvider =
           .watch(menuItemsProvider)
           .whenData(
             (items) => items.where((i) {
-              final matchesQuery = query.isEmpty ||
+              final matchesQuery =
+                  query.isEmpty ||
                   i.name.toLowerCase().contains(query) ||
                   i.description.toLowerCase().contains(query);
-              final matchesCategory = category == 'All' ||
+              final matchesCategory =
+                  category == 'All' ||
                   (i.category != null &&
                       i.category!.toLowerCase() == category.toLowerCase());
               return matchesQuery && matchesCategory;
