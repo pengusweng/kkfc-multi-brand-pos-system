@@ -85,14 +85,28 @@ class CartItemCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                formatPeso(lineTotal),
-                style: const TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF19293E),
-                  fontFeatures: [FontFeature.tabularFigures()],
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.0, -0.2),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Text(
+                  formatPeso(lineTotal),
+                  key: ValueKey('total-$lineTotal'),
+                  style: const TextStyle(
+                    fontFamily: KkfcFonts.ibmPlexSans,
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF19293E),
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],
@@ -201,14 +215,27 @@ class CartItemCard extends StatelessWidget {
               SizedBox(
                 width: 34,
                 child: Center(
-                  child: Text(
-                    '${line.quantity}',
-                    style: const TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF19293E),
-                      fontFeatures: [FontFeature.tabularFigures()],
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    transitionBuilder: (child, animation) => ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutBack,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                    child: Text(
+                      '${line.quantity}',
+                      key: ValueKey('qty-${line.quantity}'),
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF19293E),
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
                 ),

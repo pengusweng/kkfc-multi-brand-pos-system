@@ -160,16 +160,24 @@ class CartStepView extends ConsumerWidget {
                                     color: Color(0xFF586579),
                                   ),
                                 ),
-                                Text(
-                                  formatPeso(total),
-                                  style: const TextStyle(
-                                    fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 14.0,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF19293E),
-                                    fontFeatures: [
-                                      FontFeature.tabularFigures(),
-                                    ],
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) => FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                  child: Text(
+                                    formatPeso(total),
+                                    key: ValueKey('subtotal-$total'),
+                                    style: const TextStyle(
+                                      fontFamily: KkfcFonts.ibmPlexSans,
+                                      fontSize: 14.0,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF19293E),
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -194,16 +202,24 @@ class CartStepView extends ConsumerWidget {
                                     color: Color(0xFF19293E),
                                   ),
                                 ),
-                                Text(
-                                  formatPeso(total),
-                                  style: const TextStyle(
-                                    fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 18.0,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF19293E),
-                                    fontFeatures: [
-                                      FontFeature.tabularFigures(),
-                                    ],
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  transitionBuilder: (child, animation) => FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                  child: Text(
+                                    formatPeso(total),
+                                    key: ValueKey('total-$total'),
+                                    style: const TextStyle(
+                                      fontFamily: KkfcFonts.ibmPlexSans,
+                                      fontSize: 18.0,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF19293E),
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],

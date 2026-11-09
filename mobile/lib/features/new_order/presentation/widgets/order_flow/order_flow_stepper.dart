@@ -42,11 +42,15 @@ class OrderFlowStepper extends StatelessWidget {
             children: [
               for (var i = 0; i < steps.length; i++) ...[
                 if (i > 0)
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
                     width: 22.0,
                     height: 1.5,
                     margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                    color: const Color(0xFFCBD5E1),
+                    color: i < currentStep
+                        ? const Color(0xFF166B3A)
+                        : const Color(0xFFCBD5E1),
                   ),
                 _buildStep(steps[i]),
               ],
@@ -62,63 +66,59 @@ class OrderFlowStepper extends StatelessWidget {
     final isActive = step.stepNumber == currentStep;
     final isFinalSent = step.stepNumber == 5 && currentStep == 5;
 
-    Widget indicator;
-
+    final BoxDecoration decoration;
     if (isCompleted || isFinalSent) {
-      indicator = Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE3F4E9),
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFA3D9B5), width: 1.0),
-        ),
-        child: const Center(
-          child: Icon(Icons.check, size: 14, color: Color(0xFF166B3A)),
-        ),
+      decoration = BoxDecoration(
+        color: const Color(0xFFE3F4E9),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFA3D9B5), width: 1.0),
       );
     } else if (isActive) {
-      indicator = Container(
-        width: 24,
-        height: 24,
-        decoration: const BoxDecoration(
-          color: Color(0xFF19293E),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            '${step.stepNumber}',
-            style: const TextStyle(
-              fontFamily: KkfcFonts.ibmPlexSans,
-              fontSize: 12.0,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ),
+      decoration = const BoxDecoration(
+        color: Color(0xFF19293E),
+        shape: BoxShape.circle,
       );
     } else {
-      indicator = Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF76849A), width: 1.5),
-        ),
-        child: Center(
-          child: Text(
-            '${step.stepNumber}',
-            style: const TextStyle(
-              fontFamily: KkfcFonts.ibmPlexSans,
-              fontSize: 12.0,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF586579),
-            ),
-          ),
-        ),
+      decoration = BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF76849A), width: 1.5),
       );
     }
+
+    final indicator = AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      width: 24,
+      height: 24,
+      decoration: decoration,
+      child: Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: child,
+          ),
+          child: (isCompleted || isFinalSent)
+              ? const Icon(
+                  Icons.check,
+                  key: ValueKey('icon-check'),
+                  size: 14,
+                  color: Color(0xFF166B3A),
+                )
+              : Text(
+                  '${step.stepNumber}',
+                  key: ValueKey('text-${step.stepNumber}-$isActive'),
+                  style: TextStyle(
+                    fontFamily: KkfcFonts.ibmPlexSans,
+                    fontSize: 12.0,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                    color: isActive ? Colors.white : const Color(0xFF586579),
+                  ),
+                ),
+        ),
+      ),
+    );
 
     final canTap = isCompleted && currentStep < 5 && onStepTapped != null;
 
@@ -137,18 +137,27 @@ class OrderFlowStepper extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             indicator,
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              Text(
-                step.label,
-                style: const TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF19293E),
-                ),
-              ),
-            ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: isActive
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width: 6),
+                        Text(
+                          step.label,
+                          style: const TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF19293E),
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),

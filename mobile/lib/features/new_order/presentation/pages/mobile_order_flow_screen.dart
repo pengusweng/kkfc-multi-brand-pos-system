@@ -26,13 +26,25 @@ class MobileOrderFlowScreen extends ConsumerStatefulWidget {
 
 class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
   late int _currentStep = widget.initialStep;
+  int _slideDirection = 1;
 
   void _onBack() {
     if (_currentStep > 2) {
-      setState(() => _currentStep--);
+      setState(() {
+        _slideDirection = -1;
+        _currentStep--;
+      });
     } else {
       _closeFlow();
     }
+  }
+
+  void _goToStep(int step) {
+    if (step == _currentStep) return;
+    setState(() {
+      _slideDirection = (step > _currentStep) ? 1 : -1;
+      _currentStep = step;
+    });
   }
 
   void _closeFlow() {
@@ -116,7 +128,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
             currentStep: _currentStep,
             onStepTapped: (step) {
               if (step >= 2 && step <= 5) {
-                setState(() => _currentStep = step);
+                _goToStep(step);
               } else if (step == 1) {
                 _closeFlow();
               }
@@ -125,24 +137,25 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
 
           const Divider(height: 1, thickness: 1, color: Color(0xFFEDE8DF)),
 
-          // Step Body with smooth slide & fade animation
+          // Step Body with smooth directional slide & fade animation
           Expanded(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 280),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position:
-                        Tween<Offset>(
-                          begin: const Offset(0.04, 0),
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          ),
-                        ),
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(_slideDirection * 0.05, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+                  child: FadeTransition(
+                    opacity: animation,
                     child: child,
                   ),
                 );
@@ -161,7 +174,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
         return KeyedSubtree(
           key: const ValueKey('step-2-cart'),
           child: CartStepView(
-            onContinue: () => setState(() => _currentStep = 3),
+            onContinue: () => _goToStep(3),
             onReturnToMenu: _closeFlow,
           ),
         );
@@ -169,16 +182,14 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
         return KeyedSubtree(
           key: const ValueKey('step-3-details'),
           child: OrderDetailsStepView(
-            onContinue: () => setState(() => _currentStep = 4),
+            onContinue: () => _goToStep(4),
           ),
         );
       case 4:
         return KeyedSubtree(
           key: const ValueKey('step-4-review'),
           child: ReviewOrderStepView(
-            onConfirm: () {
-              setState(() => _currentStep = 5);
-            },
+            onConfirm: () => _goToStep(5),
             onCancelOrder: () {
               ref.read(cartProvider.notifier).clear();
               ref.read(orderReferenceProvider.notifier).clear();
@@ -205,7 +216,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
         return KeyedSubtree(
           key: const ValueKey('step-default'),
           child: CartStepView(
-            onContinue: () => setState(() => _currentStep = 3),
+            onContinue: () => _goToStep(3),
             onReturnToMenu: _closeFlow,
           ),
         );

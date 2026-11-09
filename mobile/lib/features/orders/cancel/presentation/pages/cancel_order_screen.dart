@@ -266,8 +266,12 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
         color: const Color(0xFFF7F4EE),
         child: Column(
           children: [
-            // Top AppHeader: Navy ("Orders" / "Cashier Staff v")
-            const AppHeader(title: 'Orders', compact: true),
+            // Top AppHeader: Navy ("Orders" / "Cashier Staff v") matching the mockup without logout icon
+            const AppHeader(
+              title: 'Orders',
+              compact: true,
+              showLogout: false,
+            ),
 
             if (!_isCancelled) ...[
               // White Title Bar: "Cancel order"
