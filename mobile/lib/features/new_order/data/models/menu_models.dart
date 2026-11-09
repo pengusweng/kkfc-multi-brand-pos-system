@@ -211,20 +211,26 @@ class CartLine {
     required this.item,
     required this.quantity,
     this.selections = const {},
+    this.kitchenNote,
   });
 
   final String id;
   final MenuItem item;
   final int quantity;
   final Map<String, String> selections; // groupId -> optionId
+  final String? kitchenNote;
 
-  CartLine copyWith({int? quantity, Map<String, String>? selections}) =>
-      CartLine(
-        id: id,
-        item: item,
-        quantity: quantity ?? this.quantity,
-        selections: selections ?? this.selections,
-      );
+  CartLine copyWith({
+    int? quantity,
+    Map<String, String>? selections,
+    String? kitchenNote,
+  }) => CartLine(
+    id: id,
+    item: item,
+    quantity: quantity ?? this.quantity,
+    selections: selections ?? this.selections,
+    kitchenNote: kitchenNote ?? this.kitchenNote,
+  );
 
   int unitCentavos(MenuChannel channel) =>
       item.priceFor(channel) + modifiersCentavosFor(item, selections);

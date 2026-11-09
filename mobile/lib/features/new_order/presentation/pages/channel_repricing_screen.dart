@@ -17,25 +17,12 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 class ChannelRepricingScreen extends StatelessWidget {
   const ChannelRepricingScreen({super.key});
 
-  void _openSection(BuildContext context, int index) {
-    if (index == 1) {
-      context.go(AppRoutes.orders);
-    } else if (index == 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Audit is not available yet.')),
-      );
-    } else {
-      context.go(AppRoutes.menu);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          final showRail = width >= MenuLayout.compactMax;
           final showContext = width >= MenuLayout.compactMax;
 
           return Column(

@@ -150,9 +150,13 @@ class CartNotifier extends Notifier<List<CartLine>> {
     MenuItem item,
     Map<String, String> sel, {
     String? except,
+    String? kitchenNote,
   }) => state.indexWhere(
     (l) =>
-        l.id != except && l.item.id == item.id && mapEquals(l.selections, sel),
+        l.id != except &&
+        l.item.id == item.id &&
+        mapEquals(l.selections, sel) &&
+        (l.kitchenNote ?? '') == (kitchenNote ?? ''),
   );
 
   /// Quick add with defaults (no modifiers).
@@ -161,10 +165,14 @@ class CartNotifier extends Notifier<List<CartLine>> {
   void addConfigured(
     MenuItem item,
     Map<String, String> selections,
-    int quantity,
-  ) {
+    int quantity, {
+    String? kitchenNote,
+  }) {
     final sel = _normalize(item, selections);
-    final i = _findIdentical(item, sel);
+    final note = (kitchenNote != null && kitchenNote.trim().isNotEmpty)
+        ? kitchenNote.trim()
+        : null;
+    final i = _findIdentical(item, sel, kitchenNote: note);
     if (i != -1) {
       state = [
         for (var k = 0; k < state.length; k++)
@@ -182,6 +190,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
         item: item,
         quantity: quantity,
         selections: sel,
+        kitchenNote: note,
       ),
     ];
   }
@@ -191,6 +200,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
     Map<String, String> selections,
     int quantity, {
     MenuItem? item,
+    String? kitchenNote,
   }) {
     final i = state.indexWhere((l) => l.id == lineId);
     if (i == -1) return;
@@ -201,11 +211,15 @@ class CartNotifier extends Notifier<List<CartLine>> {
             item: item,
             quantity: state[i].quantity,
             selections: state[i].selections,
+            kitchenNote: state[i].kitchenNote,
           );
     final sel = _normalize(line.item, selections);
+    final note = kitchenNote != null
+        ? (kitchenNote.trim().isEmpty ? null : kitchenNote.trim())
+        : line.kitchenNote;
 
     // If the edit makes this line identical to another, merge them.
-    final j = _findIdentical(line.item, sel, except: lineId);
+    final j = _findIdentical(line.item, sel, except: lineId, kitchenNote: note);
     if (j != -1) {
       final otherId = state[j].id;
       state = [
@@ -223,6 +237,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
             item: line.item,
             quantity: quantity,
             selections: sel,
+            kitchenNote: note,
           )
         else
           l,

@@ -44,35 +44,37 @@ class _CartPanelState extends ConsumerState<CartPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Current order',
-                      style: TextStyle(
-                        fontFamily: KkfcFonts.ibmPlexSans,
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF19293E),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Text(
-                        lines.isEmpty
-                            ? channel.label
-                            : '${lines.length} line${lines.length == 1 ? '' : 's'} · $count item${count == 1 ? '' : 's'} · ${channel.label}',
-                        key: ValueKey(
-                          'cart-header-subtitle-${lines.length}-$count-${channel.label}',
-                        ),
-                        style: const TextStyle(
-                          fontSize: 13.0,
-                          color: Color(0xFF586579),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Current order',
+                        style: TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF19293E),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Text(
+                          lines.isEmpty
+                              ? channel.label
+                              : '${lines.length} line${lines.length == 1 ? '' : 's'} · $count item${count == 1 ? '' : 's'} · ${channel.label}',
+                          key: ValueKey(
+                            'cart-header-subtitle-${lines.length}-$count-${channel.label}',
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13.0,
+                            color: Color(0xFF586579),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (lines.isNotEmpty)
                   AnimatedScale(
@@ -260,6 +262,47 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                                   style: const TextStyle(
                                     fontSize: 12.0,
                                     color: Color(0xFF586579),
+                                  ),
+                                ),
+                              ],
+
+                              // Kitchen note
+                              if (line.kitchenNote != null &&
+                                  line.kitchenNote!.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFDF4E2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: const Color(0xFFE8D3A7),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.edit_note,
+                                        size: 14,
+                                        color: Color(0xFF855B14),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          line.kitchenNote!,
+                                          style: const TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                            fontSize: 11.5,
+                                            color: Color(0xFF855B14),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

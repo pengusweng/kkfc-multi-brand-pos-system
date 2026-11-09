@@ -1,10 +1,10 @@
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 
-const sampleGamcheonMenu = <MenuItem>[
+final sampleGamcheonMenu = <MenuItem>[
   MenuItem(
     id: 'gamcheon-samgyupsal',
     name: 'Gamcheon Samgyupsal Rice Bowl',
-    description: 'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and spring onions.',
+    description: 'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and scallions over warm rice.',
     category: 'Rice bowls',
     pricesCentavos: {
       MenuChannel.dineIn: 22000,
@@ -14,19 +14,19 @@ const sampleGamcheonMenu = <MenuItem>[
     },
     modifierGroups: [
       ModifierGroup(
-        id: 'rice-option',
+        id: 'rice-choice',
         title: 'Rice Choice',
-        defaultOptionId: 'garlic-butter-rice',
+        defaultOptionId: 'steamed-white-rice',
         options: [
+          ModifierOption(
+            id: 'steamed-white-rice',
+            label: 'Steamed White Rice',
+            priceDeltaCentavos: 0,
+          ),
           ModifierOption(
             id: 'garlic-butter-rice',
             label: 'Garlic Butter Rice',
             priceDeltaCentavos: 1500,
-          ),
-          ModifierOption(
-            id: 'plain-rice',
-            label: 'Plain Rice',
-            priceDeltaCentavos: 0,
           ),
         ],
       ),
@@ -35,10 +35,32 @@ const sampleGamcheonMenu = <MenuItem>[
         title: 'Spice Level',
         defaultOptionId: 'mild',
         options: [
-          ModifierOption(id: 'mild', label: 'Mild (Touch of Sweetness)'),
-          ModifierOption(id: 'regular', label: 'Regular'),
-          ModifierOption(id: 'spicy', label: 'Extra Spicy'),
+          ModifierOption(
+            id: 'mild',
+            label: 'Mild (Touch of Sweetness)',
+            priceDeltaCentavos: 0,
+          ),
+          ModifierOption(
+            id: 'medium',
+            label: 'Medium Traditional',
+            priceDeltaCentavos: 0,
+          ),
+          ModifierOption(
+            id: 'spicy-fire-garlic',
+            label: 'Spicy Fire Garlic',
+            priceDeltaCentavos: 1000,
+          ),
         ],
+      ),
+      ModifierGroup.addOn(
+        id: 'fried-egg',
+        name: 'Fried Sunny-Side Egg',
+        priceCentavos: 2500,
+      ),
+      ModifierGroup.addOn(
+        id: 'house-kimchi',
+        name: 'House Kimchi Portion (60g)',
+        priceCentavos: 3000,
       ),
     ],
   ),
@@ -99,7 +121,7 @@ const sampleAureliasMenu = <MenuItem>[
   ),
 ];
 
-const sampleMenu = sampleGamcheonMenu;
+final sampleMenu = sampleGamcheonMenu;
 
 List<MenuItem> sampleMenuForBrand(String? brandCodeOrId) {
   final norm = (brandCodeOrId ?? '').toLowerCase();
