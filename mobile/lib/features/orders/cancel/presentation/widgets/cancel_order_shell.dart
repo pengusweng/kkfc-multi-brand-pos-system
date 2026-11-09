@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 import 'cancel_action_bar.dart';
@@ -44,7 +44,7 @@ class CancelOrderShell extends StatelessWidget {
         builder: (context, constraints) {
           final isTablet = constraints.maxWidth >= kCancelTabletBreakpoint;
 
-          final topBar = MenuHeader(
+          final topBar = AppHeader(
             compact: !isTablet,
             staffName: staffName,
             staffRole: staffRole,

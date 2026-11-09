@@ -5,7 +5,7 @@ import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 import '../../data/models/order_confirmed_view_data.dart';
@@ -52,7 +52,7 @@ class OrderConfirmedScreen extends StatelessWidget {
 
           return Column(
             children: [
-              const MenuHeader(),
+              const AppHeader(),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

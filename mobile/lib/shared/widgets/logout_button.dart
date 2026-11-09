@@ -6,7 +6,7 @@ import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
-/// Themed logout button extracted from [MenuHeader].
+/// Themed logout button extracted from [AppHeader].
 ///
 /// Handles ending the server session and resetting active order / cart state.
 class LogoutButton extends ConsumerWidget {

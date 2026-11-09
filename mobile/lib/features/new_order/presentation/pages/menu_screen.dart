@@ -5,7 +5,7 @@ import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
@@ -28,7 +28,7 @@ class MenuScreen extends StatelessWidget {
 
           return Column(
             children: [
-              const MenuHeader(),
+              const AppHeader(),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

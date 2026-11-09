@@ -12,7 +12,7 @@ import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 

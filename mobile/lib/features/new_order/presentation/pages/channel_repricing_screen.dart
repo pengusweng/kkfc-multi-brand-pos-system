@@ -6,7 +6,7 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
@@ -41,7 +41,7 @@ class ChannelRepricingScreen extends StatelessWidget {
 
           return Column(
             children: [
-              const MenuHeader(),
+              const AppHeader(),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
