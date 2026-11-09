@@ -50,6 +50,7 @@
 
 @theme {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --animate-rise: rise 0.9s var(--ease-out-expo) both;
   --animate-draw: draw 2.2s var(--ease-out-expo) both;
 
@@ -113,7 +114,9 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Cream, not white: route transitions snapshot the body under the moving
+       rail, and a white body flashes beside it. Every page paints its own surface. */
+    @apply bg-[#fbeee2] text-foreground;
   }
   html {
     @apply font-sans;

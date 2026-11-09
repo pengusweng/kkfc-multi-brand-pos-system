@@ -12,16 +12,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatRole } from "../../utils/formatRole";
+import { railFade } from "../../utils/railFade";
 
 export type NavUserProps = {
   name: string;
   role: string;
+  username: string;
   collapsed: boolean;
   signingOut: boolean;
   onSignOut: () => void;
 };
 
-export default function NavUser({ name, role, collapsed, signingOut, onSignOut }: NavUserProps) {
+export default function NavUser({ name, role, username, collapsed, signingOut, onSignOut }: NavUserProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   // Set when "Sign out" is chosen. The sign-out waits until the menu has fully
   // closed: a popup still fading out when the page is hidden never finishes, and
@@ -49,12 +51,12 @@ export default function NavUser({ name, role, collapsed, signingOut, onSignOut }
           aria-busy={signingOut}
           title={collapsed ? `${name} · ${formatRole(role)}` : undefined}
           className={cn(
-            "flex w-full items-center gap-3 rounded-md px-1.5 py-2 text-left transition-colors outline-none hover:bg-white/10 disabled:cursor-progress disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-white/60 data-popup-open:bg-white/10",
-            collapsed && "lg:justify-center lg:px-0",
+            // px-2 puts the avatar's centre on the collapsed rail's centre line.
+            "flex w-full items-center gap-3 rounded-md px-2 py-2 text-left whitespace-nowrap transition-colors outline-none hover:bg-white/10 disabled:cursor-progress disabled:opacity-70 focus-visible:ring-2 focus-visible:ring-white/60 data-popup-open:bg-white/10",
           )}
         >
           <Avatar name={name} />
-          <span className={cn("min-w-0 leading-tight", collapsed && "lg:sr-only")}>
+          <span className={cn("min-w-0 leading-tight", railFade(collapsed))}>
             <span className="block truncate text-sm font-semibold">{name}</span>
             <span className="block truncate text-xs text-[#c7d9ed]">
               {signingOut ? "Signing out…" : formatRole(role)}
@@ -62,17 +64,23 @@ export default function NavUser({ name, role, collapsed, signingOut, onSignOut }
           </span>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent side="top" align="start" className="w-56" finalFocus={() => !leaving.current}>
+        {/* Collapsed rail: open beside the avatar instead of over the rail's edge. */}
+        <DropdownMenuContent
+          side={collapsed ? "right" : "top"}
+          align={collapsed ? "end" : "start"}
+          sideOffset={8}
+          finalFocus={() => !leaving.current}
+          className={cn("min-w-56 rounded-xl p-1.5", collapsed && "w-56")}
+        >
           <DropdownMenuGroup>
-            <DropdownMenuLabel>
-              <span className="block truncate font-semibold text-foreground">{name}</span>
-              {formatRole(role)}
+            <DropdownMenuLabel className="px-2 pt-1.5 pb-2">
+              <span className="block text-xs text-[#526070]">Signed in as</span>
+              <span className="block truncate text-sm font-medium text-[#19293e]">{username}</span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          {/* Closes the menu right away, so it's never left open in the hidden dashboard. */}
+          <DropdownMenuSeparator className="-mx-1.5 my-1" />
           <DropdownMenuItem
-            variant="destructive"
+            className="h-9 gap-2.5 rounded-lg px-2 text-[#19293e] focus:bg-[#f6efe8] focus:text-[#19293e] [&_svg]:text-[#526070]"
             onClick={() => {
               leaving.current = true;
             }}
