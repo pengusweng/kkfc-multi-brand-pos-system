@@ -48,13 +48,9 @@ describe('OrdersService', () => {
   };
   const recipe = {
     recipe_id: 'recipe',
-    type: 'MENU_ASSEMBLY',
     is_active: true,
     version: 2,
     instructions: 'Restricted',
-    recipe_components_recipe: [
-      { inventory_item_id: 'ingredient', quantity: '3' },
-    ],
   };
   function mockClient() {
     return {
@@ -113,8 +109,6 @@ describe('OrdersService', () => {
           order_date: draft.order_date,
         },
       ]),
-      inventoryItem: { update: jest.fn() },
-      stockMovement: { create: jest.fn() },
     };
   }
   let tx: ReturnType<typeof mockClient>;
@@ -180,16 +174,6 @@ describe('OrdersService', () => {
   it.each([
     { name: 'missing', recipe: null },
     { name: 'inactive', recipe: { ...recipe, is_active: false } },
-    { name: 'production', recipe: { ...recipe, type: 'PRODUCTION' } },
-    ...['0', '-1', 'NaN', 'Infinity'].map((quantity) => ({
-      name: `component quantity ${quantity}`,
-      recipe: {
-        ...recipe,
-        recipe_components_recipe: [
-          { inventory_item_id: 'ingredient', quantity },
-        ],
-      },
-    })),
   ])(
     'UT-ORD-003 Given a $name recipe When confirming Then reject without writes',
     async ({ recipe: invalidRecipe }) => {
@@ -369,7 +353,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('UT-ORD-010: creates a draft without a ticket, final recipe or stock writes', async () => {
+  it('UT-ORD-010: creates a draft without a ticket or final recipe', async () => {
     await service.create('brand', 'actor', request);
     const { data } = (tx.order.create.mock.calls as unknown[][])[0][0] as {
       data: {
@@ -380,8 +364,6 @@ describe('OrdersService', () => {
     expect(data.order_items_order.create[0].applied_recipe_id).toBeUndefined();
     expect(data.order_items_order.create[0].recipe_snapshot).toBeUndefined();
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
-    expect(tx.stockMovement.create).not.toHaveBeenCalled();
-    expect(tx.inventoryItem.update).not.toHaveBeenCalled();
     tx.order.findUnique.mockResolvedValue({
       ...draft,
       create_request_hash: data.create_request_hash,
@@ -543,7 +525,7 @@ describe('OrdersService', () => {
     },
   );
 
-  it('UT-ORD-018: confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
+  it('UT-ORD-018: confirms with channel price, modifier and full recipe snapshots', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);
     expect(result.status).toBe('CONFIRMED');
     expect(tx.order.update).toHaveBeenCalledWith({
@@ -591,8 +573,6 @@ describe('OrdersService', () => {
         created_by_id: 'actor',
       },
     });
-    expect(tx.stockMovement.create).not.toHaveBeenCalled();
-    expect(tx.inventoryItem.update).not.toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable',
     });
@@ -1076,8 +1056,6 @@ describe('OrdersService', () => {
       expect(result.order_items_order[0]).not.toHaveProperty('recipe_snapshot');
       expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
       expect(tx.orderItem.update).not.toHaveBeenCalled();
-      expect(tx.inventoryItem.update).not.toHaveBeenCalled();
-      expect(tx.stockMovement.create).not.toHaveBeenCalled();
       expect(tx.order.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {

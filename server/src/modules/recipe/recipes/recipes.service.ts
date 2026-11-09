@@ -20,7 +20,6 @@ export class RecipesService {
     await this.access.assertAccess(userId, id, 'READ');
     const recipe = await this.prisma.recipe.findUnique({
       where: { recipe_id: id },
-      include: { recipe_components_recipe: true },
     });
     if (!recipe) throw new NotFoundException('Recipe not found.');
     return recipe;
@@ -41,20 +40,6 @@ export class RecipesService {
         instructions: dto.instructions,
         notes: dto.notes,
         modified_at: new Date(),
-        ...(dto.components
-          ? {
-              recipe_components_recipe: {
-                deleteMany: {},
-                create: dto.components.map(
-                  ({ inventory_item_id, quantity, notes }) => ({
-                    inventory_item_id,
-                    quantity,
-                    notes,
-                  }),
-                ),
-              },
-            }
-          : {}),
       },
       select: { recipe_id: true },
     });

@@ -16,7 +16,7 @@ export class OrderItemsRepository {
         is_active: true,
       },
       include: {
-        recipe: { include: { recipe_components_recipe: true } },
+        recipe: true,
         menu_item_channels_menu_item: { where: { order_channel: channel } },
         menu_item_modifiers_menu_item: { include: { modifier: true } },
       },

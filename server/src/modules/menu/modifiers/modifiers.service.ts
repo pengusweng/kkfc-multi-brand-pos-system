@@ -1,6 +1,5 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ModifiersRepository } from './modifiers.repository';
-import { InventoryItemsRepository } from '../../inventory/inventory-items/inventory-items.repository';
 import { CreateModifierDTO } from './dto/create-modifier.dto';
 import { assertExists } from '../../../shared/assertions/assert-exists';
 import { isUUID } from 'class-validator';
@@ -12,26 +11,10 @@ import { assertValidPagination } from '../../../shared/assertions/assert-valid-p
 export class ModifiersService {
   private readonly logger = new Logger(ModifiersService.name);
 
-  constructor(
-    private readonly modifiersRepository: ModifiersRepository,
-    private readonly inventoryItemsRepository: InventoryItemsRepository,
-  ) {}
+  constructor(private readonly modifiersRepository: ModifiersRepository) {}
 
   async create(dto: CreateModifierDTO) {
     this.logger.debug(`Creating modifier ${dto.code}`);
-
-    if (dto.inventory_item_id) {
-      const inventoryItem = await this.inventoryItemsRepository.findOne(
-        dto.inventory_item_id,
-      );
-
-      assertExists(
-        inventoryItem,
-        'InventoryItem',
-        dto.inventory_item_id,
-        this.logger,
-      );
-    }
 
     const modifier = await this.modifiersRepository.createModifier(dto);
 
@@ -70,26 +53,6 @@ export class ModifiersService {
     return modifier;
   }
 
-  async findManyByInventoryItem(inventoryItemId: string, activeOnly = true) {
-    this.logger.debug(
-      `Finding modifiers for inventory item ${inventoryItemId}, activeOnly=${activeOnly}`,
-    );
-
-    const inventoryItem =
-      await this.inventoryItemsRepository.findOne(inventoryItemId);
-    assertExists(inventoryItem, 'InventoryItem', inventoryItemId, this.logger);
-
-    const modifiers = await this.modifiersRepository.findManyByInventoryItem(
-      inventoryItemId,
-      activeOnly,
-    );
-
-    this.logger.log(
-      `Found ${modifiers.length} modifiers for inventory item ${inventoryItemId}`,
-    );
-    return modifiers;
-  }
-
   async findAll({ page, limit, activeOnly }: FindAllModifiersDTO) {
     this.logger.debug(
       `Listing modifiers: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
@@ -125,18 +88,6 @@ export class ModifiersService {
     const modifier =
       await this.modifiersRepository.findOneModifierByUID(modifierId);
     assertExists(modifier, 'Modifier', modifierId, this.logger);
-
-    if (dto.inventory_item_id) {
-      const inventoryItem = await this.inventoryItemsRepository.findOne(
-        dto.inventory_item_id,
-      );
-      assertExists(
-        inventoryItem,
-        'InventoryItem',
-        dto.inventory_item_id,
-        this.logger,
-      );
-    }
 
     const updated = await this.modifiersRepository.updateModifier(
       modifier.modifier_id,

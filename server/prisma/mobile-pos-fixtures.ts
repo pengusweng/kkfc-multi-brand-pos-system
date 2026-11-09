@@ -108,7 +108,6 @@ async function main() {
           brand_id: brand.brand_id,
           code: `pos-${suffix}`,
           name: 'POS test recipe',
-          type: 'MENU_ASSEMBLY',
           instructions: 'Integration test fixture',
         },
       });

@@ -43,19 +43,6 @@ export class ModifiersRepository {
     });
   }
 
-  async findManyByInventoryItem(
-    inventoryItemId: string,
-    activeOnly = true,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.modifier.findMany({
-      where: {
-        inventory_item_id: inventoryItemId,
-        is_active: activeOnly ? true : undefined,
-      },
-    });
-  }
-
   async findAll(
     skip: number,
     take: number,
