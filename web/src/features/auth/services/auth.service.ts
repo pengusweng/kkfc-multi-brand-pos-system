@@ -64,3 +64,15 @@ export async function validateCookie(token: string): Promise<LoginSession["user"
 
   return user.data;
 }
+
+export async function logout(): Promise<void> {
+  let response: Response;
+
+  try {
+    response = await fetch("/api/auth/logout", { method: "POST", cache: "no-store" });
+  } catch {
+    throw new Error("Unable to reach the server. Please try again.");
+  }
+
+  if (!response.ok) throw new Error("Unable to sign out. Please try again.");
+}

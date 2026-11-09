@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/button";
 import NavSection from "./molecules/nav-section";
 import NavUser, { type NavUserProps } from "./molecules/nav-user";
 import { NAV_GROUPS } from "../utils/navItems";
+import { useLogout } from "@/src/features/auth/hooks/useLogout";
 
 const DESKTOP_QUERY = "(min-width: 64rem)";
 
-export default function Navbar({ user }: { user: Omit<NavUserProps, "collapsed"> }) {
+export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "role"> }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const close = () => setOpen(false);
+  const logout = useLogout();
 
   // Mobile: the burger opens the dropdown menu. Desktop: it collapses the sidebar to icons.
   const toggle = () => {
@@ -69,7 +71,12 @@ export default function Navbar({ user }: { user: Omit<NavUserProps, "collapsed">
             />
           ))}
         </nav>
-        <NavUser {...user} collapsed={collapsed} />
+        <NavUser
+          {...user}
+          collapsed={collapsed}
+          signingOut={logout.isPending}
+          onSignOut={() => logout.mutate()}
+        />
       </div>
     </aside>
   );
