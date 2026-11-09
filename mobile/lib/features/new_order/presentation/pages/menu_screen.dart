@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,24 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 /// Screen breakpoint for wide tablet/desktop layout vs single-column phone layout.
 const double _kWideBreakpoint = 850.0;
+
+/// Brand accent color resolver matching PRODUCT.md brand identity commitments.
+Color _brandAccentColor(AssignedBrand brand) {
+  final code = brand.code.toUpperCase();
+  final name = brand.name.toLowerCase();
+  if (code.contains('GC') || name.contains('gamcheon')) {
+    return const Color(0xFF3D5A80); // Gamcheon Slate Blue
+  }
+  if (code.contains('AI') ||
+      name.contains('inasal') ||
+      name.contains('aurelia')) {
+    return const Color(0xFF9A4A1F); // Aurelia's Inasal Warm Terracotta
+  }
+  if (code.contains('KK') || name.contains('kafe') || name.contains('king')) {
+    return const Color(0xFF5C4033); // King Kungs Kafe Espresso Brown
+  }
+  return const Color(0xFF19293E); // Primary Shell Navy
+}
 
 /// The revamped New Order / Orders screen matching the modern KKFC POS design.
 class MenuScreen extends StatelessWidget {
@@ -109,6 +129,12 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _kWideBreakpoint;
     final cartCount = ref.watch(cartCountProvider);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    // Safe clearance when floating CartBar is present on phone
+    final bottomPadding = (!isWide && cartCount > 0)
+        ? (80.0 + bottomInset)
+        : (16.0 + bottomInset);
 
     return Column(
       children: [
@@ -136,12 +162,10 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
                       children: [
                         Positioned.fill(
                           child: Container(
-                            color: const Color(0xFFF7F3EC), // Canvas background
+                            color: const Color(0xFFF7F3EC), // Canvas ground
                             child: _MenuCatalogView(
                               isWide: isWide,
-                              bottomPadding: (!isWide && cartCount > 0)
-                                  ? 72.0
-                                  : 16.0,
+                              bottomPadding: bottomPadding,
                             ),
                           ),
                         ),
@@ -188,20 +212,9 @@ class _MenuCatalogView extends ConsumerStatefulWidget {
 class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  Timer? _searchDebounce;
   bool _searchFocused = false;
   bool _unavailablePressed = false;
-
-  final List<String> _categories = const [
-    'All',
-    'Rice bowls',
-    'Sets',
-    'Snacks',
-  ];
-
-  int _slideDirection = 1;
-  String? _lastBrandId;
-  String _lastCategory = 'All';
-  int _categorySlideDirection = 1;
 
   @override
   void initState() {
@@ -215,9 +228,25 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 220), () {
+      if (mounted) {
+        ref.read(menuSearchProvider.notifier).set(query);
+      }
+    });
+  }
+
+  void _onClearSearch() {
+    _searchController.clear();
+    _searchDebounce?.cancel();
+    ref.read(menuSearchProvider.notifier).clear();
   }
 
   void _onChannelSelected(MenuChannel newChannel) {
@@ -245,10 +274,26 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
     }
   }
 
+  List<String> _resolveCategories(List<MenuItem>? items) {
+    final categories = <String>{'All'};
+    if (items != null) {
+      for (final item in items) {
+        if (item.category != null && item.category!.trim().isNotEmpty) {
+          categories.add(item.category!.trim());
+        }
+      }
+    }
+    if (categories.length == 1) {
+      // Fallback categories if catalog items do not have categories explicitly populated
+      return const ['All', 'Rice bowls', 'Sets', 'Snacks'];
+    }
+    return categories.toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<String>(menuSearchProvider, (_, query) {
-      if (_searchController.text != query) {
+      if (_searchController.text != query && !_searchFocusNode.hasFocus) {
         _searchController.text = query;
       }
     });
@@ -258,43 +303,23 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
     final selectedChannel = ref.watch(menuChannelProvider);
     final selectedCategory = ref.watch(menuCategoryProvider);
     final visibleItems = ref.watch(visibleMenuItemsProvider);
-
-    // Track sliding animation direction for brand switching
-    var isBrandSwitch = false;
-    if (_lastBrandId != null && _lastBrandId != activeBrand.id) {
-      final oldIndex = assignedBrands.indexWhere((b) => b.id == _lastBrandId);
-      final newIndex = assignedBrands.indexWhere((b) => b.id == activeBrand.id);
-      _slideDirection = (newIndex >= oldIndex) ? 1 : -1;
-      isBrandSwitch = true;
-    }
-    _lastBrandId = activeBrand.id;
-
-    // Track category switch animation
-    if (!isBrandSwitch && _lastCategory != selectedCategory) {
-      final oldIndex = _categories.indexOf(_lastCategory);
-      final newIndex = _categories.indexOf(selectedCategory);
-      _categorySlideDirection = (newIndex >= oldIndex) ? 1 : -1;
-    }
-    _lastCategory = selectedCategory;
-
-    final currentSlide = isBrandSwitch
-        ? _slideDirection
-        : _categorySlideDirection;
+    final allItems = ref.watch(menuItemsProvider).asData?.value;
+    final categories = _resolveCategories(allItems);
 
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-              widget.isWide ? 20.0 : 16.0,
-              16.0,
-              widget.isWide ? 20.0 : 16.0,
-              12.0,
+              widget.isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+              KkfcSpace.s16,
+              widget.isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+              KkfcSpace.s12,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1 & 2. Brand and Channel segmented tabs with responsive layout
+                // 1 & 2. Brand and Channel segmented tabs with responsive layout & 44dp POS touch targets
                 if (widget.isWide)
                   Row(
                     children: [
@@ -307,7 +332,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                               ref.read(activeBrandProvider.notifier).select(b),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: KkfcSpace.s12),
                       Expanded(
                         flex: 6,
                         child: _ChannelSegmentedBar(
@@ -324,18 +349,18 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                     onSelect: (b) =>
                         ref.read(activeBrandProvider.notifier).select(b),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: KkfcSpace.s8),
                   _ChannelSegmentedBar(
                     selectedChannel: selectedChannel,
                     onSelect: _onChannelSelected,
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: KkfcSpace.s12),
 
-                // 3. Search field + Unavailable button
+                // 3. Search field + Unavailable button with tactile press feedback
                 Row(
                   children: [
-                    // Search bar with animated focus ring
+                    // Search bar with animated focus ring & debounce
                     Expanded(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
@@ -343,7 +368,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                         height: 44.0,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(KkfcRadius.sm),
                           border: Border.all(
                             color: _searchFocused
                                 ? const Color(0xFF1F66C9) // Focus Blue
@@ -364,7 +389,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                         child: TextField(
                           controller: _searchController,
                           focusNode: _searchFocusNode,
-                          onChanged: ref.read(menuSearchProvider.notifier).set,
+                          onChanged: _onSearchChanged,
                           textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
@@ -387,12 +412,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.close, size: 18),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      ref
-                                          .read(menuSearchProvider.notifier)
-                                          .clear();
-                                    },
+                                    onPressed: _onClearSearch,
                                   )
                                 : null,
                             filled: false,
@@ -409,7 +429,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: KkfcSpace.s12),
 
                     // Unavailable button with tactile press
                     AnimatedScale(
@@ -419,7 +439,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(KkfcRadius.sm),
                           onTapDown: (_) =>
                               setState(() => _unavailablePressed = true),
                           onTapCancel: () =>
@@ -436,7 +456,8 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                               color: _unavailablePressed
                                   ? const Color(0xFFEEE8DC)
                                   : Colors.white,
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius:
+                                  BorderRadius.circular(KkfcRadius.sm),
                               border: Border.all(
                                 color: _unavailablePressed
                                     ? const Color(0xFF19293E)
@@ -470,21 +491,21 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: KkfcSpace.s12),
 
-                // 4. Category chips filter
+                // 4. Category chips filter (dynamically derived with 40dp touch target clearance)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (final cat in _categories) ...[
+                      for (final cat in categories) ...[
                         _CategoryChip(
                           label: cat,
                           selected: selectedCategory == cat,
                           onTap: () =>
                               ref.read(menuCategoryProvider.notifier).set(cat),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: KkfcSpace.s8),
                       ],
                     ],
                   ),
@@ -494,12 +515,12 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
           ),
         ),
 
-        // 5. Menu Items Grid / List with sliding animation on brand switch
+        // 5. Menu Items Grid / List with native viewport virtualization (Zero shrinkWrap)
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
-            widget.isWide ? 20.0 : 16.0,
-            4.0,
-            widget.isWide ? 20.0 : 16.0,
+            widget.isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+            KkfcSpace.s4,
+            widget.isWide ? KkfcSpace.s20 : KkfcSpace.s16,
             widget.bottomPadding,
           ),
           sliver: visibleItems.when(
@@ -523,22 +544,23 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                     ref.watch(menuCategoryProvider) != 'All';
 
                 if (isSearching || isCategoryFiltered) {
-                  return SliverToBoxAdapter(
+                  return const SliverToBoxAdapter(
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(40.0),
+                        padding: EdgeInsets.all(KkfcSpace.s40),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Icon(
                               Icons.search_off,
                               size: 40,
                               color: Color(0xFF76849A),
                             ),
-                            SizedBox(height: 12),
+                            SizedBox(height: KkfcSpace.s12),
                             Text(
                               'No items in this category or matching search',
                               style: TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
                                 color: Color(0xFF586579),
                                 fontSize: 14,
                               ),
@@ -561,65 +583,32 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
                 );
               }
 
-              return SliverToBoxAdapter(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    final inAnimation =
-                        Tween<Offset>(
-                          begin: Offset(currentSlide * 0.08, 0),
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          ),
-                        );
-
-                    return SlideTransition(
-                      position: inAnimation,
-                      child: FadeTransition(opacity: animation, child: child),
+              return widget.isWide
+                  ? SliverGrid.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16.0,
+                        mainAxisSpacing: 16.0,
+                        mainAxisExtent: 140.0,
+                      ),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) => MenuItemCard(
+                        item: items[index],
+                        channel: selectedChannel,
+                        compact: false,
+                      ),
+                    )
+                  : SliverList.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12.0),
+                      itemBuilder: (context, index) => MenuItemCard(
+                        item: items[index],
+                        channel: selectedChannel,
+                        compact: true,
+                      ),
                     );
-                  },
-                  child: KeyedSubtree(
-                    key: ValueKey(
-                      'catalog-${activeBrand.id}-$selectedCategory-${ref.watch(menuSearchProvider)}',
-                    ),
-                    child: widget.isWide
-                        ? GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 16.0,
-                                  mainAxisSpacing: 16.0,
-                                  mainAxisExtent: 140.0,
-                                ),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) => MenuItemCard(
-                              item: items[index],
-                              channel: selectedChannel,
-                              compact: false,
-                            ),
-                          )
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: items.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12.0),
-                            itemBuilder: (context, index) => MenuItemCard(
-                              item: items[index],
-                              channel: selectedChannel,
-                              compact: true,
-                            ),
-                          ),
-                  ),
-                ),
-              );
             },
           ),
         ),
@@ -628,7 +617,7 @@ class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
   }
 }
 
-/// Compact brand segmented bar with sliding indicator animation and refined styling
+/// Bolder brand segmented bar with 44dp POS touch targets and brand accent colors
 class _BrandSegmentedBar extends StatelessWidget {
   const _BrandSegmentedBar({
     required this.brands,
@@ -646,13 +635,14 @@ class _BrandSegmentedBar extends StatelessWidget {
 
     final selectedIndex = brands.indexWhere((b) => b.id == selectedBrand.id);
     final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
+    final accentColor = _brandAccentColor(selectedBrand);
 
     return Container(
-      height: 36.0,
-      padding: const EdgeInsets.all(2.5),
+      height: 44.0,
+      padding: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFE8DD), // Refined sunken canvas ground
-        borderRadius: BorderRadius.circular(8.0),
+        color: const Color(0xFFEFE8DD), // Sunken canvas ground
+        borderRadius: BorderRadius.circular(KkfcRadius.sm),
         border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
       ),
       child: LayoutBuilder(
@@ -661,7 +651,7 @@ class _BrandSegmentedBar extends StatelessWidget {
 
           return Stack(
             children: [
-              // Smooth sliding pill indicator
+              // Smooth sliding pill indicator tinted with the active brand's accent color
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOutCubic,
@@ -671,12 +661,12 @@ class _BrandSegmentedBar extends StatelessWidget {
                 width: tabWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF19293E), // Selected Navy
+                    color: accentColor,
                     borderRadius: BorderRadius.circular(6.0),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF19293E).withValues(alpha: 0.16),
-                        blurRadius: 4,
+                        color: accentColor.withValues(alpha: 0.28),
+                        blurRadius: 5,
                         offset: const Offset(0, 1.5),
                       ),
                     ],
@@ -704,7 +694,7 @@ class _BrandSegmentedBar extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.storefront_outlined,
-                                size: 13.5,
+                                size: 14.5,
                                 color: i == safeIndex
                                     ? Colors.white
                                     : const Color(0xFF586579),
@@ -715,7 +705,7 @@ class _BrandSegmentedBar extends StatelessWidget {
                                   duration: const Duration(milliseconds: 180),
                                   style: TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 12.5,
+                                    fontSize: 13.0,
                                     fontWeight: i == safeIndex
                                         ? FontWeight.w700
                                         : FontWeight.w600,
@@ -745,7 +735,7 @@ class _BrandSegmentedBar extends StatelessWidget {
   }
 }
 
-/// Compact channel segmented bar with sliding indicator animation and fulfillment icons
+/// Bolder channel segmented bar with 44dp POS touch targets and fulfillment icons
 class _ChannelSegmentedBar extends StatelessWidget {
   const _ChannelSegmentedBar({
     required this.selectedChannel,
@@ -775,11 +765,11 @@ class _ChannelSegmentedBar extends StatelessWidget {
     final safeIndex = selectedIndex == -1 ? 0 : selectedIndex;
 
     return Container(
-      height: 36.0,
-      padding: const EdgeInsets.all(2.5),
+      height: 44.0,
+      padding: const EdgeInsets.all(3.0),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFE8DD), // Refined sunken canvas ground
-        borderRadius: BorderRadius.circular(8.0),
+        color: const Color(0xFFEFE8DD), // Sunken canvas ground
+        borderRadius: BorderRadius.circular(KkfcRadius.sm),
         border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
       ),
       child: LayoutBuilder(
@@ -802,8 +792,8 @@ class _ChannelSegmentedBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6.0),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF19293E).withValues(alpha: 0.16),
-                        blurRadius: 4,
+                        color: const Color(0xFF19293E).withValues(alpha: 0.20),
+                        blurRadius: 5,
                         offset: const Offset(0, 1.5),
                       ),
                     ],
@@ -831,7 +821,7 @@ class _ChannelSegmentedBar extends StatelessWidget {
                             children: [
                               Icon(
                                 _channelIcon(channels[i]),
-                                size: 13.0,
+                                size: 14.5,
                                 color: i == safeIndex
                                     ? Colors.white
                                     : const Color(0xFF586579),
@@ -842,7 +832,7 @@ class _ChannelSegmentedBar extends StatelessWidget {
                                   duration: const Duration(milliseconds: 180),
                                   style: TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 12.0,
+                                    fontSize: 12.5,
                                     fontWeight: i == safeIndex
                                         ? FontWeight.w700
                                         : FontWeight.w600,
@@ -872,7 +862,7 @@ class _ChannelSegmentedBar extends StatelessWidget {
   }
 }
 
-/// Category pill chip matching the design with tactile press feedback
+/// Category pill chip matching the design with tactile press feedback & 40dp clearance
 class _CategoryChip extends StatefulWidget {
   const _CategoryChip({
     required this.label,
@@ -905,12 +895,15 @@ class _CategoryChipState extends State<_CategoryChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18.0,
+            vertical: 10.0,
+          ),
           decoration: BoxDecoration(
             color: widget.selected
                 ? const Color(0xFF1D2940)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(999.0), // Full pill
+            borderRadius: BorderRadius.circular(KkfcRadius.pill),
             border: widget.selected
                 ? null
                 : Border.all(color: const Color(0xFF76849A), width: 1.0),
