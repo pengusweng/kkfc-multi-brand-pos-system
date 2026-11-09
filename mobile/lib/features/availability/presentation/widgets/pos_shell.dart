@@ -3,7 +3,6 @@ import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 import 'package:mobile/features/availability/data/models/availability_model.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
@@ -82,15 +81,7 @@ class _PosShellState extends State<PosShell> {
             return Column(
               children: [
                 topBar,
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const MenuRail(),
-                      Expanded(child: content),
-                    ],
-                  ),
-                ),
+                Expanded(child: content),
               ],
             );
           }
@@ -103,7 +94,6 @@ class _PosShellState extends State<PosShell> {
                 label: widget.actionLabel,
                 onPressed: widget.onAction,
               ),
-              const MenuBottomNav(),
             ],
           );
         },

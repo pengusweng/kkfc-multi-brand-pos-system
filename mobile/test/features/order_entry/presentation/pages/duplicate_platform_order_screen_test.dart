@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/order_entry/data/models/duplicate_platform_order_view_data.dart';
 import 'package:mobile/features/order_entry/presentation/pages/duplicate_platform_order_screen.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 void main() {
   Widget buildScreen({

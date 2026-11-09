@@ -11,7 +11,6 @@ import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/order_entry/data/models/platform_reference_view_data.dart';
 
 import '../widgets/order_entry_header.dart';
@@ -103,20 +102,7 @@ class _PlatformReferenceScreenState
             children: [
               const AppHeader(),
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildContent(context)),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildContent(context),
               ),
             ],
           );

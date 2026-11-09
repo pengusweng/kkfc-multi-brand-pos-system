@@ -9,7 +9,6 @@ import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -27,43 +26,22 @@ class OrdersScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final showRail = constraints.maxWidth >= MenuLayout.compactMax;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(MenuSpace.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (showRail) const MenuRail(),
-              Expanded(
-                child: Column(
-                  children: [
-                    const Expanded(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(MenuSpace.lg),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Orders'),
-                              SizedBox(height: MenuSpace.sm),
-                              _OrdersUnavailableNote(),
-                              SizedBox(height: MenuSpace.md),
-                              _CancelOrderEntry(),
-                              SizedBox(height: MenuSpace.sm),
-                              _CancelLiveOrderEntry(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (!showRail) const MenuBottomNav(),
-                  ],
-                ),
-              ),
+              const Text('Orders'),
+              const SizedBox(height: MenuSpace.sm),
+              const _OrdersUnavailableNote(),
+              const SizedBox(height: MenuSpace.md),
+              const _CancelOrderEntry(),
+              const SizedBox(height: MenuSpace.sm),
+              const _CancelLiveOrderEntry(),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }

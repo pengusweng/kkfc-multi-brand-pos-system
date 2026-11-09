@@ -16,7 +16,6 @@ import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/shared/widgets/toast/kkfc_toaster.dart';
 
 import 'order_confirmed_screen.dart';
@@ -209,20 +208,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
             children: [
               const AppHeader(),
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildContent(context)),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildContent(context),
               ),
             ],
           );

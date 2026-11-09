@@ -81,6 +81,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveRole = staffRole ?? role;
+    final isCompact = compact ?? (MediaQuery.sizeOf(context).width < 600);
 
     return Material(
       color: backgroundColor ?? KkfcColors.shell,
@@ -88,12 +89,14 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
         height: height,
         child: Padding(
           padding: padding ??
-              const EdgeInsets.symmetric(horizontal: KkfcSpace.s20),
+              EdgeInsets.symmetric(
+                horizontal: isCompact ? KkfcSpace.s16 : KkfcSpace.s20,
+              ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left side: [optional leading] + "KKFC POS" + [title / titleWidget]
+              // Left side: [optional leading] + [KKFC POS if !isCompact] + [title / titleWidget]
               Flexible(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -102,28 +105,29 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       leading!,
                       const SizedBox(width: KkfcSpace.s12),
                     ],
-                    const Text(
-                      'KKFC POS',
-                      style: TextStyle(
-                        fontFamily: KkfcFonts.ibmPlexSans,
-                        fontSize: KkfcTextSizes.textXs,
-                        fontWeight: KkfcFontWeights.bold,
-                        letterSpacing: 1.0,
-                        color: Color(0xFF8C9BAE),
+                    if (!isCompact) ...[
+                      const Text(
+                        'KKFC POS',
+                        style: TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: KkfcTextSizes.textXs,
+                          fontWeight: KkfcFontWeights.bold,
+                          letterSpacing: 1.0,
+                          color: Color(0xFF8C9BAE),
+                        ),
                       ),
-                    ),
-                    if (titleWidget != null) ...[
                       const SizedBox(width: KkfcSpace.s16),
+                    ],
+                    if (titleWidget != null) ...[
                       Flexible(child: titleWidget!),
                     ] else if (title != null && title!.isNotEmpty) ...[
-                      const SizedBox(width: KkfcSpace.s16),
                       Flexible(
                         child: Text(
                           title!,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: KkfcTextSizes.textLg,
+                            fontSize: isCompact ? 20.0 : KkfcTextSizes.textLg,
                             fontWeight: KkfcFontWeights.bold,
                             color: Colors.white,
                           ),

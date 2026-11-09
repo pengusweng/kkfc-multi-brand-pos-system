@@ -3,6 +3,7 @@ import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
 import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
@@ -76,9 +77,15 @@ final storeReferenceProvider = NotifierProvider<StoreReferenceNotifier, String>(
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   ref,
 ) async {
-  ref.watch(activeBrandProvider); // refetch when the displayed brand changes
-  final brandId = await ref.watch(authenticatedBrandIdProvider.future);
-  return ref.watch(menuRepositoryProvider).getByBrand(brandId);
+  final activeBrand = ref.watch(activeBrandProvider);
+  try {
+    final brandId = await ref.watch(authenticatedBrandIdProvider.future);
+    final items = await ref.watch(menuRepositoryProvider).getByBrand(brandId);
+    if (items.isNotEmpty) return items;
+  } catch (_) {
+    // Fall back to sample menu if backend is unavailable or empty
+  }
+  return sampleMenuForBrand(activeBrand.code);
 });
 
 /// Channels to show as tabs: those the loaded menu items are sold on, in
@@ -97,21 +104,31 @@ final availableChannelsProvider = Provider.autoDispose<List<MenuChannel>>((
   ];
 });
 
+class MenuCategoryNotifier extends Notifier<String> {
+  @override
+  String build() => 'All';
+  void set(String category) => state = category;
+}
+
+final menuCategoryProvider =
+    NotifierProvider<MenuCategoryNotifier, String>(MenuCategoryNotifier.new);
+
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
       final query = ref.watch(menuSearchProvider).trim().toLowerCase();
+      final category = ref.watch(menuCategoryProvider);
       return ref
           .watch(menuItemsProvider)
           .whenData(
-            (items) => query.isEmpty
-                ? items
-                : items
-                      .where(
-                        (i) =>
-                            i.name.toLowerCase().contains(query) ||
-                            i.description.toLowerCase().contains(query),
-                      )
-                      .toList(),
+            (items) => items.where((i) {
+              final matchesQuery = query.isEmpty ||
+                  i.name.toLowerCase().contains(query) ||
+                  i.description.toLowerCase().contains(query);
+              final matchesCategory = category == 'All' ||
+                  (i.category != null &&
+                      i.category!.toLowerCase() == category.toLowerCase());
+              return matchesQuery && matchesCategory;
+            }).toList(),
           );
     });
 
@@ -220,6 +237,11 @@ class CartNotifier extends Notifier<List<CartLine>> {
         l
       else if (l.quantity > 1)
         l.copyWith(quantity: l.quantity - 1),
+  ];
+
+  void removeLine(String lineId) => state = [
+    for (final l in state)
+      if (l.id != lineId) l,
   ];
 
   void clear() => state = const [];

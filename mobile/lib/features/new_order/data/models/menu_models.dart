@@ -86,6 +86,7 @@ class MenuItem {
     this.availability = const {},
     this.modifierGroups = const [],
     this.channels = const {},
+    this.category,
   });
 
   final String id;
@@ -98,6 +99,9 @@ class MenuItem {
   /// Channels the backend lists this item under (empty when unknown).
   final Set<MenuChannel> channels;
 
+  /// Menu category (e.g. 'Rice bowls', 'Sets', 'Snacks').
+  final String? category;
+
   MenuItem withModifierGroups(List<ModifierGroup> groups) => MenuItem(
     id: id,
     name: name,
@@ -106,6 +110,7 @@ class MenuItem {
     availability: availability,
     modifierGroups: groups,
     channels: channels,
+    category: category,
   );
 
   /// Maps the `/menu-items/brand/:brandId` payload to the UI model.
@@ -158,6 +163,7 @@ class MenuItem {
       pricesCentavos: prices,
       availability: availability,
       channels: listed,
+      category: json['category'] as String? ?? json['category_name'] as String?,
     );
   }
 

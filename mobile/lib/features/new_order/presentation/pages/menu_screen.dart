@@ -1,195 +1,551 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/shared/shared_layout.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
+import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/core/models/brand_models.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/shared/widgets/fade_slide_in.dart';
-import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
-import 'package:mobile/shared/widgets/responsive_card_grid.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
-import 'package:mobile/shared/widgets/kkfc_pagination.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
+/// Screen breakpoint for wide tablet/desktop layout vs single-column phone layout.
+const double _kWideBreakpoint = 850.0;
+
+/// The revamped New Order / Orders screen matching the modern KKFC POS design.
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return KkfcScaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final showRail = width >= MenuLayout.compactMax;
-          final showCartPanel = width >= MenuLayout.wideMin;
-
-          return Column(
-            children: [
-              const AppHeader(),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Expanded(child: _MenuBody()),
-                          if (!showCartPanel) const CartBar(),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                    if (showCartPanel) ...[
-                      const VerticalDivider(width: 1),
-                      const SizedBox(
-                        width: MenuLayout.cartPanelWidth,
-                        child: CartPanel(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+    return const KkfcScaffold(
+      body: _ResponsiveMenuLayout(),
     );
   }
 }
 
-class _MenuBody extends ConsumerStatefulWidget {
-  const _MenuBody();
+class _ResponsiveMenuLayout extends ConsumerWidget {
+  const _ResponsiveMenuLayout();
 
   @override
-  ConsumerState<_MenuBody> createState() => _MenuBodyState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= _kWideBreakpoint;
+    final cartCount = ref.watch(cartCountProvider);
+
+    return Column(
+      children: [
+        // App header
+        AppHeader(
+          title: 'Orders',
+          compact: !isWide,
+        ),
+
+        // Main body
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left / Center catalog
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Container(
+                        color: const Color(0xFFF7F3EC), // Canvas background
+                        child: _MenuCatalogView(
+                          isWide: isWide,
+                          bottomPadding: (!isWide && cartCount > 0) ? 72.0 : 16.0,
+                        ),
+                      ),
+                    ),
+
+                    // Phone-only floating cart bar
+                    if (!isWide)
+                      const Align(
+                        alignment: Alignment.bottomCenter,
+                        child: CartBar(),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Tablet / Desktop-only right cart panel
+              if (isWide)
+                const SizedBox(
+                  width: 380.0,
+                  child: CartPanel(),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _MenuBodyState extends ConsumerState<_MenuBody> {
-  final _search = TextEditingController();
+class _MenuCatalogView extends ConsumerStatefulWidget {
+  const _MenuCatalogView({
+    required this.isWide,
+    required this.bottomPadding,
+  });
+
+  final bool isWide;
+  final double bottomPadding;
+
+  @override
+  ConsumerState<_MenuCatalogView> createState() => _MenuCatalogViewState();
+}
+
+class _MenuCatalogViewState extends ConsumerState<_MenuCatalogView> {
+  final _searchController = TextEditingController();
+
+  final List<String> _categories = const [
+    'All',
+    'Rice bowls',
+    'Sets',
+    'Snacks',
+  ];
 
   @override
   void dispose() {
-    _search.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen<String>(menuSearchProvider, (_, query) {
-      if (_search.text != query) _search.text = query;
+      if (_searchController.text != query) {
+        _searchController.text = query;
+      }
     });
 
-    final channel = ref.watch(menuChannelProvider);
-    final query = ref.watch(menuSearchProvider);
-    final visible = ref.watch(visibleMenuItemsProvider);
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final activeBrand = ref.watch(activeBrandProvider);
+    final assignedBrands = ref.watch(assignedBrandsProvider);
+    final selectedChannel = ref.watch(menuChannelProvider);
+    final selectedCategory = ref.watch(menuCategoryProvider);
+    final visibleItems = ref.watch(visibleMenuItemsProvider);
 
-    final Widget body = visible.when(
-      loading: () => const MenuGridSkeleton(key: ValueKey('loading')),
-      error: (_, _) => MenuMessageCard(
-        key: const ValueKey('error'),
-        icon: Icons.wifi_off,
-        title: "Couldn't load the menu",
-        body: 'Check the Wi-Fi, then try again.',
-        actionLabel: 'Try again',
-        onAction: () => ref.invalidate(menuItemsProvider),
-      ),
-      data: (items) => items.isEmpty
-          ? MenuMessageCard(
-              key: const ValueKey('empty'),
-              icon: Icons.search_off,
-              title: 'No items match "$query"',
-              body: "This brand has no item with that name.",
-              actionLabel: 'Clear search',
-              onAction: () => ref.read(menuSearchProvider.notifier).clear(),
-            )
-          : ResponsiveCardGrid(
-              key: ValueKey('grid-$query'),
-              itemCount: items.length,
-              itemBuilder: (context, i) => FadeSlideIn(
-                index: i,
-                child: MenuItemCard(item: items[i], channel: channel),
-              ),
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isWide ? 20.0 : 16.0,
+              16.0,
+              widget.isWide ? 20.0 : 16.0,
+              12.0,
             ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MenuSpace.lg,
-            MenuSpace.lg,
-            MenuSpace.lg,
-            MenuSpace.xs,
-          ),
-          child: Text(
-            'New order',
-            style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MenuSpace.lg,
-            0,
-            MenuSpace.lg,
-            MenuSpace.sm,
-          ),
-          child: SearchBar(
-            controller: _search,
-            hintText: 'Search menu',
-            leading: const Icon(Icons.search),
-            elevation: const WidgetStatePropertyAll(0),
-            onChanged: ref.read(menuSearchProvider.notifier).set,
-            trailing: [
-              if (query.isNotEmpty)
-                IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close),
-                  onPressed: () =>
-                      ref.read(menuSearchProvider.notifier).clear(),
-                ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MenuSpace.lg),
-          child: Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: MenuSpace.md,
-              runSpacing: MenuSpace.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'All menu items',
-                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                // 1. Brands segmented tabs
+                _BrandSegmentedBar(
+                  brands: assignedBrands,
+                  selectedBrand: activeBrand,
+                  onSelect: (b) =>
+                      ref.read(activeBrandProvider.notifier).select(b),
                 ),
-                if (visible.hasValue)
-                  Text(
-                    '${visible.requireValue.length} items',
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
+                const SizedBox(height: 10),
+
+                // 2. Channel segmented tabs
+                _ChannelSegmentedBar(
+                  selectedChannel: selectedChannel,
+                  onSelect: (c) =>
+                      ref.read(menuChannelProvider.notifier).select(c),
+                ),
+                const SizedBox(height: 12),
+
+                // 3. Search field + Unavailable button
+                Row(
+                  children: [
+                    // Search bar
+                    Expanded(
+                      child: Container(
+                        height: 44.0,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8.0),
+                          border: Border.all(
+                            color: const Color(0xFF76849A),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: ref.read(menuSearchProvider.notifier).set,
+                          textAlignVertical: TextAlignVertical.center,
+                          style: const TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 14.0,
+                            color: Color(0xFF19293E),
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: 'Search',
+                            hintStyle: const TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 14.0,
+                              color: Color(0xFF76849A),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              size: 20,
+                              color: Color(0xFF586579),
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      ref
+                                          .read(menuSearchProvider.notifier)
+                                          .clear();
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10.0,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 10),
+
+                    // Unavailable button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8.0),
+                        onTap: () => context.go(AppRoutes.availability),
+                        child: Ink(
+                          height: 44.0,
+                          padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8.0),
+                            border: Border.all(
+                              color: const Color(0xFF76849A),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.block_outlined,
+                                size: 18,
+                                color: Color(0xFF19293E),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Unavailable',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 14.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF19293E),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // 4. Category chips filter
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final cat in _categories) ...[
+                        _CategoryChip(
+                          label: cat,
+                          selected: selectedCategory == cat,
+                          onTap: () => ref
+                              .read(menuCategoryProvider.notifier)
+                              .set(cat),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ],
                   ),
+                ),
               ],
             ),
           ),
         ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: context.motion(MenuMotion.medium),
-            switchInCurve: MenuMotion.curve,
-            child: body,
+
+        // 5. Menu Items Grid / List
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            widget.isWide ? 20.0 : 16.0,
+            4.0,
+            widget.isWide ? 20.0 : 16.0,
+            widget.bottomPadding,
+          ),
+          sliver: visibleItems.when(
+            loading: () => const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+            error: (_, _) => SliverToBoxAdapter(
+              child: MenuMessageCard(
+                icon: Icons.wifi_off,
+                title: "Couldn't load the menu",
+                body: 'Check the connection, then try again.',
+                actionLabel: 'Try again',
+                onAction: () => ref.invalidate(menuItemsProvider),
+              ),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.search_off,
+                            size: 40,
+                            color: Color(0xFF76849A),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No items in this category or matching search',
+                            style: const TextStyle(
+                              color: Color(0xFF586579),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              if (widget.isWide) {
+                // Tablet / Desktop 2-column grid
+                return SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    mainAxisExtent: 140.0,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => MenuItemCard(
+                      item: items[index],
+                      channel: selectedChannel,
+                      compact: false,
+                    ),
+                    childCount: items.length,
+                  ),
+                );
+              }
+
+              // Phone 1-column list
+              return SliverList.separated(
+                itemCount: items.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12.0),
+                itemBuilder: (context, index) => MenuItemCard(
+                  item: items[index],
+                  channel: selectedChannel,
+                  compact: true,
+                ),
+              );
+            },
           ),
         ),
-        KkfcPagination(currentPage: 1, totalPages: 1, onPageChanged: (_) {}),
       ],
+    );
+  }
+}
+
+/// Brand segmented bar matching the design
+class _BrandSegmentedBar extends StatelessWidget {
+  const _BrandSegmentedBar({
+    required this.brands,
+    required this.selectedBrand,
+    required this.onSelect,
+  });
+
+  final List<AssignedBrand> brands;
+  final AssignedBrand selectedBrand;
+  final ValueChanged<AssignedBrand> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44.0,
+      padding: const EdgeInsets.all(3.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEE8DC), // Canvas sunken ground
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Row(
+        children: [
+          for (final b in brands)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onSelect(b),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: b.id == selectedBrand.id
+                        ? const Color(0xFF1D2940) // Selected Navy
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6.0),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    b.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: KkfcFonts.ibmPlexSans,
+                      fontSize: 13.5,
+                      fontWeight: b.id == selectedBrand.id
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: b.id == selectedBrand.id
+                          ? Colors.white
+                          : const Color(0xFF19293E),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Channel segmented bar matching the design
+class _ChannelSegmentedBar extends StatelessWidget {
+  const _ChannelSegmentedBar({
+    required this.selectedChannel,
+    required this.onSelect,
+  });
+
+  final MenuChannel selectedChannel;
+  final ValueChanged<MenuChannel> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final channels = MenuChannel.values;
+
+    return Container(
+      height: 44.0,
+      padding: const EdgeInsets.all(3.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEE8DC), // Canvas sunken ground
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Row(
+        children: [
+          for (final c in channels)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onSelect(c),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: c == selectedChannel
+                        ? const Color(0xFF1D2940) // Selected Navy
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6.0),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    c.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: KkfcFonts.ibmPlexSans,
+                      fontSize: 13.5,
+                      fontWeight: c == selectedChannel
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: c == selectedChannel
+                          ? Colors.white
+                          : const Color(0xFF19293E),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Category pill chip matching the design
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF1D2940) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999.0), // Full pill
+          border: selected
+              ? null
+              : Border.all(
+                  color: const Color(0xFF76849A),
+                  width: 1.0,
+                ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: KkfcFonts.ibmPlexSans,
+            fontSize: 14.0,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            color: selected ? Colors.white : const Color(0xFF19293E),
+          ),
+        ),
+      ),
     );
   }
 }

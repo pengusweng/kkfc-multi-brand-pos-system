@@ -6,7 +6,6 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 import '../../data/models/duplicate_platform_order_view_data.dart';
 import '../widgets/matched_reference_card.dart';
@@ -54,20 +53,7 @@ class DuplicatePlatformOrderScreen extends StatelessWidget {
             children: [
               const AppHeader(),
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildContent(context)),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildContent(context),
               ),
             ],
           );

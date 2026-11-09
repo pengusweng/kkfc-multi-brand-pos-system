@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 import 'cancel_action_bar.dart';
 
@@ -78,18 +77,10 @@ class CancelOrderShell extends StatelessWidget {
               children: [
                 topBar,
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: Column(
                     children: [
-                      const MenuRail(),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Expanded(child: content),
-                            footer,
-                          ],
-                        ),
-                      ),
+                      Expanded(child: content),
+                      footer,
                     ],
                   ),
                 ),
@@ -102,7 +93,6 @@ class CancelOrderShell extends StatelessWidget {
               topBar,
               Expanded(child: content),
               footer,
-              const MenuBottomNav(),
             ],
           );
         },

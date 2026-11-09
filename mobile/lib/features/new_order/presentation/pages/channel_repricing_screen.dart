@@ -7,7 +7,6 @@ import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
@@ -46,10 +45,6 @@ class ChannelRepricingScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (showRail)
-                      MenuRail(
-                        onSelected: (index) => _openSection(context, index),
-                      ),
                     Expanded(
                       child: Column(
                         children: [
@@ -57,11 +52,6 @@ class ChannelRepricingScreen extends StatelessWidget {
                             child: _RepricingBody(showContext: showContext),
                           ),
                           const _GotItBar(),
-                          if (!showRail)
-                            MenuBottomNav(
-                              onSelected: (index) =>
-                                  _openSection(context, index),
-                            ),
                         ],
                       ),
                     ),

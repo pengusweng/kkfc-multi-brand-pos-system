@@ -10,7 +10,6 @@ import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/orders/screens/orders_screen.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 class _FakeAuthRepository extends AuthRepository {
   _FakeAuthRepository() : super(Dio(), TokenStore());

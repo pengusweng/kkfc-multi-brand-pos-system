@@ -18,7 +18,7 @@ final assignedBrandProvider = FutureProvider.autoDispose<AssignedBrand>((
 
 class ActiveBrandNotifier extends Notifier<AssignedBrand> {
   @override
-  AssignedBrand build() => ref.read(assignedBrandsProvider)[1]; // Aurelia's Inasal
+  AssignedBrand build() => ref.read(assignedBrandsProvider)[0]; // Gamcheon
 
   void select(AssignedBrand brand) => state = brand;
 }

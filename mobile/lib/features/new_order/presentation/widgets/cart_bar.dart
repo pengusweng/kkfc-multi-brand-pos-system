@@ -1,23 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/shared/shared_layout.dart';
-import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
-import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
+import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
-void showCartSheet(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    builder: (context) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: const FractionallySizedBox(heightFactor: 0.9, child: CartPanel()),
-    ),
-  );
-}
-
+/// Floating bottom order bar for phone layout matching the design.
 class CartBar extends ConsumerWidget {
   const CartBar({super.key});
 
@@ -25,52 +12,73 @@ class CartBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
 
-    return AnimatedSize(
-      duration: context.motion(MenuMotion.medium),
-      curve: MenuMotion.curve,
-      alignment: Alignment.bottomCenter,
-      child: count == 0
-          ? const SizedBox(width: double.infinity)
-          : Material(
-              color: scheme.surface,
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(MenuSpace.md),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return AnimatedSlide(
+      offset: count > 0 ? Offset.zero : const Offset(0, 1.2),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: count > 0 ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+            child: Material(
+              color: const Color(0xFFA8562A),
+              borderRadius: BorderRadius.circular(10.0),
+              elevation: 4,
+              shadowColor: Colors.black.withValues(alpha: 0.25),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10.0),
+                // Don't make view order work first as instructed by user
+                onTap: () {},
+                child: Container(
+                  height: 52.0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left: [Cart Icon]  "X items"
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '$count items in order',
-                            style: text.labelMedium?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
+                          const Icon(
+                            Icons.shopping_cart_outlined,
+                            color: Colors.white,
+                            size: 20,
                           ),
-                          AnimatedPeso(
-                            centavos: total,
-                            style: text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                          const SizedBox(width: 8),
+                          Text(
+                            '$count item${count == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 48),
+
+                      // Right: "View order · ₱XXX.XX"
+                      Text(
+                        'View order · ${formatPeso(total)}',
+                        style: const TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                      onPressed: () => showCartSheet(context),
-                      child: const Text('View cart'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 import '../../data/models/order_not_sent_view_data.dart';
 import '../widgets/draft_safe_card.dart';
@@ -58,20 +57,7 @@ class OrderNotSentScreen extends StatelessWidget {
             children: [
               const AppHeader(),
               Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildContent(context)),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: _buildContent(context),
               ),
             ],
           );
