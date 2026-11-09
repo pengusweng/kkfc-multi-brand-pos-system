@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardPage from "@/src/features/dashboard/containers/dashboard";
-import PageBackground from "@/src/components/layout/page-background";
+import DashboardSkeleton from "@/src/features/dashboard/components/dashboard-skeleton";
 import { validateCookie } from "@/src/features/auth/services/auth.service";
 import { WEB_ROLES } from "@/src/features/auth/utils/webRoles";
 
@@ -10,13 +10,7 @@ export const instant = false;
 
 export default function Dashboard() {
   return (
-    <Suspense
-      fallback={
-        <PageBackground>
-          <p role="status">Checking your session…</p>
-        </PageBackground>
-      }
-    >
+    <Suspense fallback={<DashboardSkeleton />}>
       <CheckAccess />
     </Suspense>
   );

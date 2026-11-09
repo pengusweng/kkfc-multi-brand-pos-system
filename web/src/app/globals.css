@@ -119,3 +119,75 @@ body {
     @apply font-sans;
   }
 }
+
+/* Route transitions: the navy rail reshapes from the login panel into the
+   sidebar while its contents swap; the page underneath crossfades. */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root) {
+  animation: 160ms ease-in both vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation: 320ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both vt-rise-in;
+}
+
+::view-transition-group(.app-rail) {
+  overflow: clip;
+  background: rgb(25 41 62);
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Keep the rail's snapshots at their natural size instead of stretching them. */
+::view-transition-old(.app-rail),
+::view-transition-new(.app-rail) {
+  width: auto;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+
+::view-transition-old(.app-rail) {
+  animation: 140ms ease-in both vt-fade-out;
+}
+
+::view-transition-new(.app-rail) {
+  animation: 280ms ease-out 220ms both vt-fade-in;
+}
+
+::view-transition-group(.app-wordmark) {
+  z-index: 1;
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

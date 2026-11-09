@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
 
 const BRANDS = ["Gamcheon", "Aurelia's Inasal", "King Kung's Kafé"];
 
@@ -11,6 +12,7 @@ const LINES = [
 
 export default function LoginSide({ className }: { className?: string }) {
   return (
+    <RailTransition>
     <aside
       aria-label="KKFC Web Management"
       className={cn(
@@ -41,7 +43,9 @@ export default function LoginSide({ className }: { className?: string }) {
       </svg>
 
       <p className="motion-safe:animate-rise">
-        <span className="text-xl font-bold tracking-[0.12em] lg:text-3xl">KKFC</span>{" "}
+        <WordmarkTransition>
+          <span className="inline-block text-xl font-bold tracking-[0.12em] lg:text-3xl">KKFC</span>
+        </WordmarkTransition>{" "}
         <span className="text-base text-[#c7d9ed] lg:mt-2 lg:block lg:text-lg">Web Management</span>
       </p>
 
@@ -57,5 +61,6 @@ export default function LoginSide({ className }: { className?: string }) {
         ))}
       </ul>
     </aside>
+    </RailTransition>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "cn";
@@ -9,6 +9,7 @@ import NavSection from "./molecules/nav-section";
 import NavUser, { type NavUserProps } from "./molecules/nav-user";
 import { NAV_GROUPS } from "../utils/navItems";
 import { useLogout } from "@/src/features/auth/hooks/useLogout";
+import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
 
 const DESKTOP_QUERY = "(min-width: 64rem)";
 
@@ -19,6 +20,9 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
   const close = () => setOpen(false);
   const logout = useLogout();
 
+  // Close the mobile menu when the page is hidden so it isn't open on return.
+  useLayoutEffect(() => () => setOpen(false), []);
+
   // Mobile: the burger opens the dropdown menu. Desktop: it collapses the sidebar to icons.
   const toggle = () => {
     if (window.matchMedia(DESKTOP_QUERY).matches) setCollapsed((value) => !value);
@@ -26,6 +30,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
   };
 
   return (
+    <RailTransition>
     <aside
       className={cn(
         "sticky top-0 z-40 flex shrink-0 flex-col bg-[rgb(25,41,62)] text-white transition-[width] lg:h-dvh",
@@ -33,7 +38,9 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
       )}
     >
       <div className={cn("flex h-16 items-center justify-between px-4", collapsed && "lg:justify-center lg:px-0")}>
-        <span className={cn("text-xl font-bold tracking-[0.08em]", collapsed && "lg:hidden")}>KKFC</span>
+        <WordmarkTransition>
+          <span className={cn("inline-block text-xl font-bold tracking-[0.12em]", collapsed && "lg:hidden")}>KKFC</span>
+        </WordmarkTransition>
         <Button
           variant="ghost"
           size="icon-lg"
@@ -79,5 +86,6 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
         />
       </div>
     </aside>
+    </RailTransition>
   );
 }
