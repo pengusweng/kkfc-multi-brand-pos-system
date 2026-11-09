@@ -7,6 +7,7 @@ import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
+import '../features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import '../features/availability/presentation/pages/availability_read_only_screen.dart';
 import '../features/order_entry/data/models/order_confirmed_view_data.dart';
@@ -73,6 +74,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.menu,
         builder: (context, state) => const MenuScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.mobileOrderFlow,
+        builder: (context, state) => const MobileOrderFlowScreen(),
       ),
       GoRoute(
         path: AppRoutes.channelChange,

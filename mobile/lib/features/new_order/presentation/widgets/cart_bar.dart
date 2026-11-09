@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
@@ -46,8 +49,10 @@ class _CartBarState extends ConsumerState<CartBar> {
                   onTapDown: (_) => setState(() => _pressed = true),
                   onTapCancel: () => setState(() => _pressed = false),
                   onTapUp: (_) => setState(() => _pressed = false),
-                  // Don't make view order work first as instructed by user
-                  onTap: () {},
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push(AppRoutes.mobileOrderFlow);
+                  },
                   child: Container(
                     height: 52.0,
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
