@@ -25,6 +25,7 @@ GitHub usernames, separated by commas or spaces. A leading `@` is accepted.
 | ---------------------- | ---------------------------------------- |
 | `CI_BACKEND_ASSIGNEES` | Backend test and build failures          |
 | `CI_FLUTTER_ASSIGNEES` | Flutter test and build failures          |
+| `CI_WEB_ASSIGNEES` | Web test and build failures              |
 | `CI_DEFAULT_ASSIGNEES` | CI setup failures and fallback ownership |
 
 The reporter checks assignment eligibility. It tries area owners, default
@@ -37,7 +38,7 @@ warning. GitHub notification preferences determine delivery to each assignee.
 ## Execution and permissions
 
 The reporting job waits for automation tests, change detection, backend, and
-Flutter. It runs when a dependency fails, even if subsequent stages are skipped.
+Flutter, and Web. It runs when a dependency fails, even if subsequent stages are skipped.
 It reads the current attempt's job results while the workflow is still running.
 The final required `CI` job waits for reporting and still fails if any required
 pipeline failed. Reporting problems are visible as failed jobs too.

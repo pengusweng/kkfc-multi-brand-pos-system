@@ -1,0 +1,55 @@
+name: Web CI
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web-tests:
+    name: Lint, tests, build and browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # The starter browser test does not call the API. Full-stack tests will
+      # need a running API and isolated test database at this address.
+      API_URL: http://127.0.0.1:3000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Unit and component integration tests with coverage
+        run: npm run test:coverage
+      - name: Build production app
+        run: npm run build
+      - name: Type check app and test files
+        run: npm run typecheck
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests
+        run: npm run test:e2e
+      - name: Upload web test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-results
+          path: |
+            web/reports/
+            web/coverage/
+            web/playwright-report/
+            web/test-results/
+          if-no-files-found: warn
+          retention-days: 14
