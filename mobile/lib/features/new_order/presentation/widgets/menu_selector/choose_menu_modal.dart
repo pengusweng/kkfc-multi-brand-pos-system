@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 /// Shows the "Choose menu" modal bottom sheet matching the visual design.
 Future<({AssignedBrand brand, MenuChannel channel})?> showChooseMenuModal(
@@ -24,7 +26,7 @@ Future<({AssignedBrand brand, MenuChannel channel})?> showChooseMenuModal(
 }
 
 /// The "Choose menu" modal bottom sheet widget.
-class ChooseMenuModal extends StatefulWidget {
+class ChooseMenuModal extends ConsumerStatefulWidget {
   const ChooseMenuModal({
     super.key,
     required this.brands,
@@ -37,10 +39,10 @@ class ChooseMenuModal extends StatefulWidget {
   final MenuChannel initialChannel;
 
   @override
-  State<ChooseMenuModal> createState() => _ChooseMenuModalState();
+  ConsumerState<ChooseMenuModal> createState() => _ChooseMenuModalState();
 }
 
-class _ChooseMenuModalState extends State<ChooseMenuModal> {
+class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
   late AssignedBrand _selectedBrand = widget.initialBrand;
   late MenuChannel _selectedChannel = widget.initialChannel;
 
@@ -196,11 +198,16 @@ class _ChooseMenuModalState extends State<ChooseMenuModal> {
   }
 
   Widget _buildBrandCard(AssignedBrand brand) {
-    final isAuthorized = brand.isAuthorized;
-    final channels = brand.channels ??
+    final channelsAsync = ref.watch(brandChannelsProvider(brand));
+    final defaultChannels =
+        brand.channels ??
         (brand.code.toUpperCase().contains('AI')
             ? const [MenuChannel.dineIn]
             : const [MenuChannel.dineIn, MenuChannel.takeaway]);
+
+    final isAuthorized =
+        channelsAsync.value?.isAuthorized ?? brand.isAuthorized;
+    final channels = channelsAsync.value?.channels ?? defaultChannels;
 
     return Container(
       width: double.infinity,
