@@ -71,3 +71,19 @@ final activeBrandProvider =
     NotifierProvider<ActiveBrandNotifier, AssignedBrand>(
       ActiveBrandNotifier.new,
     );
+
+/// Resolves the real UUID of the currently active brand.
+String resolveActiveBrandId(AssignedBrand brand, List<AssignedBrand> allBrands) {
+  final uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+  if (uuidRegex.hasMatch(brand.id)) return brand.id;
+  for (final b in allBrands) {
+    if (b.code.toUpperCase() == brand.code.toUpperCase() &&
+        uuidRegex.hasMatch(b.id)) {
+      return b.id;
+    }
+  }
+  return brand.id;
+}
+

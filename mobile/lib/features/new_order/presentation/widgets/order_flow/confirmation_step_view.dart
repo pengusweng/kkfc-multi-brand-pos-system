@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
+import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
 
 /// Step 5: Order confirmation view matching the "Kitchen ticket confirmed" visual design.
 class ConfirmationStepView extends ConsumerWidget {
@@ -20,7 +22,7 @@ class ConfirmationStepView extends ConsumerWidget {
   final String orderId;
   final VoidCallback? onCancelOrder;
 
-  void _showCancelDialog(BuildContext context) {
+  void _showCancelDialog(BuildContext context, WidgetRef ref) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -42,8 +44,24 @@ class ConfirmationStepView extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((confirmed) {
+    ).then((confirmed) async {
       if (confirmed == true) {
+        final draft = ref.read(activeOrderDraftProvider);
+        if (draft != null) {
+          try {
+            await ref.read(orderEntryRepositoryProvider).cancelDraftOrder(
+                  brandId: draft.brandId,
+                  orderId: draft.orderId,
+                  cancellationReason: 'Cancelled from confirmation screen',
+                );
+          } catch (_) {
+            // Ignore cancellation error if ticket is already queued/accepted
+          }
+        }
+        ref.read(cartProvider.notifier).clear();
+        ref.read(orderReferenceProvider.notifier).clear();
+        ref.read(activeOrderDraftProvider.notifier).clear();
+        ref.read(clientOrderIdProvider.notifier).regenerate();
         onCancelOrder?.call();
         onDone();
       }
@@ -54,6 +72,25 @@ class ConfirmationStepView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final channel = ref.watch(menuChannelProvider);
     final reference = ref.watch(orderReferenceProvider);
+    final draft = ref.watch(activeOrderDraftProvider);
+
+    final displayTicketNumber = draft?.ticketNumber?.isNotEmpty == true
+        ? draft!.ticketNumber!
+        : ticketNumber;
+
+    final displayOrderCode = draft?.orderCode.isNotEmpty == true
+        ? draft!.orderCode
+        : orderId;
+
+    final displayTable = draft?.tableReference?.isNotEmpty == true
+        ? draft!.tableReference!
+        : (reference.isNotEmpty
+            ? reference
+            : (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
+
+    final isPaid = channel.isPlatform ||
+        (draft?.paymentStatus?.toUpperCase() == 'PAID');
+    final paymentLabel = isPaid ? 'Paid' : 'Unpaid';
 
     return Column(
       children: [
@@ -137,7 +174,7 @@ class ConfirmationStepView extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              ticketNumber,
+                              displayTicketNumber,
                               style: const TextStyle(
                                 fontFamily: KkfcFonts.ibmPlexSans,
                                 fontSize: 26.0,
@@ -164,7 +201,7 @@ class ConfirmationStepView extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            orderId,
+                            displayOrderCode,
                             style: const TextStyle(
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: 14.5,
@@ -216,7 +253,7 @@ class ConfirmationStepView extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            reference.isNotEmpty ? reference : 'Table 7',
+                            displayTable,
                             style: const TextStyle(
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: 14.5,
@@ -249,9 +286,9 @@ class ConfirmationStepView extends ConsumerWidget {
                               color: const Color(0xFFEDF1F5),
                               borderRadius: BorderRadius.circular(12.0),
                             ),
-                            child: const Text(
-                              'Unpaid',
-                              style: TextStyle(
+                            child: Text(
+                              paymentLabel,
+                              style: const TextStyle(
                                 fontFamily: KkfcFonts.ibmPlexSans,
                                 fontSize: 12.0,
                                 fontWeight: FontWeight.w600,
@@ -289,6 +326,10 @@ class ConfirmationStepView extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(10.0),
                       onTap: () {
                         HapticFeedback.mediumImpact();
+                        ref.read(cartProvider.notifier).clear();
+                        ref.read(orderReferenceProvider.notifier).clear();
+                        ref.read(activeOrderDraftProvider.notifier).clear();
+                        ref.read(clientOrderIdProvider.notifier).regenerate();
                         onDone();
                       },
                       child: const Center(
@@ -321,7 +362,7 @@ class ConfirmationStepView extends ConsumerWidget {
 
                 // Secondary: "Cancel this order"
                 TextButton(
-                  onPressed: () => _showCancelDialog(context),
+                  onPressed: () => _showCancelDialog(context, ref),
                   child: const Text(
                     'Cancel this order',
                     style: TextStyle(

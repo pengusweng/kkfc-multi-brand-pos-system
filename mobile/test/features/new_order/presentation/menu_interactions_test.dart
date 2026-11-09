@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
+import 'package:mobile/features/new_order/presentation/widgets/item_customization_dialog.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
@@ -64,6 +65,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text(_meal.name));
         await tester.pumpAndSettle();
+        if (availability == MenuAvailability.available) {
+          expect(find.byType(ItemCustomizationDialog), findsOneWidget);
+          await tester.tap(find.textContaining('Add to order'));
+          await tester.pumpAndSettle();
+        } else {
+          expect(find.byType(ItemCustomizationDialog), findsNothing);
+        }
         expect(
           container.read(cartCountProvider),
           availability == MenuAvailability.available ? 1 : 0,

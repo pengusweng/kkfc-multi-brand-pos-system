@@ -8,7 +8,6 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/item_customization_dialog.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
-import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 class MenuItemCard extends ConsumerStatefulWidget {
   const MenuItemCard({
@@ -40,24 +39,6 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
 
   Future<void> _onAdd(MenuItem item) async {
     HapticFeedback.lightImpact();
-
-    if (item.modifierGroups.isEmpty) {
-      ref.read(cartProvider.notifier).add(item);
-      if (mounted) {
-        setState(() {
-          _buttonPressed = false;
-          _justAdded = true;
-        });
-
-        _flashTimer?.cancel();
-        _flashTimer = Timer(const Duration(milliseconds: 600), () {
-          if (mounted) {
-            setState(() => _justAdded = false);
-          }
-        });
-      }
-      return;
-    }
 
     final brand = ref.read(activeBrandProvider);
     final added = await showItemCustomizationDialog(

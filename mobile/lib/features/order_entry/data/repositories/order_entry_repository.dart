@@ -84,6 +84,73 @@ class OrderEntryRepository {
     }
     return body;
   }
+
+  /// Verifies an existing draft order at `POST /brands/:brandId/orders/:orderId/verify`.
+  Future<Map<String, dynamic>> verifyOrder({
+    required String brandId,
+    required String orderId,
+    String? paymentMethod,
+    String? paymentStatus,
+    String? paymentReference,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (paymentMethod != null) payload['payment_method'] = paymentMethod;
+    if (paymentStatus != null) payload['payment_status'] = paymentStatus;
+    if (paymentReference != null) {
+      payload['payment_reference'] = paymentReference;
+    }
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/brands/$brandId/orders/$orderId/verify',
+      data: payload,
+    );
+    final body = response.data;
+    if (body == null) {
+      throw const FormatException('Invalid verify order response.');
+    }
+    return body;
+  }
+
+  /// Confirms an existing draft order at `POST /brands/:brandId/orders/:orderId/confirm`.
+  Future<Map<String, dynamic>> confirmOrder({
+    required String brandId,
+    required String orderId,
+    String? paymentMethod,
+    String? paymentStatus,
+    String? paymentReference,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (paymentMethod != null) payload['payment_method'] = paymentMethod;
+    if (paymentStatus != null) payload['payment_status'] = paymentStatus;
+    if (paymentReference != null) {
+      payload['payment_reference'] = paymentReference;
+    }
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/brands/$brandId/orders/$orderId/confirm',
+      data: payload,
+    );
+    final body = response.data;
+    if (body == null) {
+      throw const FormatException('Invalid confirm order response.');
+    }
+    return body;
+  }
+
+  /// Cancels an unconfirmed draft order at `POST /brands/:brandId/orders/:orderId/cancel`.
+  Future<Map<String, dynamic>> cancelDraftOrder({
+    required String brandId,
+    required String orderId,
+    required String cancellationReason,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/brands/$brandId/orders/$orderId/cancel',
+      data: {'cancellation_reason': cancellationReason},
+    );
+    final body = response.data;
+    if (body == null) {
+      throw const FormatException('Invalid cancel draft order response.');
+    }
+    return body;
+  }
 }
 
 final orderEntryRepositoryProvider = Provider<OrderEntryRepository>(

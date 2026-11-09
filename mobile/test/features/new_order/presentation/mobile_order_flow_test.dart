@@ -6,6 +6,82 @@ import 'package:mobile/features/new_order/presentation/pages/mobile_order_flow_s
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/cart_item_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_flow_stepper.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
+
+class FakeOrderEntryRepository implements OrderEntryRepository {
+  @override
+  Future<Map<String, dynamic>> createOrder({
+    required String brandId,
+    required String orderId,
+    required MenuChannel channel,
+    required List<CartLine> lines,
+    String? reference,
+    String? merchantStoreReference,
+    String? notes,
+  }) async {
+    return {
+      'order_id': orderId,
+      'order_code': 'ORD-2026-1105-017',
+      'order_number': 17,
+      'brand_id': brandId,
+      'order_channel': channel.apiValue,
+      'table_reference': reference,
+      'status': 'DRAFT',
+      'payment_status': 'UNPAID',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> confirmOrder({
+    required String brandId,
+    required String orderId,
+    String? paymentMethod,
+    String? paymentStatus,
+    String? paymentReference,
+  }) async {
+    return {
+      'order_id': orderId,
+      'order_code': 'ORD-2026-1105-017',
+      'order_number': 17,
+      'brand_id': brandId,
+      'status': 'CONFIRMED',
+      'payment_status': paymentStatus ?? 'UNPAID',
+      'kitchen_tickets_order': {
+        'ticket_number': 'T-017',
+        'status': 'QUEUED',
+      },
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> verifyOrder({
+    required String brandId,
+    required String orderId,
+    String? paymentMethod,
+    String? paymentStatus,
+    String? paymentReference,
+  }) async {
+    return {
+      'order_id': orderId,
+      'valid': true,
+      'payment_method': paymentMethod,
+      'payment_status': paymentStatus,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> cancelDraftOrder({
+    required String brandId,
+    required String orderId,
+    required String cancellationReason,
+  }) async {
+    return {
+      'order_id': orderId,
+      'status': 'CANCELLED',
+      'cancellation_reason': cancellationReason,
+    };
+  }
+}
 
 void main() {
   final sampleItem = MenuItem(
@@ -67,7 +143,13 @@ void main() {
   testWidgets(
     'MobileOrderFlowScreen displays cart matching visual design, steps without rerouting, and controls work',
     (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          orderEntryRepositoryProvider.overrideWithValue(
+            FakeOrderEntryRepository(),
+          ),
+        ],
+      );
 
       // Configure cart with 1 line, quantity 2, matching the screenshot
       container.read(cartProvider.notifier).addConfigured(

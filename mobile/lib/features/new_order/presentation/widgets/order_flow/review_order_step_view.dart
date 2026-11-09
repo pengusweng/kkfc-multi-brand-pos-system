@@ -1,16 +1,29 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/models/order_draft_models.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
+import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
 
 /// Step 4: Review order details and line items before confirming.
-class ReviewOrderStepView extends ConsumerWidget {
+/// Sends confirmation via POST /brands/:brandId/orders/:orderId/confirm.
+class ReviewOrderStepView extends ConsumerStatefulWidget {
   const ReviewOrderStepView({super.key, required this.onConfirm});
 
   final VoidCallback onConfirm;
+
+  @override
+  ConsumerState<ReviewOrderStepView> createState() =>
+      _ReviewOrderStepViewState();
+}
+
+class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
+  bool _isSubmitting = false;
 
   String _formatModifiers(CartLine line, String brandName) {
     final parts = <String>[];
@@ -50,17 +63,90 @@ class ReviewOrderStepView extends ConsumerWidget {
     }
   }
 
+  String _extractErrorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final message = data['message'];
+        if (message is String && message.isNotEmpty) return message;
+        if (message is List && message.isNotEmpty) {
+          return message.first.toString();
+        }
+      }
+      return 'Could not confirm order. Please check your connection and try again.';
+    }
+    if (error is StateError) {
+      return error.message;
+    }
+    return 'Could not confirm order. Please try again.';
+  }
+
+  Future<void> _onConfirmAndSend() async {
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      final draft = ref.read(activeOrderDraftProvider);
+      final activeBrand = ref.read(activeBrandProvider);
+      final allBrands = ref.read(assignedBrandsProvider);
+      final brandId = (draft != null && draft.brandId.isNotEmpty)
+          ? draft.brandId
+          : resolveActiveBrandId(activeBrand, allBrands);
+      final String orderId = (draft != null && draft.orderId.isNotEmpty)
+          ? draft.orderId
+          : ref.read(clientOrderIdProvider);
+      final channel = ref.read(menuChannelProvider);
+
+      final paymentMethod = channel.isPlatform ? 'PLATFORM_SETTLED' : 'CASH';
+      final paymentStatus = channel.isPlatform ? 'PAID' : 'UNPAID';
+
+      final confirmed = await ref
+          .read(orderEntryRepositoryProvider)
+          .confirmOrder(
+            brandId: brandId,
+            orderId: orderId,
+            paymentMethod: paymentMethod,
+            paymentStatus: paymentStatus,
+          );
+
+      final updatedDraft = OrderDraft.fromJson(confirmed);
+      ref.read(activeOrderDraftProvider.notifier).set(updatedDraft);
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        widget.onConfirm();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        final message = _extractErrorMessage(e);
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFFB42318),
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final channel = ref.watch(menuChannelProvider);
     final reference = ref.watch(orderReferenceProvider);
     final cart = ref.watch(cartProvider);
     final total = ref.watch(cartTotalProvider);
     final itemCount = ref.watch(cartCountProvider);
-    final activeBrand = ref.watch(assignedBrandProvider).asData?.value;
-    final brandName = activeBrand?.name ?? 'Gamcheon';
+    final activeBrand = ref.watch(activeBrandProvider);
+    final brandName = activeBrand.name;
+    final draft = ref.watch(activeOrderDraftProvider);
 
     final lineCount = cart.length;
+    final effectiveReference = reference.isNotEmpty
+        ? reference
+        : (draft?.tableReference ?? (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
 
     return Column(
       children: [
@@ -164,7 +250,7 @@ class ReviewOrderStepView extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            reference.isNotEmpty ? reference : 'Table 7',
+                            effectiveReference,
                             style: const TextStyle(
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: 15.0,
@@ -197,22 +283,22 @@ class ReviewOrderStepView extends ConsumerWidget {
                               color: const Color(0xFFEDF1F5),
                               borderRadius: BorderRadius.circular(12.0),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.info_outline,
-                                  size: 14,
+                                  size: 13.0,
                                   color: Color(0xFF586579),
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4.0),
                                 Text(
-                                  'Unpaid',
-                                  style: TextStyle(
+                                  channel.isPlatform ? 'Paid' : 'Unpaid',
+                                  style: const TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
                                     fontSize: 12.0,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF586579),
+                                    color: Color(0xFF19293E),
                                   ),
                                 ),
                               ],
@@ -220,7 +306,7 @@ class ReviewOrderStepView extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
 
                       Text(
                         _paymentNote(channel),
@@ -237,7 +323,7 @@ class ReviewOrderStepView extends ConsumerWidget {
 
                 const SizedBox(height: 14),
 
-                // Card 2: Order Items & Pricing Card
+                // Card 2: Lines & Financial Summary
                 Container(
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
@@ -261,27 +347,33 @@ class ReviewOrderStepView extends ConsumerWidget {
                           color: Color(0xFF19293E),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                      // Items List
-                      for (var idx = 0; idx < cart.length; idx++) ...[
-                        if (idx > 0) const SizedBox(height: 14),
+                      // Order Lines
+                      for (int i = 0; i < cart.length; i++) ...[
+                        if (i > 0)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12.0),
+                            child: Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF2ECE1),
+                            ),
+                          ),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // "2×"
-                            SizedBox(
-                              width: 26,
-                              child: Text(
-                                '${cart[idx].quantity}×',
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 15.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF19293E),
-                                ),
+                            // Quantity: "2×"
+                            Text(
+                              '${cart[i].quantity}×',
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: 15.0,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF19293E),
                               ),
                             ),
+                            const SizedBox(width: 12),
 
                             // Name & Modifiers
                             Expanded(
@@ -289,59 +381,58 @@ class ReviewOrderStepView extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    cart[idx].item.name,
+                                    cart[i].item.name,
                                     style: const TextStyle(
                                       fontFamily: KkfcFonts.ibmPlexSans,
                                       fontSize: 15.0,
                                       fontWeight: FontWeight.w700,
                                       color: Color(0xFF19293E),
+                                      height: 1.25,
                                     ),
                                   ),
-                                  const SizedBox(height: 3),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    _formatModifiers(cart[idx], brandName),
+                                    _formatModifiers(cart[i], brandName),
                                     style: const TextStyle(
                                       fontFamily: KkfcFonts.text,
                                       fontSize: 13.0,
                                       color: Color(0xFF586579),
-                                      height: 1.3,
+                                      height: 1.35,
                                     ),
                                   ),
-                                  if (cart[idx].kitchenNote != null &&
-                                      cart[idx].kitchenNote!.isNotEmpty) ...[
-                                    const SizedBox(height: 3),
+                                  if (cart[i].kitchenNote != null &&
+                                      cart[i].kitchenNote!.trim().isNotEmpty) ...[
+                                    const SizedBox(height: 4),
                                     Text(
-                                      'Note: "${cart[idx].kitchenNote}"',
+                                      'Note: ${cart[i].kitchenNote}',
                                       style: const TextStyle(
                                         fontFamily: KkfcFonts.text,
-                                        fontSize: 12.0,
+                                        fontSize: 12.5,
                                         fontStyle: FontStyle.italic,
-                                        color: Color(0xFF586579),
+                                        color: Color(0xFF76849A),
                                       ),
                                     ),
                                   ],
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 8),
 
-                            // Total
+                            // Line Total
                             Text(
-                              formatPeso(cart[idx].totalCentavos(channel)),
+                              formatPeso(cart[i].totalCentavos(channel)),
                               style: const TextStyle(
                                 fontFamily: KkfcFonts.ibmPlexSans,
                                 fontSize: 15.0,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF19293E),
-                                fontFeatures: [FontFeature.tabularFigures()],
                               ),
                             ),
                           ],
                         ),
                       ],
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
                       const Divider(
                         height: 1,
                         thickness: 1,
@@ -349,7 +440,7 @@ class ReviewOrderStepView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 14),
 
-                      // Subtotal
+                      // Subtotal Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -366,16 +457,15 @@ class ReviewOrderStepView extends ConsumerWidget {
                             style: const TextStyle(
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: 15.0,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF586579),
-                              fontFeatures: [FontFeature.tabularFigures()],
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF19293E),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
 
-                      // Total
+                      // Total Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -395,7 +485,6 @@ class ReviewOrderStepView extends ConsumerWidget {
                               fontSize: 18.0,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF19293E),
-                              fontFeatures: [FontFeature.tabularFigures()],
                             ),
                           ),
                         ],
@@ -418,35 +507,44 @@ class ReviewOrderStepView extends ConsumerWidget {
               height: 52,
               width: double.infinity,
               child: Material(
-                color: const Color(0xFFA8562A),
+                color: _isSubmitting
+                    ? const Color(0xFF8B4722)
+                    : const Color(0xFFA8562A),
                 borderRadius: BorderRadius.circular(10.0),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10.0),
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    onConfirm();
-                  },
-                  child: const Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.restaurant,
-                          color: Colors.white,
-                          size: 18.0,
-                        ),
-                        SizedBox(width: 8.0),
-                        Text(
-                          'Confirm and send',
-                          style: TextStyle(
-                            fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                  onTap: _isSubmitting ? null : _onConfirmAndSend,
+                  child: Center(
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.restaurant,
+                                color: Colors.white,
+                                size: 18.0,
+                              ),
+                              SizedBox(width: 8.0),
+                              Text(
+                                'Confirm and send',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),

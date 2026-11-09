@@ -189,4 +189,90 @@ void main() {
       expect(cart.first.totalCentavos(MenuChannel.dineIn), 52000);
     },
   );
+
+  testWidgets(
+    'ItemCustomizationDialog shows when item has no add-ons, hiding the add-on section while keeping quantity and notes',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      const simpleItem = MenuItem(
+        id: 'simple-item',
+        name: 'Simple Drink',
+        description: 'Fresh brewed iced tea',
+        pricesCentavos: {
+          MenuChannel.dineIn: 7500,
+          MenuChannel.takeaway: 7500,
+        },
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showItemCustomizationDialog(
+                    context,
+                    item: simpleItem,
+                    channel: MenuChannel.dineIn,
+                    brandName: 'Gamcheon',
+                  ),
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Open dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Dialog shows title, brand, and description
+      expect(find.text('Simple Drink'), findsOneWidget);
+      expect(find.textContaining('Gamcheon'), findsOneWidget);
+      expect(find.text('Fresh brewed iced tea'), findsOneWidget);
+
+      // Add-ons section and radio modifier sections should NOT be present
+      expect(find.text('Add-Ons'), findsNothing);
+      expect(find.text('Optional'), findsNothing);
+      expect(find.text('Rice Choice'), findsNothing);
+
+      // Quantity stepper and Kitchen Note ARE present
+      expect(find.text('Quantity'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // Base price is shown
+      expect(find.text('₱75.00'), findsWidgets);
+
+      // Increment quantity
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('₱150.00'), findsOneWidget);
+
+      // Enter kitchen note
+      await tester.enterText(find.byType(TextField), 'Less ice');
+      await tester.pumpAndSettle();
+
+      // Submit
+      await tester.tap(find.text('Add to order'));
+      await tester.pumpAndSettle();
+
+      // Dialog dismissed
+      expect(find.text('Simple Drink'), findsNothing);
+
+      // Cart provider has 1 line with quantity 2 and kitchen note
+      final cart = container.read(cartProvider);
+      expect(cart.length, 1);
+      expect(cart.first.item.id, 'simple-item');
+      expect(cart.first.quantity, 2);
+      expect(cart.first.kitchenNote, 'Less ice');
+      expect(cart.first.totalCentavos(MenuChannel.dineIn), 15000);
+    },
+  );
 }

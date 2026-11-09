@@ -167,9 +167,9 @@ class MenuItem {
         final mod = row['modifier'] as Map<String, dynamic>?;
         final name = mod?['name'] as String? ?? row['name'] as String?;
         final modId =
-            row['menu_item_modifier_id'] as String? ??
             row['modifier_id'] as String? ??
             mod?['modifier_id'] as String? ??
+            row['menu_item_modifier_id'] as String? ??
             mod?['code'] as String? ??
             row['code'] as String? ??
             'mod_${groups.length}';
@@ -271,13 +271,20 @@ class CartLine {
 
   int totalCentavos(MenuChannel channel) => unitCentavos(channel) * quantity;
 
+  static final _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
   /// Active modifier IDs selected for this cart line.
   List<String> get selectedModifierIds {
     final ids = <String>[];
     for (final g in item.modifierGroups) {
       final id = selections[g.id] ?? g.defaultOptionId;
       if (id == g.defaultOptionId) continue;
-      ids.add(g.isAddOn ? g.id : id);
+      final effectiveId = g.isAddOn ? g.id : id;
+      if (_uuidRegex.hasMatch(effectiveId)) {
+        ids.add(effectiveId);
+      }
     }
     return ids;
   }

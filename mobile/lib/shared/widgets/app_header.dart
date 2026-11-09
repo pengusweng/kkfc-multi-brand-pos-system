@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
@@ -21,6 +22,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.height = KkfcSizing.appBar,
     this.padding,
     this.backgroundColor,
+    this.showLogout = true,
     // Legacy MenuHeader compatibility properties
     this.compact,
     this.channel,
@@ -59,6 +61,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   /// Background color of the header bar. Defaults to [KkfcColors.shell] (#19293E).
   final Color? backgroundColor;
+
+  /// Whether to display the logout button on the right side of the header.
+  final bool showLogout;
 
   /// Legacy compatibility property from MenuHeader.
   final bool? compact;
@@ -138,11 +143,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
 
-              // Right side: [actions] + [trailing or role badge]
+              // Right side: [actions] + [trailing or role badge] + [logout]
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (actions != null) ...actions!,
+                  ...?actions,
                   if (trailing != null)
                     trailing!
                   else if (effectiveRole != null && effectiveRole.isNotEmpty)
@@ -150,6 +155,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       role: effectiveRole,
                       onTap: onRoleTap,
                     ),
+                  if (showLogout) ...[
+                    const SizedBox(width: KkfcSpace.s8),
+                    const LogoutButton(color: Colors.white),
+                  ],
                 ],
               ),
             ],

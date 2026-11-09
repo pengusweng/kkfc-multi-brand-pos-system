@@ -37,9 +37,9 @@ class LogoutButton extends ConsumerWidget {
   /// Signs out the current session and clears all order, cart, and search state.
   static void signOut(WidgetRef ref) {
     final token = ref.read(sessionTokenProvider);
-    if (token == null) return;
-
-    unawaited(ref.read(authRepositoryProvider).logout(token));
+    if (token != null) {
+      unawaited(ref.read(authRepositoryProvider).logout(token));
+    }
     ref.read(cartProvider.notifier).clear();
     ref.read(orderReferenceProvider.notifier).clear();
     ref.read(storeReferenceProvider.notifier).clear();

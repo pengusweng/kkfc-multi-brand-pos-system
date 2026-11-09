@@ -8,6 +8,7 @@ import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_flow_stepper.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/review_order_step_view.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
@@ -35,8 +36,9 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
   }
 
   void _closeFlow() {
-    if (context.canPop()) {
-      context.pop();
+    final router = GoRouter.maybeOf(context);
+    if (router != null && router.canPop()) {
+      router.pop();
     } else {
       Navigator.of(context).maybePop();
     }
@@ -67,6 +69,9 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
     ).then((confirmed) {
       if (confirmed == true && mounted) {
         ref.read(cartProvider.notifier).clear();
+        ref.read(orderReferenceProvider.notifier).clear();
+        ref.read(activeOrderDraftProvider.notifier).clear();
+        ref.read(clientOrderIdProvider.notifier).regenerate();
         _closeFlow();
       }
     });
