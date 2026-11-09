@@ -6,7 +6,7 @@ import 'package:mobile/features/new_order/presentation/widgets/order_flow/confir
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_details_step_view.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_flow_header.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_flow_stepper.dart';
-import 'package:mobile/features/new_order/presentation/widgets/order_flow/payment_step_view.dart';
+import 'package:mobile/features/new_order/presentation/widgets/order_flow/review_order_step_view.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -79,7 +79,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
       case 3:
         return 'Order details';
       case 4:
-        return 'Payment';
+        return 'Review order';
       case 5:
         return 'Confirmation';
       default:
@@ -95,15 +95,16 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
           // Navy App Header: "Orders" with Cashier Staff dropdown
           const AppHeader(title: 'Orders', compact: true),
 
-          // Sub-header: [< Back] Current order [Clear]
-          OrderFlowHeader(
-            title: _stepTitle,
-            onBack: _onBack,
-            onClear: _onClearOrder,
-            showClear: _currentStep == 2,
-          ),
-
-          const Divider(height: 1, thickness: 1, color: Color(0xFFEDE8DF)),
+          // Sub-header: [< Back] Current order [Clear] (hidden on final Sent step)
+          if (_currentStep < 5) ...[
+            OrderFlowHeader(
+              title: _stepTitle,
+              onBack: _onBack,
+              onClear: _onClearOrder,
+              showClear: _currentStep == 2,
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEDE8DF)),
+          ],
 
           // Stepper: (✓) —— (2) Order —— (3) —— (4) —— (5)
           OrderFlowStepper(
@@ -168,10 +169,9 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
         );
       case 4:
         return KeyedSubtree(
-          key: const ValueKey('step-4-payment'),
-          child: PaymentStepView(
-            onComplete: () {
-              ref.read(cartProvider.notifier).clear();
+          key: const ValueKey('step-4-review'),
+          child: ReviewOrderStepView(
+            onConfirm: () {
               setState(() => _currentStep = 5);
             },
           ),
@@ -179,7 +179,15 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
       case 5:
         return KeyedSubtree(
           key: const ValueKey('step-5-confirm'),
-          child: ConfirmationStepView(onDone: _closeFlow),
+          child: ConfirmationStepView(
+            onDone: () {
+              ref.read(cartProvider.notifier).clear();
+              _closeFlow();
+            },
+            onCancelOrder: () {
+              ref.read(cartProvider.notifier).clear();
+            },
+          ),
         );
       default:
         return KeyedSubtree(

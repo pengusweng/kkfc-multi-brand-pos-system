@@ -68,32 +68,6 @@ void main() {
     ],
   );
 
-  Widget createSubject(WidgetRef? capturedRef) {
-    return ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(
-          body: Consumer(
-            builder: (context, ref, _) {
-              return Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    showItemCustomizationDialog(
-                      context,
-                      item: testItem,
-                      channel: MenuChannel.dineIn,
-                      brandName: 'Gamcheon',
-                    );
-                  },
-                  child: const Text('Open Dialog'),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
   testWidgets(
     'ItemCustomizationDialog displays all options, calculates price, and adds to cart',
     (tester) async {

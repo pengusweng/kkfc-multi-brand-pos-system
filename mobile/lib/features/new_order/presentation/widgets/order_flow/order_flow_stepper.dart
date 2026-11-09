@@ -20,8 +20,8 @@ class OrderFlowStepper extends StatelessWidget {
       OrderFlowStepItem(stepNumber: 1, label: 'Menu'),
       OrderFlowStepItem(stepNumber: 2, label: 'Order'),
       OrderFlowStepItem(stepNumber: 3, label: 'Details'),
-      OrderFlowStepItem(stepNumber: 4, label: 'Payment'),
-      OrderFlowStepItem(stepNumber: 5, label: 'Confirm'),
+      OrderFlowStepItem(stepNumber: 4, label: 'Review'),
+      OrderFlowStepItem(stepNumber: 5, label: 'Sent'),
     ],
   });
 
@@ -60,10 +60,11 @@ class OrderFlowStepper extends StatelessWidget {
   Widget _buildStep(OrderFlowStepItem step) {
     final isCompleted = step.stepNumber < currentStep;
     final isActive = step.stepNumber == currentStep;
+    final isFinalSent = step.stepNumber == 5 && currentStep == 5;
 
     Widget indicator;
 
-    if (isCompleted) {
+    if (isCompleted || isFinalSent) {
       indicator = Container(
         width: 24,
         height: 24,
@@ -119,7 +120,7 @@ class OrderFlowStepper extends StatelessWidget {
       );
     }
 
-    final canTap = isCompleted && onStepTapped != null;
+    final canTap = isCompleted && currentStep < 5 && onStepTapped != null;
 
     return InkWell(
       key: ValueKey('step-${step.stepNumber}'),

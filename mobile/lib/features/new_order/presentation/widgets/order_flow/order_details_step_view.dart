@@ -3,9 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_details_channel_card.dart';
+import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_details_error_banner.dart';
+import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_details_summary_card.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
-/// Step 3: Customer and order reference details without rerouting.
+/// Step 3: Order details matching the visual design.
+/// Includes Channel segmented picker, Table / Reference field with error validation,
+/// financial summary, payment status badge, and sticky "Review order" button.
 class OrderDetailsStepView extends ConsumerStatefulWidget {
   const OrderDetailsStepView({super.key, required this.onContinue});
 
@@ -18,7 +23,8 @@ class OrderDetailsStepView extends ConsumerStatefulWidget {
 
 class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
   late final TextEditingController _referenceController;
-  late final TextEditingController _customerNotesController;
+  late final FocusNode _focusNode;
+  bool _showValidationError = false;
 
   @override
   void initState() {
@@ -26,267 +32,118 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
     _referenceController = TextEditingController(
       text: ref.read(orderReferenceProvider),
     );
-    _customerNotesController = TextEditingController();
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _referenceController.dispose();
-    _customerNotesController.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  bool _isValidForChannel(MenuChannel channel, String text) {
+    if (channel == MenuChannel.dineIn) {
+      return text.trim().isNotEmpty;
+    }
+    return true;
+  }
+
+  String _bannerErrorMessage(MenuChannel channel) {
+    if (channel == MenuChannel.dineIn) {
+      return 'Enter the table before reviewing a dine-in order.';
+    }
+    return 'Enter the order reference before reviewing.';
+  }
+
+  String _fieldErrorMessage(MenuChannel channel) {
+    if (channel == MenuChannel.dineIn) {
+      return 'Table is required.';
+    }
+    return 'Reference is required.';
+  }
+
+  void _onReviewOrder() {
+    final channel = ref.read(menuChannelProvider);
+    final text = _referenceController.text.trim();
+    final isValid = _isValidForChannel(channel, text);
+
+    if (!isValid) {
+      HapticFeedback.heavyImpact();
+      setState(() => _showValidationError = true);
+      _focusNode.requestFocus();
+      return;
+    }
+
+    setState(() => _showValidationError = false);
+    HapticFeedback.mediumImpact();
+    ref.read(orderReferenceProvider.notifier).set(text);
+    widget.onContinue();
   }
 
   @override
   Widget build(BuildContext context) {
     final channel = ref.watch(menuChannelProvider);
-    final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
+    final hasError =
+        _showValidationError &&
+        !_isValidForChannel(channel, _referenceController.text);
 
     return Column(
       children: [
         Expanded(
           child: Container(
-            color: const Color(0xFFF7F3EC),
+            color: const Color(0xFFF7F4EE),
             child: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                // Dining Channel Section
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: const Color(0xFFDDD6C9)),
+                // Error Alert Banner (e.g. "Enter the table before reviewing a dine-in order.")
+                if (hasError)
+                  OrderDetailsErrorBanner(
+                    message: _bannerErrorMessage(channel),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Order Channel',
-                        style: TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 8.0,
-                        children: [
-                          for (final c in MenuChannel.values)
-                            ChoiceChip(
-                              label: Text(c.label),
-                              selected: channel == c,
-                              selectedColor: const Color(0xFFE7ECF4),
-                              backgroundColor: Colors.white,
-                              labelStyle: TextStyle(
-                                fontFamily: KkfcFonts.ibmPlexSans,
-                                fontSize: 13.5,
-                                fontWeight: channel == c
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: channel == c
-                                    ? const Color(0xFF19293E)
-                                    : const Color(0xFF586579),
-                              ),
-                              side: BorderSide(
-                                color: channel == c
-                                    ? const Color(0xFF19293E)
-                                    : const Color(0xFF76849A),
-                                width: channel == c ? 1.5 : 1.0,
-                              ),
-                              onSelected: (val) {
-                                if (val) {
-                                  ref
-                                      .read(menuChannelProvider.notifier)
-                                      .select(c);
-                                }
-                              },
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+
+                // Card 1: Channel & Table Input
+                OrderDetailsChannelCard(
+                  selectedChannel: channel,
+                  onChannelSelected: (c) {
+                    ref.read(menuChannelProvider.notifier).select(c);
+                    if (_showValidationError) {
+                      setState(() {
+                        _showValidationError =
+                            !_isValidForChannel(c, _referenceController.text);
+                      });
+                    }
+                  },
+                  controller: _referenceController,
+                  focusNode: _focusNode,
+                  onChanged: (val) {
+                    ref.read(orderReferenceProvider.notifier).set(val);
+                    if (_showValidationError &&
+                        _isValidForChannel(channel, val)) {
+                      setState(() => _showValidationError = false);
+                    }
+                  },
+                  hasError: hasError,
+                  errorMessage: _fieldErrorMessage(channel),
                 ),
 
                 const SizedBox(height: 14),
 
-                // Table / Order Reference Input
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: const Color(0xFFDDD6C9)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        channel.referenceLabel,
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _referenceController,
-                        onChanged: (val) {
-                          ref
-                              .read(orderReferenceProvider.notifier)
-                              .set(val);
-                        },
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 14.0,
-                          color: Color(0xFF19293E),
-                        ),
-                        decoration: InputDecoration(
-                          hintText: channel == MenuChannel.dineIn
-                              ? 'e.g. Table 12'
-                              : 'e.g. Order #1042',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF8C97A5),
-                            fontSize: 14,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF76849A),
-                              width: 1.0,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF76849A),
-                              width: 1.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF19293E),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'General Order Notes (Optional)',
-                        style: TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 14.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _customerNotesController,
-                        maxLines: 2,
-                        maxLength: 120,
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 14.0,
-                          color: Color(0xFF19293E),
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'e.g. Priority order, pack separately',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF8C97A5),
-                            fontSize: 14,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          counterText: '',
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF76849A),
-                              width: 1.0,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF76849A),
-                              width: 1.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF19293E),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // Mini Order Summary
-                Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0),
-                    border: Border.all(color: const Color(0xFFDDD6C9)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '$count item${count == 1 ? '' : 's'} · ${channel.label}',
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.text,
-                          fontSize: 14.0,
-                          color: Color(0xFF586579),
-                        ),
-                      ),
-                      Text(
-                        formatPeso(total),
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
+                // Card 2: Subtotal, Total, Payment status
+                OrderDetailsSummaryCard(
+                  subtotalCentavos: total,
+                  totalCentavos: total,
+                  channel: channel,
                 ),
               ],
             ),
           ),
         ),
 
-        // Bottom Action Bar
+        // Bottom Action Bar: "Review order"
         Container(
-          color: const Color(0xFFF7F3EC),
+          color: const Color(0xFFF7F4EE),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: SafeArea(
             top: false,
@@ -298,13 +155,10 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
                 borderRadius: BorderRadius.circular(10.0),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(10.0),
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    widget.onContinue();
-                  },
+                  onTap: _onReviewOrder,
                   child: const Center(
                     child: Text(
-                      'Continue to payment',
+                      'Review order',
                       style: TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 16.0,
