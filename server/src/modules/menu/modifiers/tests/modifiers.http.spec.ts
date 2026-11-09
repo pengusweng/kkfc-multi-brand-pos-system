@@ -16,12 +16,9 @@ import { ModifiersService } from '../modifiers.service';
 
 describe('Modifiers HTTP endpoints', () => {
   const modifierId = '00000000-0000-4000-8000-000000000001';
-  const inventoryItemId = '00000000-0000-4000-8000-000000000002';
   const create = {
     code: 'MOD-EXTRA-RICE',
     name: 'Extra rice',
-    inventory_item_id: inventoryItemId,
-    quantity: 200,
   };
   const headers = {
     Authorization: 'Bearer test-session',
@@ -30,7 +27,6 @@ describe('Modifiers HTTP endpoints', () => {
   const service = {
     create: jest.fn(),
     findOne: jest.fn(),
-    findManyByInventoryItem: jest.fn(),
     findAll: jest.fn(),
     update: jest.fn(),
     reactivate: jest.fn(),
@@ -52,13 +48,6 @@ describe('Modifiers HTTP endpoints', () => {
       body: undefined,
       status: 200,
       handler: 'findOne',
-    },
-    {
-      method: 'GET',
-      path: `/inventory-item/${inventoryItemId}`,
-      body: undefined,
-      status: 200,
-      handler: 'findManyByInventoryItem',
     },
     {
       method: 'PATCH',
@@ -136,7 +125,6 @@ describe('Modifiers HTTP endpoints', () => {
       document.paths['/api/modifiers/{id}']?.get,
       document.paths['/api/modifiers/{id}']?.patch,
       document.paths['/api/modifiers/{id}']?.delete,
-      document.paths['/api/modifiers/inventory-item/{inventoryItemId}']?.get,
       document.paths['/api/modifiers/reactivate/{id}']?.patch,
     ];
     for (const [index, operation] of operations.entries()) {
@@ -159,12 +147,6 @@ describe('Modifiers HTTP endpoints', () => {
       'content.application/json.example.code',
       'MOD-EXTRA-RICE',
     );
-    expect(operations[2]?.responses['200']).not.toHaveProperty(
-      'content.application/json.example.inventory_item_id',
-    );
-    expect(operations[2]?.responses['200']).not.toHaveProperty(
-      'content.application/json.example.quantity',
-    );
     expect(operations[1]?.responses['200']).toHaveProperty(
       'content.application/json.examples.populated.value.meta',
       { page: 1, limit: 10, total: 1, totalPages: 1 },
@@ -172,14 +154,6 @@ describe('Modifiers HTTP endpoints', () => {
     expect(operations[1]?.responses['200']).toHaveProperty(
       'content.application/json.examples.empty.value',
       { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } },
-    );
-    expect(operations[5]?.responses['200']).toHaveProperty(
-      'content.application/json.examples.populated.value.0.modifier_id',
-      modifierId,
-    );
-    expect(operations[5]?.responses['200']).toHaveProperty(
-      'content.application/json.examples.empty.value',
-      [],
     );
     expect(operations[3]?.responses['200']).toHaveProperty(
       'content.application/json.example.name',
@@ -189,7 +163,7 @@ describe('Modifiers HTTP endpoints', () => {
       'content.application/json.example.is_active',
       false,
     );
-    expect(operations[6]?.responses['200']).toHaveProperty(
+    expect(operations[5]?.responses['200']).toHaveProperty(
       'content.application/json.example.is_active',
       true,
     );
@@ -254,20 +228,6 @@ describe('Modifiers HTTP endpoints', () => {
       args: ['MOD-EXTRA-RICE', false],
     },
     {
-      method: 'GET',
-      path: `/inventory-item/${inventoryItemId}`,
-      status: 200,
-      handler: 'findManyByInventoryItem',
-      args: [inventoryItemId, true],
-    },
-    {
-      method: 'GET',
-      path: `/inventory-item/${inventoryItemId}?activeOnly=false`,
-      status: 200,
-      handler: 'findManyByInventoryItem',
-      args: [inventoryItemId, false],
-    },
-    {
       method: 'PATCH',
       path: `/${modifierId}`,
       body: { name: 'Updated' },
@@ -278,10 +238,10 @@ describe('Modifiers HTTP endpoints', () => {
     {
       method: 'PATCH',
       path: `/${modifierId}`,
-      body: { inventory_item_id: null, quantity: null },
+      body: { description: null },
       status: 200,
       handler: 'update',
-      args: [modifierId, { inventory_item_id: null, quantity: null }],
+      args: [modifierId, { description: null }],
     },
     {
       method: 'PATCH',
@@ -386,23 +346,17 @@ describe('Modifiers HTTP endpoints', () => {
     {
       method: 'POST',
       path: '',
-      body: { ...create, inventory_item_id: 'invalid' },
+      body: { ...create, inventory_item_id: crypto.randomUUID() },
     },
-    { method: 'POST', path: '', body: { ...create, quantity: -1 } },
     { method: 'PATCH', path: `/${modifierId}`, body: { name: null } },
     { method: 'PATCH', path: `/${modifierId}`, body: { is_active: false } },
     { method: 'PATCH', path: '/invalid', body: { name: 'Updated' } },
     { method: 'PATCH', path: '/reactivate/invalid' },
     { method: 'DELETE', path: '/invalid' },
-    { method: 'GET', path: '/inventory-item/invalid' },
     { method: 'GET', path: '?page=0' },
     { method: 'GET', path: '?limit=101' },
     { method: 'GET', path: '?activeOnly=invalid' },
     { method: 'GET', path: '/EXTRA?activeOnly=invalid' },
-    {
-      method: 'GET',
-      path: `/inventory-item/${inventoryItemId}?activeOnly=invalid`,
-    },
   ] as const)(
     'IT-MOD-007: $method $path rejects invalid input before calling the service',
     async (route) => {

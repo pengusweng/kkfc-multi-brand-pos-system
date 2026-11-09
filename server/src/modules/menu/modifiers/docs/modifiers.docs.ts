@@ -40,18 +40,12 @@ export function CreateModifierDocs() {
     PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a modifier.',
-      description:
-        'Creates an active modifier with a unique code and name. An optional inventory item must exist and be active. Quantity uses the inventory item base unit.',
+      description: 'Creates an active modifier with a unique code and name.',
     }),
     ApiResponse({
       status: 201,
-      description:
-        'Created modifier. Inventory links and quantities are excluded from the response.',
+      description: 'Created modifier.',
       content: { 'application/json': { example: modifierExample } },
-    }),
-    ApiResponse({
-      status: 404,
-      description: 'Inventory item not found or inactive.',
     }),
     ApiResponse({
       status: 409,
@@ -69,8 +63,7 @@ export function FindAllModifiersDocs() {
     }),
     ApiResponse({
       status: 200,
-      description:
-        'Paginated modifiers with inventory links and quantities excluded.',
+      description: 'Paginated modifiers.',
       content: {
         'application/json': {
           examples: {
@@ -91,47 +84,6 @@ export function FindAllModifiersDocs() {
           },
         },
       },
-    }),
-  );
-}
-
-export function FindModifiersByInventoryItemDocs() {
-  return applyDecorators(
-    ApiOperation({
-      summary: 'List modifiers for an inventory item.',
-      description:
-        'Returns modifiers linked to an existing active inventory item. activeOnly defaults to true; false includes inactive modifiers.',
-    }),
-    ApiParam({
-      name: 'inventoryItemId',
-      schema: { type: 'string', format: 'uuid' },
-    }),
-    ApiQuery({
-      name: 'activeOnly',
-      required: false,
-      type: Boolean,
-      schema: { default: true },
-      description: 'False includes active and inactive modifiers.',
-    }),
-    ApiResponse({
-      status: 200,
-      description:
-        'Array of modifiers linked to the inventory item. Inventory links and quantities are excluded from the response.',
-      content: {
-        'application/json': {
-          examples: {
-            populated: {
-              summary: 'One linked modifier',
-              value: [modifierExample],
-            },
-            empty: { summary: 'No matching modifiers', value: [] },
-          },
-        },
-      },
-    }),
-    ApiResponse({
-      status: 404,
-      description: 'Inventory item not found or inactive.',
     }),
   );
 }
@@ -157,8 +109,7 @@ export function FindOneModifierDocs() {
     }),
     ApiResponse({
       status: 200,
-      description:
-        'Modifier details with inventory links and quantities excluded.',
+      description: 'Modifier details.',
       content: { 'application/json': { example: modifierExample } },
     }),
     ApiResponse({
@@ -173,8 +124,7 @@ export function UpdateModifierDocs() {
     PinRequiredDocs(),
     ApiOperation({
       summary: 'Update a modifier.',
-      description:
-        'Updates an active modifier. A replacement inventory item must exist and be active. Nullable inventory and quantity fields can be cleared with null.',
+      description: 'Updates an active modifier.',
     }),
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
     ApiResponse({
@@ -192,7 +142,7 @@ export function UpdateModifierDocs() {
     }),
     ApiResponse({
       status: 404,
-      description: 'Modifier or inventory item not found or inactive.',
+      description: 'Modifier not found or inactive.',
     }),
     ApiResponse({
       status: 409,

@@ -17,7 +17,6 @@ import {
   ModifiersDocs,
   CreateModifierDocs,
   FindAllModifiersDocs,
-  FindModifiersByInventoryItemDocs,
   FindOneModifierDocs,
   UpdateModifierDocs,
   ReactivateModifierDocs,
@@ -52,18 +51,6 @@ export class ModifiersController {
   @FindAllModifiersDocs()
   async findAll(@Query() query: FindAllModifiersDTO) {
     return this.modifiersService.findAll(query);
-  }
-
-  @Get('inventory-item/:inventoryItemId')
-  @FindModifiersByInventoryItemDocs()
-  async findManyByInventoryItem(
-    @Param('inventoryItemId', ParseUUIDPipe) inventoryItemId: string,
-    @Query() query: FindModifierDTO,
-  ) {
-    return this.modifiersService.findManyByInventoryItem(
-      inventoryItemId,
-      query.activeOnly,
-    );
   }
 
   @Get(':id')

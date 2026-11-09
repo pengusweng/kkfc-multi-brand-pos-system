@@ -53,8 +53,6 @@ const menuCatalogItemExample = {
         code: 'EXTRA-CHEESE',
         name: 'Extra Cheese',
         description: 'An extra serving of cheese.',
-        inventory_item_id: null,
-        quantity: null,
         is_active: true,
         created_at: menuItemExample.created_at,
         modified_at: menuItemExample.modified_at,

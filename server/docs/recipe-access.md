@@ -1,8 +1,7 @@
 # Confidential recipe access
 
-`GET /api/recipes/:id` reads the recipe and its components.
-`PATCH /api/recipes/:id` accepts instructions, notes and an optional replacement
-components array (`inventory_item_id`, positive `quantity`, optional notes).
+`GET /api/recipes/:id` reads the recipe.
+`PATCH /api/recipes/:id` accepts instructions and notes.
 PATCH returns only the recipe ID: write permission does not imply read permission.
 Both routes require a bearer session. Guards check access before DTO validation,
 and the service checks again for callers outside HTTP.
@@ -48,8 +47,8 @@ events. If audit storage fails, access remains denied and a constant operational
 error is logged; the event cannot be guaranteed durable during that outage.
 
 General menu, channel, modifier and menu-item-modifier responses use a recursive
-field allowlist for every role, including owners. Recipe relations, snapshots,
-components, ingredient quantities and private notes are excluded. Confidential
+field allowlist for every role, including owners. Recipe relations, snapshots
+and private notes are excluded. Confidential
 reads must use the authorized recipe endpoint. Order APIs already remove their
 internal recipe snapshots; this change preserves that behavior.
 

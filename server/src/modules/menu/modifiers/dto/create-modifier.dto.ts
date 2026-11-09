@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateModifierDTO {
   @IsString()
@@ -28,23 +19,4 @@ export class CreateModifierDTO {
   @MaxLength(2000)
   @ApiPropertyOptional({ type: String, maxLength: 2000, nullable: true })
   description?: string | null;
-
-  @IsOptional()
-  @IsUUID('all')
-  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
-  inventory_item_id?: string | null;
-
-  @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 3 })
-  @Min(0)
-  @Max(99999999999.999)
-  @ApiPropertyOptional({
-    type: Number,
-    minimum: 0,
-    maximum: 99999999999.999,
-    multipleOf: 0.001,
-    nullable: true,
-    description: 'Quantity consumed in inventory item base units per serving.',
-  })
-  quantity?: number | null;
 }

@@ -28,8 +28,7 @@ export class OrderItemsService {
           !menu ||
           !menu.is_available ||
           !menu.recipe ||
-          !menu.recipe.is_active ||
-          menu.recipe.type !== 'MENU_ASSEMBLY'
+          !menu.recipe.is_active
         )
           throw new BadRequestException('Menu item or recipe is unavailable.');
         const override = menu.menu_item_channels_menu_item[0];
@@ -39,15 +38,6 @@ export class OrderItemsService {
           );
         const price = override?.price ?? menu.base_price;
         this.validatePrice(price);
-        if (
-          menu.recipe.recipe_components_recipe.some((component) => {
-            const quantity = new Prisma.Decimal(component.quantity);
-            return !quantity.isFinite() || quantity.lte(0);
-          })
-        )
-          throw new BadRequestException(
-            'Recipe component quantities must be positive and finite.',
-          );
         const modifiers = (line.modifier_ids ?? []).map((id) => {
           const link = menu.menu_item_modifiers_menu_item.find(
             (m) =>

@@ -3,10 +3,9 @@ import { PrismaModule } from '../../../shared/prisma/prisma.module';
 import { ModifiersController } from './modifiers.controller';
 import { ModifiersRepository } from './modifiers.repository';
 import { ModifiersService } from './modifiers.service';
-import { InventoryItemsModule } from '../../inventory/inventory-items/inventory-items.module';
 
 @Module({
-  imports: [PrismaModule, InventoryItemsModule],
+  imports: [PrismaModule],
   controllers: [ModifiersController],
   providers: [ModifiersService, ModifiersRepository],
   exports: [ModifiersRepository],

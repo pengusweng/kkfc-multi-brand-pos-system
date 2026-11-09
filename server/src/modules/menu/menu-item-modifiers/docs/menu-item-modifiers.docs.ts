@@ -117,8 +117,7 @@ export function FindMenuItemModifiersForMenuItemDocs() {
     }),
     ApiResponse({
       status: 200,
-      description:
-        'Array of assignments with nested modifier details. Inventory links and quantities are excluded.',
+      description: 'Array of assignments with nested modifier details.',
       content: {
         'application/json': {
           examples: {
@@ -148,8 +147,7 @@ export function FindOneMenuItemModifierDocs() {
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
     ApiResponse({
       status: 200,
-      description:
-        'Assignment and modifier details in separate fields. Inventory links and quantities are excluded.',
+      description: 'Assignment and modifier details in separate fields.',
       content: {
         'application/json': {
           example: {

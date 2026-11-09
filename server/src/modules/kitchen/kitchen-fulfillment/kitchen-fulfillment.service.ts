@@ -3,8 +3,6 @@ import {
   ConflictException,
   Injectable,
 } from '@nestjs/common';
-import { InventoryItemsRepository } from '../../inventory/inventory-items/inventory-items.repository';
-import { InventoryItemsService } from '../../inventory/inventory-items/inventory-items.service';
 import { OrderItemsRepository } from '../../orders/order-items/order-items.repository';
 import { OrderItemsService } from '../../orders/order-items/order-items.service';
 import { OrdersRepository } from '../../orders/orders/orders.repository';
@@ -44,8 +42,6 @@ export class KitchenFulfillmentService {
     private readonly ordersRepository: OrdersRepository,
     private readonly orderItemsService: OrderItemsService,
     private readonly orderItemsRepository: OrderItemsRepository,
-    private readonly inventoryItemsService: InventoryItemsService,
-    private readonly inventoryItemsRepository: InventoryItemsRepository,
   ) {}
 
   async acknowledge(kitchenTicketId: string) {

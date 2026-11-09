@@ -22,7 +22,6 @@ describe('Confidential recipes HTTP authorization', () => {
     recipe_id: id,
     instructions: 'secret-instructions',
     notes: 'secret-notes',
-    recipe_components_recipe: [{ quantity: '123.456' }],
   };
   const db = {
     user: { findUnique: jest.fn() },
@@ -170,7 +169,6 @@ describe('Confidential recipes HTTP authorization', () => {
       const result = await call('patch').send({
         instructions: 'updated',
         notes: null,
-        components: [{ inventory_item_id: id, quantity: 2 }],
       });
       expect(result.status).toBe(200);
       expect(result.body).toEqual({ recipe_id: id });

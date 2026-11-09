@@ -160,7 +160,6 @@ export class OrdersService {
         { confirmed_at: new Date(), ...payment },
         tx,
       );
-      // Sprint 1 deliberately performs no inventory writes or stock availability checks.
       return this.response(confirmed);
     });
   }

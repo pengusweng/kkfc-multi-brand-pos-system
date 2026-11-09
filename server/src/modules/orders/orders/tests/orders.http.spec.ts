@@ -764,7 +764,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     },
   );
 
-  it('IT-ORD-004 Given a draft When verifying and confirming Then save a queued ticket and private snapshots without inventory changes', async () => {
+  it('IT-ORD-004 Given a draft When verifying and confirming Then save a queued ticket and private snapshots', async () => {
     await channel();
     const order = await draft('GRABFOOD');
     const before = await savedOrder(order.order_id);
@@ -807,7 +807,6 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(saved.kitchen_tickets_order?.ticket_number).toMatch(/^T-\d{3,}$/);
     expect(saved.order_items_order[0].recipe_snapshot).toMatchObject({
       instructions: 'Restricted fixture instructions',
-      recipe_components_recipe: [expect.objectContaining({ quantity: '3' })],
     });
     expect(
       saved.order_items_order[0].order_item_modifiers_order_item[0],
@@ -815,18 +814,6 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     expect(
       saved.order_items_order[0].order_item_modifiers_order_item[0].additional_price.toString(),
     ).toBe('25');
-    expect(
-      (
-        await prisma.inventoryItem.findUniqueOrThrow({
-          where: { inventory_item_id: fixture.ingredient.inventory_item_id },
-        })
-      ).quantity_on_hand.toString(),
-    ).toBe('100');
-    expect(
-      await prisma.stockMovement.count({
-        where: { inventory_item_id: fixture.ingredient.inventory_item_id },
-      }),
-    ).toBe(0);
   });
 
   it('IT-ORD-005 Given simultaneous confirmations When both finish Then return one persisted ticket', async () => {
@@ -1335,7 +1322,6 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
         brand_id: fixture.otherBrand.brand_id,
         code: randomUUID(),
         name: 'Other brand assembly',
-        type: 'MENU_ASSEMBLY',
       },
     });
     const item = await prisma.menuItem.create({

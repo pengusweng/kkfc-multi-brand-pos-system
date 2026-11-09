@@ -116,7 +116,7 @@ export function CancelOrderDocs() {
     ApiOperation({
       summary: 'Cancel a draft order',
       description:
-        'Cancels only a draft order without a kitchen ticket. Requires a nonblank reason. Repeated cancellation of the same draft returns the original saved result. Orders with kitchen tickets must be cancelled through kitchen fulfillment. No refund or inventory adjustment is performed.',
+        'Cancels only a draft order without a kitchen ticket. Requires a nonblank reason. Repeated cancellation of the same draft returns the original saved result. Orders with kitchen tickets must be cancelled through kitchen fulfillment. No refund is performed.',
     }),
     ApiParam({
       name: 'orderId',

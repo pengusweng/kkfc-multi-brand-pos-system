@@ -19,9 +19,7 @@ async function check() {
   const brands = new Map();
   const users = new Map();
   const pinCredentials = new Map();
-  const inventory = new Map();
   const recipes = new Map();
-  const components = new Map();
   const menuItems = new Map();
   const menuItemChannels = new Map();
   const modifiers = new Map();
@@ -58,16 +56,6 @@ async function check() {
     },
     modifier: {
       upsert: async (args: Prisma.ModifierUpsertArgs) => {
-        const inventoryItemId = args.create.inventory_item_id;
-        if (inventoryItemId) {
-          assert(
-            [...inventory.values()].some(
-              (item) => item.inventory_item_id === inventoryItemId,
-            ),
-          );
-          assert(Number(args.create.quantity) > 0);
-        }
-        assert.equal('inventory_item_code' in args.create, false);
         return upsert(modifiers, args.where.code!, args, 'modifier_id');
       },
     },
@@ -124,7 +112,6 @@ async function check() {
         );
         assert(recipe);
         assert.equal(recipe.brand_id, args.create.brand_id);
-        assert.equal(recipe.type, 'MENU_ASSEMBLY');
         return upsert(menuItems, args.where.code!, args, 'menu_item_id');
       },
     },
@@ -136,10 +123,6 @@ async function check() {
       upsert: async (args: Prisma.BrandUpsertArgs) =>
         upsert(brands, args.where.code!, args, 'brand_id'),
     },
-    inventoryItem: {
-      upsert: async (args: Prisma.InventoryItemUpsertArgs) =>
-        upsert(inventory, args.where.code!, args, 'inventory_item_id'),
-    },
     recipe: {
       upsert: async (args: Prisma.RecipeUpsertArgs) => {
         assert(
@@ -147,40 +130,8 @@ async function check() {
             (brand) => brand.brand_id === args.create.brand_id,
           ),
         );
-        const output = args.create.output_inventory_item_id;
-        if (output) {
-          assert(
-            [...inventory.values()].some(
-              (item) => item.inventory_item_id === output,
-            ),
-          );
-          assert(Number(args.create.expected_output_quantity) > 0);
-        }
         const { code, version } = args.where.code_version!;
         return upsert(recipes, `${code}:${version}`, args, 'recipe_id');
-      },
-    },
-    recipeComponent: {
-      upsert: async (args: Prisma.RecipeComponentUpsertArgs) => {
-        const { recipe_id, inventory_item_id } =
-          args.where.recipe_id_inventory_item_id!;
-        assert(
-          [...recipes.values()].some(
-            (recipe) => recipe.recipe_id === recipe_id,
-          ),
-        );
-        assert(
-          [...inventory.values()].some(
-            (item) => item.inventory_item_id === inventory_item_id,
-          ),
-        );
-        assert(Number(args.create.quantity) > 0);
-        return upsert(
-          components,
-          `${recipe_id}:${inventory_item_id}`,
-          args,
-          'recipe_component_id',
-        );
       },
     },
   } as unknown as Prisma.TransactionClient;
@@ -211,9 +162,7 @@ async function check() {
     assert.equal(saved.brand_code, undefined);
     assert.equal(saved.brand_id, undefined);
   }
-  assert.equal(inventory.size, 51);
-  assert.equal(recipes.size, 22);
-  assert.equal(components.size, 83);
+  assert.equal(recipes.size, 16);
   assert.equal(menuItems.size, 25);
   assert([...menuItems.values()].every((row) => row.is_available === true));
   assert.equal(menuItemChannels.size, 50);
@@ -229,8 +178,8 @@ async function check() {
     34,
   );
   const noOnions = modifiers.get('MOD-NO-ONIONS');
-  assert.equal(noOnions.inventory_item_id, null);
-  assert.equal(noOnions.quantity, null);
+  assert.equal(noOnions.inventory_item_id, undefined);
+  assert.equal(noOnions.quantity, undefined);
   for (const item of menuItems.values()) {
     assert(
       menuItemChannels.has(`${item.menu_item_id}:${OrderChannel.GRABFOOD}`),
@@ -259,8 +208,8 @@ async function check() {
     );
   }
   for (const [code, count] of [
-    ['GC', 8],
-    ['AI', 9],
+    ['GC', 6],
+    ['AI', 5],
     ['KK', 5],
   ] as const) {
     const brandId = brands.get(code).brand_id;
@@ -270,20 +219,17 @@ async function check() {
       count,
     );
   }
-  assert.equal(
-    [...recipes.values()].filter((recipe) => recipe.type === 'PRODUCTION')
-      .length,
-    6,
+  assert(
+    [...recipes.values()].every(
+      (recipe) =>
+        recipe.type === undefined &&
+        recipe.output_inventory_item_id === undefined,
+    ),
   );
 
-  const rice = inventory.get('INV-RICE');
-  rice.quantity_on_hand = 123;
-  rice.is_active = false;
-  rice.name = 'Existing rice';
-  const firstRecipe = recipes.get('RCP-PROD-COOKED-RICE:1');
+  const firstRecipe = recipes.get('RCP-AI-PAA-INASAL:1');
   firstRecipe.is_active = false;
   firstRecipe.instructions = 'Existing recipe instructions';
-  [...components.values()][0].quantity = 999;
   brands.get('GC').name = 'Existing brand';
   const staff = users.get('test_inventory');
   staff.password_hash = await argon2.hash('ChangedPassword123!');
@@ -306,9 +252,7 @@ async function check() {
     brands,
     users,
     pinCredentials,
-    inventory,
     recipes,
-    components,
     menuItems,
     menuItemChannels,
     modifiers,
@@ -330,13 +274,7 @@ async function check() {
   users.delete('test_ai_kitchen');
   const missingPinUserId = users.get('test_owner').user_id;
   pinCredentials.delete(missingPinUserId);
-  const packaging = [...inventory.values()].find(
-    (item) => item.type === 'PACKAGING',
-  );
-  assert(packaging);
-  inventory.delete(packaging.code);
-  recipes.delete('RCP-PROD-COOKED-RICE:1');
-  components.delete(`${firstRecipe.recipe_id}:${rice.inventory_item_id}`);
+  recipes.delete('RCP-AI-PAA-INASAL:1');
   const firstAssignmentKey = menuItemModifiers.keys().next().value!;
   menuItemModifiers.delete(firstAssignmentKey);
   await seedDatabase(database);
@@ -355,14 +293,10 @@ async function check() {
     '2030-01-01T00:00:00.000Z',
   );
   assert.equal(users.get('test_ai_kitchen').brand_id, undefined);
-  assert.equal(inventory.size, 51);
-  assert(inventory.has(packaging.code));
-  assert.equal(recipes.size, 22);
-  assert(recipes.has('RCP-PROD-COOKED-RICE:1'));
-  assert.equal(components.size, 83);
+  assert.equal(recipes.size, 16);
+  assert(recipes.has('RCP-AI-PAA-INASAL:1'));
   assert.equal(menuItemModifiers.size, 34);
   assert(menuItemModifiers.has(firstAssignmentKey));
-  assert.equal(inventory.get('INV-RICE').quantity_on_hand, 123);
   assert.equal(modifiers.get('MOD-EXTRA-RICE').is_active, false);
   assert.deepEqual(
     new Set(TEST_USERS.map((user) => user.role)),
@@ -374,7 +308,7 @@ async function check() {
     17,
   );
   console.log(
-    `Seed checks passed: ${users.size} users with shared brand access, ${components.size} component links, ${menuItemChannels.size} delivery channels, ${modifiers.size} modifiers, ${menuItemModifiers.size} unique menu assignments, preserved existing records, and missing records restored.`,
+    `Seed checks passed: ${users.size} users with shared brand access, ${menuItemChannels.size} delivery channels, ${modifiers.size} modifiers, ${menuItemModifiers.size} unique menu assignments, preserved existing records, and missing records restored.`,
   );
 }
 

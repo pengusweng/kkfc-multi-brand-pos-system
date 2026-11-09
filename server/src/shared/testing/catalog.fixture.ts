@@ -65,24 +65,7 @@ export async function createCatalogFixture(prisma: PrismaService) {
       brand_id: brand.brand_id,
       code: `recipe-${suffix}`,
       name: 'Test assembly',
-      type: 'MENU_ASSEMBLY',
       instructions: 'Restricted fixture instructions',
-    },
-  });
-  const ingredient = await prisma.inventoryItem.create({
-    data: {
-      code: `ingredient-${suffix}`,
-      name: 'Fixture rice',
-      type: 'RAW',
-      base_unit: 'g',
-      quantity_on_hand: 100,
-    },
-  });
-  await prisma.recipeComponent.create({
-    data: {
-      recipe_id: recipe.recipe_id,
-      inventory_item_id: ingredient.inventory_item_id,
-      quantity: 3,
     },
   });
   const item = await prisma.menuItem.create({
@@ -105,7 +88,7 @@ export async function createCatalogFixture(prisma: PrismaService) {
       additional_price: 25,
     },
   });
-  return { brand, otherBrand, users, recipe, item, modifier, ingredient, pin };
+  return { brand, otherBrand, users, recipe, item, modifier, pin };
 }
 
 export async function cleanupCatalogFixture(
@@ -140,15 +123,9 @@ export async function cleanupCatalogFixture(
     where: { menu_item: { brand_id: { in: brandIds } } },
   });
   await prisma.menuItem.deleteMany({ where: { brand_id: { in: brandIds } } });
-  await prisma.recipeComponent.deleteMany({
-    where: { recipe_id: fixture.recipe.recipe_id },
-  });
   await prisma.recipe.deleteMany({ where: { brand_id: { in: brandIds } } });
   await prisma.modifier.delete({
     where: { modifier_id: fixture.modifier.modifier_id },
-  });
-  await prisma.inventoryItem.delete({
-    where: { inventory_item_id: fixture.ingredient.inventory_item_id },
   });
   const users = await prisma.user.findMany({
     where: {
