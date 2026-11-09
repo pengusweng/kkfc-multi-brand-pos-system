@@ -48,6 +48,26 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-rise: rise 0.9s var(--ease-out-expo) both;
+  --animate-draw: draw 2.2s var(--ease-out-expo) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.625rem);
+      filter: blur(4px);
+    }
+  }
+
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+}
+
 body {
   font-family: var(--font-ibm-plex-sans), Arial, Helvetica, sans-serif;
 }
