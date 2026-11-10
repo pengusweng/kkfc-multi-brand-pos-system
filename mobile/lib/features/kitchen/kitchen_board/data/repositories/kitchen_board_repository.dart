@@ -71,11 +71,30 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Acknowledges a queued kitchen ticket via
+  /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge`.
+  Future<void> acknowledgeTicket(String kitchenTicketId) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/$kitchenTicketId/acknowledge'),
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   /// Advances a ticket's fulfillment stage on the backend.
   Future<void> advanceTicket(KitchenBoardTicket ticket) async {
     final id = ticket.kitchenTicketId;
+    if (ticket.rawStatus.toUpperCase() == 'QUEUED') {
+      await acknowledgeTicket(id);
+      return;
+    }
+
     final actionPath = switch (ticket.rawStatus.toUpperCase()) {
-      'QUEUED' => '/kitchen-fulfillment/$id/acknowledge',
       'ACKNOWLEDGED' => '/kitchen-fulfillment/$id/prepare',
       'PREPARING' || 'REWORKING' => '/kitchen-fulfillment/$id/for-checking',
       'FOR_CHECKING' => '/kitchen-fulfillment/$id/check',

@@ -14,6 +14,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/seed/sample_kitchen_board_tickets.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_status_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
@@ -53,90 +54,125 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
 
   final Future<List<KitchenBoardTicket>> Function() onFetch;
   int fetchCount = 0;
+  final List<String> acknowledgedTicketIds = [];
 
   @override
   Future<List<KitchenBoardTicket>> fetchTodaysTickets({DateTime? now}) {
     fetchCount++;
     return onFetch();
   }
+
+  @override
+  Future<void> acknowledgeTicket(String kitchenTicketId) async {
+    acknowledgedTicketIds.add(kitchenTicketId);
+  }
 }
 
 void main() {
   group('KitchenBoardRepository', () {
-    test('requests GET /api/kitchen-ticket/today and parses active lanes', () async {
-      final adapter = _RecordingAdapter(
-        (_) async => _jsonResponse([
-          {
-            'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-            'order_id': '00000000-0000-4000-8000-000000000116',
-            'order_code': 'KK-00016',
-            'ticket_number': 'T-016',
-            'status': 'QUEUED',
-            'created_at': '2026-11-10T09:39:00.000Z',
-            'channel': 'Takeaway',
-            'reference': 'Call: Ana',
-            'payment_status': 'PAID',
-            'items': [
-              {
-                'quantity': 2,
-                'item_name': 'Iced Sea Salt Cream Latte',
-                'modifiers': ['50% Less Sweet', '22oz Large Cup'],
-                'notes': 'Separate straws',
-              },
-            ],
-          },
-          {
-            'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
-            'order_id': '00000000-0000-4000-8000-000000000115',
-            'order_code': 'AI-00015',
-            'ticket_number': 'T-015',
-            'status': 'PREPARING',
-            'created_at': '2026-11-10T09:35:00.000Z',
-          },
-          {
-            'kitchen_ticket_id': '00000000-0000-4000-8000-000000000099',
-            'order_id': '00000000-0000-4000-8000-000000000199',
-            'order_code': 'GC-00099',
-            'ticket_number': 'T-099',
-            'status': 'HANDED_OVER',
-            'created_at': '2026-11-10T09:00:00.000Z',
-          },
-        ]),
-      );
+    test(
+      'requests GET /api/kitchen-ticket/today and parses active lanes',
+      () async {
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse([
+            {
+              'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
+              'order_id': '00000000-0000-4000-8000-000000000116',
+              'order_code': 'KK-00016',
+              'ticket_number': 'T-016',
+              'status': 'QUEUED',
+              'created_at': '2026-11-10T09:39:00.000Z',
+              'channel': 'Takeaway',
+              'reference': 'Call: Ana',
+              'payment_status': 'PAID',
+              'items': [
+                {
+                  'quantity': 2,
+                  'item_name': 'Iced Sea Salt Cream Latte',
+                  'modifiers': ['50% Less Sweet', '22oz Large Cup'],
+                  'notes': 'Separate straws',
+                },
+              ],
+            },
+            {
+              'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
+              'order_id': '00000000-0000-4000-8000-000000000115',
+              'order_code': 'AI-00015',
+              'ticket_number': 'T-015',
+              'status': 'PREPARING',
+              'created_at': '2026-11-10T09:35:00.000Z',
+            },
+            {
+              'kitchen_ticket_id': '00000000-0000-4000-8000-000000000099',
+              'order_id': '00000000-0000-4000-8000-000000000199',
+              'order_code': 'GC-00099',
+              'ticket_number': 'T-099',
+              'status': 'HANDED_OVER',
+              'created_at': '2026-11-10T09:00:00.000Z',
+            },
+          ]),
+        );
 
-      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-        ..httpClientAdapter = adapter;
-      final repo = KitchenBoardRepository(dio);
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
 
-      final tickets = await repo.fetchTodaysTickets(
-        now: DateTime.parse('2026-11-10T09:41:00.000Z'),
-      );
+        final tickets = await repo.fetchTodaysTickets(
+          now: DateTime.parse('2026-11-10T09:41:00.000Z'),
+        );
 
-      expect(adapter.requests, hasLength(1));
-      expect(adapter.requests.first.method, 'GET');
-      expect(
-        adapter.requests.first.uri.toString(),
-        'http://localhost:3000/api/kitchen-ticket/today',
-      );
+        expect(adapter.requests, hasLength(1));
+        expect(adapter.requests.first.method, 'GET');
+        expect(
+          adapter.requests.first.uri.toString(),
+          'http://localhost:3000/api/kitchen-ticket/today',
+        );
 
-      // Terminal HANDED_OVER ticket is filtered out
-      expect(tickets, hasLength(2));
-      expect(tickets[0].data.ticketNumber, 'T-016');
-      expect(tickets[0].lane, KitchenBoardLane.queued);
-      expect(tickets[0].data.brand.code, 'KK');
-      expect(tickets[0].data.items.first.name, 'Iced Sea Salt Cream Latte');
-      expect(
-        tickets[0].data.items.first.modifiers,
-        contains('Note: Separate straws'),
-      );
+        // Terminal HANDED_OVER ticket is filtered out
+        expect(tickets, hasLength(2));
+        expect(tickets[0].data.ticketNumber, 'T-016');
+        expect(tickets[0].lane, KitchenBoardLane.queued);
+        expect(tickets[0].data.brand.code, 'KK');
+        expect(tickets[0].data.items.first.name, 'Iced Sea Salt Cream Latte');
+        expect(
+          tickets[0].data.items.first.modifiers,
+          contains('Note: Separate straws'),
+        );
 
-      expect(tickets[1].data.ticketNumber, 'T-015');
-      expect(tickets[1].lane, KitchenBoardLane.preparing);
-      expect(tickets[1].data.brand.code, 'AI');
-    });
+        expect(tickets[1].data.ticketNumber, 'T-015');
+        expect(tickets[1].lane, KitchenBoardLane.preparing);
+        expect(tickets[1].data.brand.code, 'AI');
+      },
+    );
+
+    test(
+      'acknowledgeTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge',
+      () async {
+        const ticketId = '00000000-0000-4000-8000-000000000016';
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse({
+            'kitchen_ticket_id': ticketId,
+            'status': 'ACKNOWLEDGED',
+          }),
+        );
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.acknowledgeTicket(ticketId);
+
+        expect(adapter.requests, hasLength(1));
+        expect(adapter.requests.first.method, 'POST');
+        expect(
+          adapter.requests.first.uri.toString(),
+          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/acknowledge',
+        );
+      },
+    );
   });
 
-  group('KitchenBoardScreen UI', () {
+  group('KitchenBoardScreen & KitchenTicketStatusDialog UI', () {
     Future<void> pumpBoard(
       WidgetTester tester, {
       required KitchenBoardRepository repository,
@@ -162,9 +198,9 @@ void main() {
           child: MaterialApp(
             theme: counterTheme,
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(textScale),
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
               child: child!,
             ),
             home: const KitchenBoardScreen(),
@@ -189,7 +225,10 @@ void main() {
         expect(find.text('Kitchen Head'), findsOneWidget);
 
         // 2. Toolbar active count & Refresh button
-        expect(find.textContaining('3 active', findRichText: true), findsOneWidget);
+        expect(
+          find.textContaining('3 active', findRichText: true),
+          findsOneWidget,
+        );
         expect(find.text('Refresh'), findsOneWidget);
 
         // 3. All 4 lane headers
@@ -214,9 +253,55 @@ void main() {
 
         // 7. Clicking Refresh re-fetches from repository
         expect(repo.fetchCount, 1);
-        await tester.tap(find.byKey(const ValueKey('kitchen-board-refresh-button')));
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-board-refresh-button')),
+        );
         await tester.pumpAndSettle();
         expect(repo.fetchCount, 2);
+      },
+    );
+
+    testWidgets(
+      'clicking Acknowledge on the card opens KitchenTicketStatusDialog, and the button inside the popup calls the backend API',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        await pumpBoard(tester, repository: repo);
+
+        // Tap Acknowledge on T-016 card on the board
+        final cardAcknowledgeButton = find.descendant(
+          of: find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
+          matching: find.text('Acknowledge'),
+        );
+        await tester.tap(cardAcknowledgeButton);
+        await tester.pumpAndSettle();
+
+        // Clicking the card button only opens the popup; API is not called yet
+        expect(repo.acknowledgedTicketIds, isEmpty);
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(find.text('TICKET DETAILS'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        expect(find.text('Items to prepare'), findsOneWidget);
+        expect(find.text('ORD-2026-1105-016'), findsOneWidget);
+        expect(find.text('7:39 PM'), findsOneWidget);
+        expect(find.text('Not started'), findsOneWidget);
+
+        // Click the Acknowledge button inside the dialog
+        final dialogActionButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(dialogActionButton, findsOneWidget);
+        await tester.tap(dialogActionButton);
+        await tester.pumpAndSettle();
+
+        // Verify POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge was called by the popup button
+        expect(repo.acknowledgedTicketIds, [
+          '00000000-0000-4000-8000-000000000016',
+        ]);
+        // Dialog closes after successful status change
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );
 
@@ -228,20 +313,12 @@ void main() {
       );
 
       // Tablet Portrait (768px -> 2x2 lanes)
-      await pumpBoard(
-        tester,
-        repository: repo,
-        size: const Size(768, 1024),
-      );
+      await pumpBoard(tester, repository: repo, size: const Size(768, 1024));
       expect(tester.takeException(), isNull);
       expect(find.byType(KitchenTicketCard), findsNWidgets(3));
 
       // Phone (390px -> stacked lanes)
-      await pumpBoard(
-        tester,
-        repository: repo,
-        size: const Size(390, 844),
-      );
+      await pumpBoard(tester, repository: repo, size: const Size(390, 844));
       expect(tester.takeException(), isNull);
     });
   });

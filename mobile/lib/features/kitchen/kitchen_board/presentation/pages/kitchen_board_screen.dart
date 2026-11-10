@@ -7,6 +7,7 @@ import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lanes_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_toolbar.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_status_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -64,10 +65,16 @@ class KitchenBoardScreen extends ConsumerWidget {
             Expanded(
               child: KitchenBoardLanesView(
                 state: boardState,
-                onTicketAction: (ticket) => ref
-                    .read(kitchenBoardProvider.notifier)
-                    .performTicketAction(ticket),
-                onTicketDetails: onTicketDetails,
+                onTicketAction: (ticket) => showKitchenTicketStatusDialog(
+                  context,
+                  ticket: ticket,
+                ),
+                onTicketDetails:
+                    onTicketDetails ??
+                    (ticket) => showKitchenTicketStatusDialog(
+                      context,
+                      ticket: ticket,
+                    ),
               ),
             ),
           ],

@@ -93,14 +93,12 @@ class KitchenBoardLaneColumn extends StatelessWidget {
   }
 
   Widget _buildTicketCard(KitchenBoardTicket boardTicket) {
-    final isLoading = loadingTicketIds.contains(boardTicket.kitchenTicketId);
     final actionLabel = lane.actionLabelFor(boardTicket.data.status);
 
     return KitchenTicketCard.board(
       key: ValueKey('kitchen-ticket-card-${boardTicket.data.ticketNumber}'),
       ticket: boardTicket.data,
       actionLabel: actionLabel,
-      isActionLoading: isLoading,
       onAction: onTicketAction != null
           ? () => onTicketAction!(boardTicket)
           : () {},

@@ -100,9 +100,46 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
-  Future<void> performTicketAction(KitchenBoardTicket ticket) async {
+  Future<bool> acknowledgeTicket(String kitchenTicketId) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      await repo.acknowledgeTicket(kitchenTicketId);
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        tickets: tickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
+    if (ticket.rawStatus.toUpperCase() == 'QUEUED' ||
+        ticket.lane == KitchenBoardLane.queued) {
+      return acknowledgeTicket(ticket.kitchenTicketId);
+    }
+
     final id = ticket.kitchenTicketId;
-    if (state.loadingTicketIds.contains(id)) return;
+    if (state.loadingTicketIds.contains(id)) return false;
 
     state = state.copyWith(
       loadingTicketIds: {...state.loadingTicketIds, id},
@@ -120,12 +157,14 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         loadingTicketIds: nextLoading,
         clearError: true,
       );
+      return true;
     } catch (error) {
       final nextLoading = Set<String>.from(state.loadingTicketIds)..remove(id);
       state = state.copyWith(
         loadingTicketIds: nextLoading,
         errorMessage: error.toString(),
       );
+      return false;
     }
   }
 }

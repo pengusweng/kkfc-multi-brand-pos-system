@@ -16,6 +16,8 @@ class KitchenBoardTicket {
     required this.lane,
     required this.data,
     this.rawStatus = 'QUEUED',
+    this.sentToKitchenLabel = '—',
+    this.preparationStartedLabel = 'Not started',
   });
 
   final String kitchenTicketId;
@@ -24,6 +26,8 @@ class KitchenBoardTicket {
   final KitchenBoardLane lane;
   final KitchenTicketData data;
   final String rawStatus;
+  final String sentToKitchenLabel;
+  final String preparationStartedLabel;
 
   KitchenBoardTicket copyWith({
     String? kitchenTicketId,
@@ -32,6 +36,8 @@ class KitchenBoardTicket {
     KitchenBoardLane? lane,
     KitchenTicketData? data,
     String? rawStatus,
+    String? sentToKitchenLabel,
+    String? preparationStartedLabel,
   }) {
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
@@ -40,6 +46,9 @@ class KitchenBoardTicket {
       lane: lane ?? this.lane,
       data: data ?? this.data,
       rawStatus: rawStatus ?? this.rawStatus,
+      sentToKitchenLabel: sentToKitchenLabel ?? this.sentToKitchenLabel,
+      preparationStartedLabel:
+          preparationStartedLabel ?? this.preparationStartedLabel,
     );
   }
 
@@ -77,6 +86,14 @@ class KitchenBoardTicket {
     final reference = _parseReference(json, orderMap, channel, orderCode);
     final paymentStatus = _parsePaymentStatus(json, orderMap);
     final items = _parseItems(json, orderMap, orderCode);
+    final sentToKitchenLabel = _parseTimeLabel(
+      json['created_at'] as String?,
+      fallback: '—',
+    );
+    final preparationStartedLabel = _parseTimeLabel(
+      json['preparation_started_at'] as String?,
+      fallback: 'Not started',
+    );
 
     return KitchenBoardTicket(
       kitchenTicketId: ticketId.isNotEmpty ? ticketId : ticketNumber,
@@ -84,6 +101,8 @@ class KitchenBoardTicket {
       orderCode: orderCode,
       lane: lane,
       rawStatus: rawStatus,
+      sentToKitchenLabel: sentToKitchenLabel,
+      preparationStartedLabel: preparationStartedLabel,
       data: KitchenTicketData(
         ticketNumber: ticketNumber,
         elapsed: elapsed,
@@ -96,6 +115,18 @@ class KitchenBoardTicket {
         paymentStatus: paymentStatus,
       ),
     );
+  }
+
+  static String _parseTimeLabel(String? isoString, {required String fallback}) {
+    if (isoString == null || isoString.trim().isEmpty) return fallback;
+    final parsed = DateTime.tryParse(isoString.trim());
+    if (parsed == null) return fallback;
+    final local = parsed.toLocal();
+    final hour24 = local.hour;
+    final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = hour24 >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minute $period';
   }
 
   static KkfcStatus? _parseStatus(String status) => switch (status) {

@@ -9,9 +9,11 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
   KitchenBoardTicket(
     kitchenTicketId: '00000000-0000-4000-8000-000000000016',
     orderId: '00000000-0000-4000-8000-000000000116',
-    orderCode: 'KK-00016',
+    orderCode: 'ORD-2026-1105-016',
     lane: KitchenBoardLane.queued,
     rawStatus: 'QUEUED',
+    sentToKitchenLabel: '7:39 PM',
+    preparationStartedLabel: 'Not started',
     data: KitchenTicketData(
       ticketNumber: 'T-016',
       elapsed: Duration(minutes: 2),
@@ -41,9 +43,11 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
   KitchenBoardTicket(
     kitchenTicketId: '00000000-0000-4000-8000-000000000015',
     orderId: '00000000-0000-4000-8000-000000000115',
-    orderCode: 'AI-00015',
+    orderCode: 'ORD-2026-1105-015',
     lane: KitchenBoardLane.preparing,
     rawStatus: 'PREPARING',
+    sentToKitchenLabel: '7:35 PM',
+    preparationStartedLabel: '7:37 PM',
     data: KitchenTicketData(
       ticketNumber: 'T-015',
       elapsed: Duration(minutes: 6),
@@ -72,9 +76,11 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
   KitchenBoardTicket(
     kitchenTicketId: '00000000-0000-4000-8000-000000000014',
     orderId: '00000000-0000-4000-8000-000000000114',
-    orderCode: 'GC-00014',
+    orderCode: 'ORD-2026-1105-014',
     lane: KitchenBoardLane.ready,
     rawStatus: 'READY',
+    sentToKitchenLabel: '7:29 PM',
+    preparationStartedLabel: '7:31 PM',
     data: KitchenTicketData(
       ticketNumber: 'T-014',
       elapsed: Duration(minutes: 12),
