@@ -544,6 +544,67 @@ void main() {
       },
     );
 
+    testWidgets(
+      'KitchenTicketStatusDialog renders magnifying glass icon next to Send to QC button for preparing ticket',
+      (tester) async {
+        final preparingTicket = sampleKitchenBoardTickets[1].copyWith(
+          rawStatus: 'PREPARING',
+          lane: KitchenBoardLane.preparing,
+          data: sampleKitchenBoardTickets[1].data.copyWith(
+            status: KkfcStatus.preparing,
+          ),
+        );
+
+        var actionTapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: counterTheme,
+            home: Scaffold(
+              body: KitchenTicketStatusDialog(
+                ticket: preparingTicket,
+                onAction: () => actionTapped = true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Status badge displays Preparing
+        final statusBadge = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
+        expect(statusBadge, findsOneWidget);
+        expect(
+          find.descendant(of: statusBadge, matching: find.text('Preparing')),
+          findsOneWidget,
+        );
+
+        // 2. Button displays 'Send to QC' and magnifying glass icon
+        final dialogActionButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.text('Send to QC'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.byIcon(Icons.search_rounded),
+          ),
+          findsOneWidget,
+        );
+
+        // 3. Tapping the action button triggers onAction
+        await tester.tap(dialogActionButton);
+        await tester.pumpAndSettle();
+        expect(actionTapped, isTrue);
+      },
+    );
+
     testWidgets('adapts cleanly across tablet portrait and phone viewports', (
       tester,
     ) async {

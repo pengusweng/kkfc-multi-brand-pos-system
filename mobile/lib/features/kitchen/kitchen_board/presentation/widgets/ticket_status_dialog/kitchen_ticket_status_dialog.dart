@@ -51,12 +51,17 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     final resolvedStatusLabel =
         statusLabel ?? (isAcknowledged ? 'Acknowledged' : ticket.lane.title);
     final resolvedActionIcon = actionIcon ??
-        (isAcknowledged
-            ? Icons.local_fire_department_rounded
-            : (ticket.lane == KitchenBoardLane.queued ||
-                    ticket.data.status == KkfcStatus.queued
-                ? Icons.check_rounded
-                : null));
+        switch (resolvedActionLabel) {
+          'Start Preparing' => Icons.local_fire_department_rounded,
+          'Acknowledge' => Icons.check_rounded,
+          'Send to QC' => Icons.search_rounded,
+          _ => isAcknowledged
+              ? Icons.local_fire_department_rounded
+              : (ticket.lane == KitchenBoardLane.queued ||
+                      ticket.data.status == KkfcStatus.queued
+                  ? Icons.check_rounded
+                  : null),
+        };
 
     return Dialog(
       backgroundColor: KkfcColors.surface,
