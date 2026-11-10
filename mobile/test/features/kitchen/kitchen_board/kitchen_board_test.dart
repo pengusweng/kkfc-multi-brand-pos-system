@@ -18,7 +18,9 @@ import 'package:mobile/features/kitchen/kitchen_board/data/seed/sample_kitchen_b
 import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_status_dialog.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
+import 'package:mobile/shared/widgets/button/button.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 class _RecordingAdapter implements HttpClientAdapter {
@@ -112,9 +114,16 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
 class _FakeAuthRepository extends AuthRepository {
   _FakeAuthRepository() : super(Dio(), TokenStore());
 
+  int logoutCount = 0;
+
   @override
   Future<String?> getCurrentUserId() async =>
       '00000000-0000-4000-8000-000000000001';
+
+  @override
+  Future<void> logout(String token) async {
+    logoutCount++;
+  }
 }
 
 void main() {
@@ -359,6 +368,7 @@ void main() {
         expect(find.byType(AppHeader), findsOneWidget);
         expect(find.text('Kitchen'), findsOneWidget);
         expect(find.text('Kitchen Head'), findsOneWidget);
+        expect(find.byType(LogoutButton), findsOneWidget);
 
         // 2. Toolbar active count & Refresh button
         expect(
@@ -821,6 +831,75 @@ void main() {
           find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
         );
         expect(dialogActionButton.onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'tapping logout button in AppHeader displays confirmation dialog and can cancel or confirm',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+        final authRepo = _FakeAuthRepository();
+
+        tester.view.physicalSize = const Size(1280, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final container = ProviderContainer(
+          overrides: [
+            kitchenBoardRepositoryProvider.overrideWithValue(repo),
+            initialRoleProvider.overrideWithValue(UserRole.kitchenHead),
+            authRepositoryProvider.overrideWithValue(authRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Prepopulate token so we can verify it gets cleared on confirm
+        container.read(sessionTokenProvider.notifier).setToken('kitchen-test-jwt');
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: counterTheme,
+              home: const KitchenBoardScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final logoutFinder = find.byType(LogoutButton);
+        expect(logoutFinder, findsOneWidget);
+
+        // 1. Tapping logout opens confirmation dialog
+        await tester.tap(logoutFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Do you want to logout?'), findsOneWidget);
+        expect(
+          find.text('Any active order draft will be cleared.'),
+          findsOneWidget,
+        );
+
+        // 2. Tapping Cancel dismisses dialog without logging out
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Do you want to logout?'), findsNothing);
+        expect(container.read(sessionTokenProvider), 'kitchen-test-jwt');
+        expect(authRepo.logoutCount, 0);
+
+        // 3. Tapping logout again and confirming clears session token
+        await tester.tap(logoutFinder);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(KkfcPrimaryButton, 'Logout'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Do you want to logout?'), findsNothing);
+        expect(container.read(sessionTokenProvider), isNull);
+        expect(authRepo.logoutCount, 1);
       },
     );
   });

@@ -16,7 +16,7 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 class KitchenBoardScreen extends ConsumerWidget {
   const KitchenBoardScreen({
     super.key,
-    this.showLogout = false,
+    this.showLogout = true,
     this.onTicketDetails,
   });
 
