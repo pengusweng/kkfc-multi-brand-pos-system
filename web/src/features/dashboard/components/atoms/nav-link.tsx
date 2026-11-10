@@ -10,26 +10,14 @@ type NavLinkProps = NavItem & {
   onNavigate?: (href: string) => void;
 };
 
-export default function NavLink({ label, href, icon: Icon, count, active, collapsed, onNavigate }: NavLinkProps) {
+// Shared by the real link and its copy inside the highlight, so the two line
+// up to the pixel. The icon stays put (centred in the 64px rail); the label
+// fades and is clipped.
+const BOX = "relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold whitespace-nowrap";
+
+function NavLinkContent({ label, icon: Icon, count, collapsed }: NavItem & { collapsed: boolean }) {
   return (
-    <Link
-      href={href}
-      data-nav-href={href}
-      onClick={(event) => {
-        // New-tab clicks don't navigate this page, so don't move the indicator.
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-        onNavigate?.(href);
-      }}
-      title={collapsed ? label : undefined}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        // The icon stays put (centred in the 64px rail); the label fades and is clipped.
-        "relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-        // The white background comes from the shared NavIndicator behind the links.
-        // Turn dark as the indicator arrives, not before (dark-on-navy would flash).
-        active ? "text-rail-pill-ink delay-150" : "text-white hover:bg-white/10",
-      )}
-    >
+    <>
       <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
       <span className={cn("flex-1 truncate", railFade(collapsed))}>{label}</span>
       {count ? (
@@ -40,6 +28,40 @@ export default function NavLink({ label, href, icon: Icon, count, active, collap
           {count}
         </Badge>
       ) : null}
+    </>
+  );
+}
+
+// The real, focusable link. It is always white: the dark "you are here" text
+// belongs to the highlight drawn over it (see NavHighlight), so the text never
+// fades color on its own and can't fall out of step with the pill.
+export default function NavLink({ href, active, collapsed, onNavigate, ...item }: NavLinkProps) {
+  return (
+    <Link
+      href={href}
+      data-nav-href={href}
+      onClick={(event) => {
+        // New-tab clicks don't navigate this page, so don't move the highlight.
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        onNavigate?.(href);
+      }}
+      title={collapsed ? item.label : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        BOX,
+        "text-white transition-colors duration-200 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60",
+      )}
+    >
+      <NavLinkContent {...item} href={href} collapsed={collapsed} />
     </Link>
+  );
+}
+
+// The highlight's copy of a link: same box and content, no behaviour.
+export function NavLinkFace({ collapsed, ...item }: NavItem & { collapsed: boolean }) {
+  return (
+    <div className={BOX}>
+      <NavLinkContent {...item} collapsed={collapsed} />
+    </div>
   );
 }

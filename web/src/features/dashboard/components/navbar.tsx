@@ -6,7 +6,7 @@ import { Menu, X } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import NavSection from "./molecules/nav-section";
-import NavIndicator from "./atoms/nav-indicator";
+import NavHighlight from "./molecules/nav-highlight";
 import NavUser, { type NavUserProps } from "./molecules/nav-user";
 import NavThemeToggle from "./molecules/nav-theme-toggle";
 import { railFade } from "../utils/railFade";
@@ -33,22 +33,51 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
     setPending({ href, from: pathname });
   };
 
-  // Slide the indicator to the active link. The rail's labels keep the same
-  // height when collapsed, so offsets only change when the active link does.
+  // Clip the highlight to the active link's box; the clip's transition is the
+  // pill sliding. Left and right match the nav's padding, and the bottom is
+  // measured from the end so the highlight's own height never matters. The
+  // rail's labels keep the same height when collapsed, so offsets only change
+  // when the active link does.
   const navRef = useRef<HTMLElement>(null);
-  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
+  const placedRef = useRef(false);
   useLayoutEffect(() => {
-    const indicator = indicatorRef.current;
+    const highlight = highlightRef.current;
     const link = navRef.current?.querySelector<HTMLElement>(`[data-nav-href="${activeHref}"]`);
-    if (!indicator) return;
+    if (!highlight) return;
     if (!link) {
-      indicator.style.visibility = "hidden";
+      highlight.style.visibility = "hidden";
       return;
     }
-    indicator.style.visibility = "";
-    indicator.style.transform = `translateY(${link.offsetTop}px)`;
-    // Enable the transition only after the first placement.
-    if (!indicator.dataset.ready) requestAnimationFrame(() => (indicator.dataset.ready = ""));
+    const top = link.offsetTop;
+    const bottom = top + link.offsetHeight;
+    const box = (right: string) =>
+      `inset(${top}px ${right} calc(100% - ${bottom}px) 0.75rem round 0.375rem)`;
+    highlight.style.visibility = "";
+
+    if (placedRef.current) {
+      // Already on screen: the clip's transition slides the pill across.
+      highlight.style.clipPath = box("0.75rem");
+      return;
+    }
+
+    // First placement (a fresh load or refresh): instead of popping in, the pill
+    // draws itself across the active link from the left, uncovering the dark
+    // label as it goes. Start as a zero-width sliver at the link's left edge,
+    // wait for that to paint (one frame can share a style pass with this one,
+    // which would skip the start state), then switch the transition on and
+    // open the clip to full width.
+    placedRef.current = true;
+    highlight.style.clipPath = box("calc(100% - 0.75rem)");
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        highlight.dataset.ready = "";
+        highlight.dataset.entering = "";
+        highlight.style.clipPath = box("0.75rem");
+        // From here on, moves use the shorter slide timing.
+        highlight.addEventListener("transitionend", () => delete highlight.dataset.entering, { once: true });
+      }),
+    );
   }, [activeHref]);
 
   // Close the mobile menu when the page is hidden so it isn't open on return.
@@ -122,7 +151,6 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
           ref={navRef}
           className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4"
         >
-          <NavIndicator ref={indicatorRef} />
           {NAV_GROUPS.map((group) => (
             <NavSection
               key={group.label ?? "main"}
@@ -132,6 +160,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
               onNavigate={navigate}
             />
           ))}
+          <NavHighlight ref={highlightRef} collapsed={collapsed} />
         </nav>
         <div className="border-t border-rail-line">
           <NavThemeToggle collapsed={collapsed} />

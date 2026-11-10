@@ -3,7 +3,7 @@ import { railFade } from "../../utils/railFade";
 
 type NavSectionLabelProps = {
   children: string;
-  id: string;
+  id?: string;
   collapsed: boolean;
 };
 

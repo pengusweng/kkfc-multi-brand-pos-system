@@ -68,6 +68,7 @@
 @theme {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --animate-rise: rise 0.9s var(--ease-out-expo) both;
   --animate-page-in: rise 0.45s var(--ease-out-expo) both;
   --animate-draw: draw 2.2s var(--ease-out-expo) both;
@@ -187,13 +188,289 @@ body {
   --rail-pill-ink: oklch(0.22 0.035 255);
 }
 
-/* Applied for one frame while the theme flips, so every color swaps at once
-   instead of each element easing on its own schedule. */
-.theme-switching,
-.theme-switching *,
-.theme-switching *::before,
-.theme-switching *::after {
+/* Theme change. Every color that differs between the themes is a registered
+   <color>, so the browser can animate the token itself: <html> eases each one
+   from its light value to its dark value (or back), and everything that reads
+   it (text, borders, gradients, the SVG waves) follows in the same frame. No
+   snapshot, no overlay, nothing sweeping across the screen. Color transitions
+   blend in Oklab, where lightness is perceptual, so brightness rises and falls
+   evenly instead of jumping at one end. lib/theme.ts adds `.theme-animating`
+   for the length of the change. */
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --card {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --card-foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --popover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --popover-foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --secondary-foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --muted {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --muted-foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --accent-foreground {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --destructive {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --border {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --input {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --ring {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --ink-muted {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --primary-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --danger-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --page-from {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --page-to {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --page-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --wave-1 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --wave-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --field {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --surface-hover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --hairline {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --rail-pill {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --rail-pill-ink {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+/* Surfaces (backgrounds, borders, fields, waves) take the full, slow fade.
+   Text can't follow the same curve: it starts on one side of the background's
+   brightness and ends on the other, so on a shared timeline the two meet at the
+   same mid-grey and the words dissolve into the page for a long beat. Instead
+   text flips in a short window centred on the surfaces' midpoint: it holds its
+   contrast while the page dims, crosses quickly while the page is mid-tone,
+   and is already readable as the page settles. */
+html.theme-animating {
+  --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    --background 420ms var(--theme-ease),
+    --card 420ms var(--theme-ease),
+    --popover 420ms var(--theme-ease),
+    --secondary 420ms var(--theme-ease),
+    --muted 420ms var(--theme-ease),
+    --accent 420ms var(--theme-ease),
+    --destructive 420ms var(--theme-ease),
+    --border 420ms var(--theme-ease),
+    --input 420ms var(--theme-ease),
+    --ring 420ms var(--theme-ease),
+    --page-from 420ms var(--theme-ease),
+    --page-to 420ms var(--theme-ease),
+    --wave-1 420ms var(--theme-ease),
+    --wave-2 420ms var(--theme-ease),
+    --field 420ms var(--theme-ease),
+    --surface-hover 420ms var(--theme-ease),
+    --hairline 420ms var(--theme-ease),
+    --rail-pill 420ms var(--theme-ease),
+    --rail-pill-ink 420ms var(--theme-ease),
+    --foreground 180ms var(--theme-ease) 120ms,
+    --card-foreground 180ms var(--theme-ease) 120ms,
+    --popover-foreground 180ms var(--theme-ease) 120ms,
+    --secondary-foreground 180ms var(--theme-ease) 120ms,
+    --muted-foreground 180ms var(--theme-ease) 120ms,
+    --accent-foreground 180ms var(--theme-ease) 120ms,
+    --ink 180ms var(--theme-ease) 120ms,
+    --ink-muted 180ms var(--theme-ease) 120ms,
+    --primary-ink 180ms var(--theme-ease) 120ms,
+    --danger-ink 180ms var(--theme-ease) 120ms,
+    --page-text 180ms var(--theme-ease) 120ms;
+}
+
+/* Brightening is harder on the eyes than dimming, so turning the lights back
+   on takes a little longer; the text window moves to stay centred. */
+html.theme-animating:not(.dark) {
+  transition:
+    --background 520ms var(--theme-ease),
+    --card 520ms var(--theme-ease),
+    --popover 520ms var(--theme-ease),
+    --secondary 520ms var(--theme-ease),
+    --muted 520ms var(--theme-ease),
+    --accent 520ms var(--theme-ease),
+    --destructive 520ms var(--theme-ease),
+    --border 520ms var(--theme-ease),
+    --input 520ms var(--theme-ease),
+    --ring 520ms var(--theme-ease),
+    --page-from 520ms var(--theme-ease),
+    --page-to 520ms var(--theme-ease),
+    --wave-1 520ms var(--theme-ease),
+    --wave-2 520ms var(--theme-ease),
+    --field 520ms var(--theme-ease),
+    --surface-hover 520ms var(--theme-ease),
+    --hairline 520ms var(--theme-ease),
+    --rail-pill 520ms var(--theme-ease),
+    --rail-pill-ink 520ms var(--theme-ease),
+    --foreground 200ms var(--theme-ease) 160ms,
+    --card-foreground 200ms var(--theme-ease) 160ms,
+    --popover-foreground 200ms var(--theme-ease) 160ms,
+    --secondary-foreground 200ms var(--theme-ease) 160ms,
+    --muted-foreground 200ms var(--theme-ease) 160ms,
+    --accent-foreground 200ms var(--theme-ease) 160ms,
+    --ink 200ms var(--theme-ease) 160ms,
+    --ink-muted 200ms var(--theme-ease) 160ms,
+    --primary-ink 200ms var(--theme-ease) 160ms,
+    --danger-ink 200ms var(--theme-ease) 160ms,
+    --page-text 200ms var(--theme-ease) 160ms;
+}
+
+/* While the tokens animate, elements drop their own color transitions: a
+   200ms hover fade chasing a value that changes every frame would lag behind
+   the rest of the page. The theme switch keeps its motion. */
+html.theme-animating body,
+html.theme-animating body *:not([data-theme-switch], [data-theme-switch] *),
+html.theme-animating body *::before,
+html.theme-animating body *::after {
   transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still a fade (color change carries meaning), just shorter. */
+  html.theme-animating,
+  html.theme-animating:not(.dark) {
+    transition-duration: 200ms;
+    transition-delay: 0s;
+  }
 }
 
 @layer base {
