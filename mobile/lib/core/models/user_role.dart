@@ -25,4 +25,11 @@ enum UserRole {
   /// Whether this role is an authorized kitchen workspace role.
   bool get isKitchen =>
       this == UserRole.kitchenHead || this == UserRole.kitchenStaff;
+
+  /// Whether this role is authorized to pass QC checks on the kitchen board.
+  bool get canPassQc =>
+      this == UserRole.superadmin ||
+      this == UserRole.manager ||
+      this == UserRole.supervisor ||
+      this == UserRole.kitchenHead;
 }

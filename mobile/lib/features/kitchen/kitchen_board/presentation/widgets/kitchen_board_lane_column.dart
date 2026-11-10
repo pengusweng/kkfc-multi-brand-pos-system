@@ -5,6 +5,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lane_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 /// A single sunken lane column on the KDS board containing a
 /// [KitchenBoardLaneHeader] and either an empty-state placeholder or a list of
@@ -15,6 +16,7 @@ class KitchenBoardLaneColumn extends StatelessWidget {
     required this.lane,
     required this.tickets,
     required this.loadingTicketIds,
+    this.canPassQc = true,
     this.onTicketAction,
     this.onTicketDetails,
     this.scrollable = true,
@@ -23,6 +25,7 @@ class KitchenBoardLaneColumn extends StatelessWidget {
   final KitchenBoardLane lane;
   final List<KitchenBoardTicket> tickets;
   final Set<String> loadingTicketIds;
+  final bool canPassQc;
   final ValueChanged<KitchenBoardTicket>? onTicketAction;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
   final bool scrollable;
@@ -94,14 +97,18 @@ class KitchenBoardLaneColumn extends StatelessWidget {
 
   Widget _buildTicketCard(KitchenBoardTicket boardTicket) {
     final actionLabel = lane.actionLabelFor(boardTicket.data.status);
+    final isQcLane = lane == KitchenBoardLane.qcCheck ||
+        boardTicket.data.status == KkfcStatus.checking;
+    final isActionEnabled = !isQcLane || canPassQc;
 
     return KitchenTicketCard.board(
       key: ValueKey('kitchen-ticket-card-${boardTicket.data.ticketNumber}'),
       ticket: boardTicket.data,
       actionLabel: actionLabel,
-      onAction: onTicketAction != null
+      isActionEnabled: isActionEnabled,
+      onAction: isActionEnabled && onTicketAction != null
           ? () => onTicketAction!(boardTicket)
-          : () {},
+          : null,
       onDetails: onTicketDetails != null
           ? () => onTicketDetails!(boardTicket)
           : null,

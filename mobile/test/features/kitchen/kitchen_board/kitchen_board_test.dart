@@ -715,5 +715,113 @@ void main() {
       await pumpBoard(tester, repository: repo, size: const Size(390, 844));
       expect(tester.takeException(), isNull);
     });
+
+    test('UserRole.canPassQc authorization rules', () {
+      expect(UserRole.superadmin.canPassQc, isTrue);
+      expect(UserRole.manager.canPassQc, isTrue);
+      expect(UserRole.supervisor.canPassQc, isTrue);
+      expect(UserRole.kitchenHead.canPassQc, isTrue);
+
+      expect(UserRole.kitchenStaff.canPassQc, isFalse);
+      expect(UserRole.cashierStaff.canPassQc, isFalse);
+      expect(UserRole.recipeManager.canPassQc, isFalse);
+      expect(UserRole.inventoryStaff.canPassQc, isFalse);
+    });
+
+    testWidgets(
+      'QC Check Pass button is unclickable and muted for unauthorized role (KITCHEN_STAFF)',
+      (tester) async {
+        final qcTicket = sampleKitchenBoardTickets[1].copyWith(
+          kitchenTicketId: '00000000-0000-4000-8000-000000000017',
+          lane: KitchenBoardLane.qcCheck,
+          rawStatus: 'FOR_CHECKING',
+          data: sampleKitchenBoardTickets[1].data.copyWith(
+            ticketNumber: 'T-017',
+            status: KkfcStatus.checking,
+          ),
+        );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [qcTicket],
+        );
+
+        // Pump as KITCHEN_STAFF (unauthorized to pass QC)
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenStaff);
+
+        // Card is in QC check lane
+        final card = find.byKey(const ValueKey('kitchen-ticket-card-T-017'));
+        expect(card, findsOneWidget);
+
+        final passButtonFinder = find.descendant(
+          of: card,
+          matching: find.byType(FilledButton),
+        );
+        expect(passButtonFinder, findsOneWidget);
+
+        final filledButton = tester.widget<FilledButton>(passButtonFinder);
+        // Button is disabled (unclickable)
+        expect(filledButton.onPressed, isNull);
+
+        // Tap the disabled button - does not call any API or open dialog
+        await tester.tap(passButtonFinder);
+        await tester.pumpAndSettle();
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+
+        // Opening details shows popup, but action button inside is also disabled
+        final detailsFinder = find.descendant(
+          of: card,
+          matching: find.text('Details'),
+        );
+        await tester.tap(detailsFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        final dialogActionButton = tester.widget<FilledButton>(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
+        );
+        expect(dialogActionButton.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'QC Check Pass button is clickable for authorized role (KITCHEN_HEAD, MANAGER, SUPERVISOR, SUPERADMIN)',
+      (tester) async {
+        final qcTicket = sampleKitchenBoardTickets[1].copyWith(
+          kitchenTicketId: '00000000-0000-4000-8000-000000000017',
+          lane: KitchenBoardLane.qcCheck,
+          rawStatus: 'FOR_CHECKING',
+          data: sampleKitchenBoardTickets[1].data.copyWith(
+            ticketNumber: 'T-017',
+            status: KkfcStatus.checking,
+          ),
+        );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [qcTicket],
+        );
+
+        // Pump as KITCHEN_HEAD (authorized to pass QC)
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
+
+        final card = find.byKey(const ValueKey('kitchen-ticket-card-T-017'));
+        final passButtonFinder = find.descendant(
+          of: card,
+          matching: find.byType(FilledButton),
+        );
+        final filledButton = tester.widget<FilledButton>(passButtonFinder);
+        // Button is enabled (clickable)
+        expect(filledButton.onPressed, isNotNull);
+
+        // Tapping opens the popup
+        await tester.tap(passButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        final dialogActionButton = tester.widget<FilledButton>(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
+        );
+        expect(dialogActionButton.onPressed, isNotNull);
+      },
+    );
   });
 }

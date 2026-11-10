@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
@@ -118,6 +119,9 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground =
+        isActionEnabled ? KkfcColors.onSolid : KkfcColors.ticketMuted;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(KkfcSpace.s16),
@@ -140,7 +144,7 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
             backgroundColor: KkfcColors.action,
             disabledBackgroundColor: KkfcColors.ticketDisabledBg,
             foregroundColor: KkfcColors.onSolid,
-            disabledForegroundColor: KkfcColors.onSolid,
+            disabledForegroundColor: KkfcColors.ticketMuted,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -160,18 +164,18 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (actionIcon != null) ...[
-                      Icon(actionIcon, size: 18, color: KkfcColors.onSolid),
+                      Icon(actionIcon, size: 18, color: foreground),
                       const SizedBox(width: KkfcSpace.s8),
                     ],
                     Flexible(
                       child: Text(
                         actionLabel,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: KkfcFonts.ibmPlexSans,
                           fontSize: KkfcTextSizes.textBase,
                           fontWeight: KkfcFontWeights.bold,
-                          color: KkfcColors.onSolid,
+                          color: foreground,
                         ),
                       ),
                     ),
@@ -192,6 +196,7 @@ Future<void> showKitchenTicketStatusDialog(
   String? actionLabel,
   IconData? actionIcon,
   String? statusLabel,
+  bool? isActionEnabled,
 }) {
   return showDialog<void>(
     context: context,
@@ -200,6 +205,7 @@ Future<void> showKitchenTicketStatusDialog(
       return Consumer(
         builder: (context, ref, _) {
           final boardState = ref.watch(kitchenBoardProvider);
+          final userRole = ref.watch(userRoleProvider);
           final currentTicket = boardState.tickets.firstWhere(
             (t) => t.kitchenTicketId == ticket.kitchenTicketId,
             orElse: () => ticket,
@@ -208,22 +214,31 @@ Future<void> showKitchenTicketStatusDialog(
             currentTicket.kitchenTicketId,
           );
 
+          final isQcLane = currentTicket.lane == KitchenBoardLane.qcCheck ||
+              currentTicket.data.status == KkfcStatus.checking;
+          final canPass = userRole?.canPassQc ?? false;
+          final effectiveActionEnabled =
+              isActionEnabled ?? (!isQcLane || canPass);
+
           return KitchenTicketStatusDialog(
             ticket: currentTicket,
             actionLabel: actionLabel,
             actionIcon: actionIcon,
             statusLabel: statusLabel,
             isActionLoading: isLoading,
+            isActionEnabled: effectiveActionEnabled,
             onClose: () => Navigator.of(dialogContext).maybePop(),
-            onAction: () async {
-              final success = await ref
-                  .read(kitchenBoardProvider.notifier)
-                  .performTicketAction(currentTicket);
+            onAction: effectiveActionEnabled
+                ? () async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .performTicketAction(currentTicket);
 
-              if (success && dialogContext.mounted) {
-                Navigator.of(dialogContext).maybePop();
-              }
-            },
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
           );
         },
       );

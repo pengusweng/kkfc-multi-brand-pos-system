@@ -65,6 +65,7 @@ class KitchenBoardScreen extends ConsumerWidget {
             Expanded(
               child: KitchenBoardLanesView(
                 state: boardState,
+                canPassQc: userRole?.canPassQc ?? false,
                 onTicketAction: (ticket) => showKitchenTicketStatusDialog(
                   context,
                   ticket: ticket,

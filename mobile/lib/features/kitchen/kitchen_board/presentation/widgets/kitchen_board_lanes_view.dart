@@ -13,11 +13,13 @@ class KitchenBoardLanesView extends StatelessWidget {
   const KitchenBoardLanesView({
     super.key,
     required this.state,
+    this.canPassQc = true,
     this.onTicketAction,
     this.onTicketDetails,
   });
 
   final KitchenBoardState state;
+  final bool canPassQc;
   final ValueChanged<KitchenBoardTicket>? onTicketAction;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
 
@@ -121,6 +123,7 @@ class KitchenBoardLanesView extends StatelessWidget {
       lane: lane,
       tickets: state.ticketsForLane(lane),
       loadingTicketIds: state.loadingTicketIds,
+      canPassQc: canPassQc,
       onTicketAction: onTicketAction,
       onTicketDetails: onTicketDetails,
       scrollable: scrollable,

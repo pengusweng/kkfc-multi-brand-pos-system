@@ -159,7 +159,7 @@ class KitchenTicketCard extends StatelessWidget {
         backgroundColor: KkfcColors.action, // #A8562A
         disabledBackgroundColor: KkfcColors.ticketDisabledBg,
         foregroundColor: KkfcColors.onSolid,
-        disabledForegroundColor: KkfcColors.onSolid,
+        disabledForegroundColor: KkfcColors.ticketMuted,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -177,10 +177,11 @@ class KitchenTicketCard extends StatelessWidget {
           : Text(
               resolvedLabel,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: KkfcColors.onSolid,
+                color:
+                    isActionEnabled ? KkfcColors.onSolid : KkfcColors.ticketMuted,
               ),
             ),
     );
