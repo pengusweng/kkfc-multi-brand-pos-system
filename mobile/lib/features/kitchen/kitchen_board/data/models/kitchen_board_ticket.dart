@@ -19,6 +19,8 @@ class KitchenBoardTicket {
     this.sentToKitchenLabel = '—',
     this.preparationStartedLabel = 'Not started',
     this.preparerId,
+    this.checkerId,
+    this.qcAttemptId,
   });
 
   final String kitchenTicketId;
@@ -30,6 +32,8 @@ class KitchenBoardTicket {
   final String sentToKitchenLabel;
   final String preparationStartedLabel;
   final String? preparerId;
+  final String? checkerId;
+  final String? qcAttemptId;
 
   KitchenBoardTicket copyWith({
     String? kitchenTicketId,
@@ -41,6 +45,8 @@ class KitchenBoardTicket {
     String? sentToKitchenLabel,
     String? preparationStartedLabel,
     String? preparerId,
+    String? checkerId,
+    String? qcAttemptId,
   }) {
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
@@ -53,6 +59,8 @@ class KitchenBoardTicket {
       preparationStartedLabel:
           preparationStartedLabel ?? this.preparationStartedLabel,
       preparerId: preparerId ?? this.preparerId,
+      checkerId: checkerId ?? this.checkerId,
+      qcAttemptId: qcAttemptId ?? this.qcAttemptId,
     );
   }
 
@@ -99,6 +107,15 @@ class KitchenBoardTicket {
       fallback: 'Not started',
     );
 
+    final checkerId = (json['checker_id'] as String?)?.trim();
+    final qcAttemptId = (json['qc_attempt_id'] as String?)?.trim() ??
+        (json['attempt_id'] as String?)?.trim() ??
+        (json['qc_attempts'] is List && (json['qc_attempts'] as List).isNotEmpty
+            ? ((json['qc_attempts'] as List).first is Map
+                ? ((json['qc_attempts'] as List).first['qc_attempt_id'] as String?)?.trim()
+                : null)
+            : null);
+
     return KitchenBoardTicket(
       kitchenTicketId: ticketId.isNotEmpty ? ticketId : ticketNumber,
       orderId: orderId,
@@ -108,6 +125,8 @@ class KitchenBoardTicket {
       sentToKitchenLabel: sentToKitchenLabel,
       preparationStartedLabel: preparationStartedLabel,
       preparerId: (json['preparer_id'] as String?)?.trim(),
+      checkerId: checkerId,
+      qcAttemptId: qcAttemptId,
       data: KitchenTicketData(
         ticketNumber: ticketNumber,
         elapsed: elapsed,

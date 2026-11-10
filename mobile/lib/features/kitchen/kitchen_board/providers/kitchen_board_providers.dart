@@ -260,6 +260,62 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
+  Future<bool> passQc({
+    required String kitchenTicketId,
+    String? attemptId,
+  }) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      final userId = await _resolveCurrentUserId();
+      await repo.passQcForTicket(
+        kitchenTicketId: kitchenTicketId,
+        attemptId: attemptId,
+        checkerId: userId,
+      );
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+
+      final updatedTickets = tickets.map((t) {
+        if (t.kitchenTicketId == kitchenTicketId &&
+            (t.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
+                t.rawStatus.toUpperCase() == 'CHECKING' ||
+                t.data.status == KkfcStatus.checking ||
+                t.lane == KitchenBoardLane.qcCheck)) {
+          return t.copyWith(
+            rawStatus: 'READY',
+            lane: KitchenBoardLane.ready,
+            data: t.data.copyWith(status: KkfcStatus.ready),
+          );
+        }
+        return t;
+      }).toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
     final raw = ticket.rawStatus.toUpperCase();
     final isQueued =
@@ -283,6 +339,18 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         ticket.data.status == KkfcStatus.reworking;
     if (isPreparingOrReworking) {
       return sendToQc(ticket.kitchenTicketId);
+    }
+
+    final isQcLane =
+        raw == 'FOR_CHECKING' ||
+        raw == 'CHECKING' ||
+        ticket.data.status == KkfcStatus.checking ||
+        ticket.lane == KitchenBoardLane.qcCheck;
+    if (isQcLane) {
+      return passQc(
+        kitchenTicketId: ticket.kitchenTicketId,
+        attemptId: ticket.qcAttemptId,
+      );
     }
 
     final id = ticket.kitchenTicketId;

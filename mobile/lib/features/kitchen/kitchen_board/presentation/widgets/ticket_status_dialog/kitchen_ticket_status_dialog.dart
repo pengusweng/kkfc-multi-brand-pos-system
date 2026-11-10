@@ -7,6 +7,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_qc_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
@@ -45,17 +46,24 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         ticket.data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
 
+    final isQcCheck = ticket.lane == KitchenBoardLane.qcCheck ||
+        ticket.data.status == KkfcStatus.checking ||
+        ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
+        ticket.rawStatus.toUpperCase() == 'CHECKING';
+
     final resolvedActionLabel = actionLabel ??
         (isAcknowledged
             ? 'Start Preparing'
-            : ticket.lane.actionLabelFor(ticket.data.status));
+            : (isQcCheck
+                ? 'All items passed'
+                : ticket.lane.actionLabelFor(ticket.data.status)));
     final resolvedStatusLabel =
         statusLabel ?? (isAcknowledged ? 'Acknowledged' : ticket.lane.title);
     final resolvedActionIcon = actionIcon ??
         switch (resolvedActionLabel) {
           'Start Preparing' => Icons.local_fire_department_rounded,
-          'Acknowledge' => Icons.check_rounded,
-          'Send to QC' => Icons.search_rounded,
+          'Acknowledge' || 'All items passed' => Icons.check_rounded,
+          'Send to QC' || 'QC check' => Icons.search_rounded,
           _ => isAcknowledged
               ? Icons.local_fire_department_rounded
               : (ticket.lane == KitchenBoardLane.queued ||
@@ -87,14 +95,26 @@ class KitchenTicketStatusDialog extends StatelessWidget {
               statusIcon: statusIcon,
               onClose: onClose,
             ),
-            Flexible(child: KitchenTicketDialogBody(ticket: ticket)),
-            _KitchenTicketDialogFooter(
-              actionLabel: resolvedActionLabel,
-              actionIcon: resolvedActionIcon,
-              isActionLoading: isActionLoading,
-              isActionEnabled: isActionEnabled,
-              onAction: onAction,
-            ),
+            if (isQcCheck)
+              Flexible(
+                child: KitchenTicketQcView(
+                  ticket: ticket,
+                  isActionLoading: isActionLoading,
+                  isActionEnabled: isActionEnabled,
+                  onPass: onAction,
+                  onFail: () {},
+                ),
+              )
+            else ...[
+              Flexible(child: KitchenTicketDialogBody(ticket: ticket)),
+              _KitchenTicketDialogFooter(
+                actionLabel: resolvedActionLabel,
+                actionIcon: resolvedActionIcon,
+                isActionLoading: isActionLoading,
+                isActionEnabled: isActionEnabled,
+                onAction: onAction,
+              ),
+            ],
           ],
         ),
       ),
@@ -204,6 +224,7 @@ Future<void> showKitchenTicketStatusDialog(
     builder: (dialogContext) {
       return Consumer(
         builder: (context, ref, _) {
+          ref.watch(userRoleInitializerProvider);
           final boardState = ref.watch(kitchenBoardProvider);
           final userRole = ref.watch(userRoleProvider);
           final currentTicket = boardState.tickets.firstWhere(
@@ -215,7 +236,9 @@ Future<void> showKitchenTicketStatusDialog(
           );
 
           final isQcLane = currentTicket.lane == KitchenBoardLane.qcCheck ||
-              currentTicket.data.status == KkfcStatus.checking;
+              currentTicket.data.status == KkfcStatus.checking ||
+              currentTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
+              currentTicket.rawStatus.toUpperCase() == 'CHECKING';
           final canPass = userRole?.canPassQc ?? false;
           final effectiveActionEnabled =
               isActionEnabled ?? (!isQcLane || canPass);

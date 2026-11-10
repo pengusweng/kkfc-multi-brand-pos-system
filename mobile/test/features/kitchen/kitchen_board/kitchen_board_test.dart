@@ -61,6 +61,7 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   final List<String> acknowledgedTicketIds = [];
   final List<String> preparedTicketIds = [];
   final List<String> sentToQcTicketIds = [];
+  final List<String> passedQcAttemptIds = [];
   final List<({String ticketId, String preparerId})> assignedPreparers = [];
 
   @override
@@ -108,6 +109,20 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     String preparerId,
   ) async {
     assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+  }
+
+  @override
+  Future<void> passQcAttempt(String attemptId) async {
+    passedQcAttemptIds.add(attemptId);
+  }
+
+  @override
+  Future<void> passQcForTicket({
+    required String kitchenTicketId,
+    String? attemptId,
+    String? checkerId,
+  }) async {
+    passedQcAttemptIds.add(attemptId ?? kitchenTicketId);
   }
 }
 
@@ -311,6 +326,32 @@ void main() {
         expect(
           adapter.requests.first.uri.toString(),
           'http://localhost:3000/api/kitchen-fulfillment/$ticketId/for-checking',
+        );
+      },
+    );
+
+    test(
+      'passQcAttempt sends POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/pass',
+      () async {
+        const attemptId = '00000000-0000-4000-8000-000000000099';
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse({
+            'qc_attempt_id': attemptId,
+            'status': 'PASSED',
+          }),
+        );
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.passQcAttempt(attemptId);
+
+        expect(adapter.requests, hasLength(1));
+        expect(adapter.requests.first.method, 'POST');
+        expect(
+          adapter.requests.first.uri.toString(),
+          'http://localhost:3000/api/kitchen-fulfillment/qc-attempts/$attemptId/pass',
         );
       },
     );
@@ -739,7 +780,7 @@ void main() {
     });
 
     testWidgets(
-      'QC Check Pass button is unclickable and muted for unauthorized role (KITCHEN_STAFF)',
+      'QC Check button on ticket card says "QC check" and is unclickable and muted for unauthorized role (KITCHEN_STAFF)',
       (tester) async {
         final qcTicket = sampleKitchenBoardTickets[1].copyWith(
           kitchenTicketId: '00000000-0000-4000-8000-000000000017',
@@ -761,6 +802,12 @@ void main() {
         // Card is in QC check lane
         final card = find.byKey(const ValueKey('kitchen-ticket-card-T-017'));
         expect(card, findsOneWidget);
+
+        // Action button on card says 'QC check'
+        expect(
+          find.descendant(of: card, matching: find.text('QC check')),
+          findsOneWidget,
+        );
 
         final passButtonFinder = find.descendant(
           of: card,
@@ -786,6 +833,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(find.text('QUALITY CHECK'), findsOneWidget);
         final dialogActionButton = tester.widget<FilledButton>(
           find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
         );
@@ -794,10 +842,11 @@ void main() {
     );
 
     testWidgets(
-      'QC Check Pass button is clickable for authorized role (KITCHEN_HEAD, MANAGER, SUPERVISOR, SUPERADMIN)',
+      'QC Check button is clickable for authorized role, renders QC modal layout, and clicking All items passed calls passQc',
       (tester) async {
         final qcTicket = sampleKitchenBoardTickets[1].copyWith(
           kitchenTicketId: '00000000-0000-4000-8000-000000000017',
+          qcAttemptId: '00000000-0000-4000-8000-000000000099',
           lane: KitchenBoardLane.qcCheck,
           rawStatus: 'FOR_CHECKING',
           data: sampleKitchenBoardTickets[1].data.copyWith(
@@ -814,23 +863,225 @@ void main() {
         await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
 
         final card = find.byKey(const ValueKey('kitchen-ticket-card-T-017'));
-        final passButtonFinder = find.descendant(
+        expect(
+          find.descendant(of: card, matching: find.text('QC check')),
+          findsOneWidget,
+        );
+
+        final qcCardButton = find.descendant(
           of: card,
           matching: find.byType(FilledButton),
         );
-        final filledButton = tester.widget<FilledButton>(passButtonFinder);
-        // Button is enabled (clickable)
+        final filledButton = tester.widget<FilledButton>(qcCardButton);
         expect(filledButton.onPressed, isNotNull);
 
-        // Tapping opens the popup
-        await tester.tap(passButtonFinder);
+        // Tapping opens the QC check popup
+        await tester.tap(qcCardButton);
         await tester.pumpAndSettle();
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
-        final dialogActionButton = tester.widget<FilledButton>(
-          find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
+
+        // 1. Header: Subtitle QUALITY CHECK, Ticket number T-017, Status badge QC check
+        expect(find.text('QUALITY CHECK'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(KitchenTicketStatusDialog),
+            matching: find.text('T-017'),
+          ),
+          findsOneWidget,
         );
-        expect(dialogActionButton.onPressed, isNotNull);
+        expect(find.text('QC check'), findsWidgets);
+
+        // 2. Body: Instruction text and items list
+        expect(
+          find.text(
+            'Check temperature, plating, portion and special requests for each item.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(KitchenTicketStatusDialog),
+            matching: find.text("Aurelia's Chicken Inasal Pecho"),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(KitchenTicketStatusDialog),
+            matching: find.text('Note: Extra calamansi please'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Pass'), findsOneWidget);
+        expect(find.text('Fail'), findsOneWidget);
+
+        // 3. Footer: Fail QC and rework button + All items passed button
+        expect(find.text('Fail QC and rework'), findsOneWidget);
+        final allItemsPassedFinder = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(allItemsPassedFinder, findsOneWidget);
+        expect(find.text('All items passed'), findsOneWidget);
+
+        // Before clicking Pass on every item, the button is MUTED (unclickable)
+        expect(
+          tester.widget<FilledButton>(allItemsPassedFinder).onPressed,
+          isNull,
+        );
+
+        // Tapping Fail toggles item decision - button remains muted
+        await tester.tap(find.text('Fail'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<FilledButton>(allItemsPassedFinder).onPressed,
+          isNull,
+        );
+
+        // Tapping Pass marks the item passed - button becomes ENABLED
+        await tester.tap(find.text('Pass'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<FilledButton>(allItemsPassedFinder).onPressed,
+          isNotNull,
+        );
+
+        // 4. Clicking All items passed calls passQcAttempt and closes dialog
+        expect(repo.passedQcAttemptIds, isEmpty);
+        await tester.tap(allItemsPassedFinder);
+        await tester.pumpAndSettle();
+
+        expect(repo.passedQcAttemptIds, contains('00000000-0000-4000-8000-000000000099'));
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'QC checker cannot press "All items passed" (button is muted) without clicking pass on every item in that ticket',
+      (tester) async {
+        final multiItemQcTicket = KitchenBoardTicket(
+          kitchenTicketId: '00000000-0000-4000-8000-000000000088',
+          qcAttemptId: '00000000-0000-4000-8000-000000000089',
+          orderId: '00000000-0000-4000-8000-000000000188',
+          orderCode: 'ORD-2026-1105-088',
+          lane: KitchenBoardLane.qcCheck,
+          rawStatus: 'FOR_CHECKING',
+          data: KitchenTicketData(
+            ticketNumber: 'T-088',
+            elapsed: const Duration(minutes: 4),
+            age: KitchenTicketAge.onTime,
+            status: KkfcStatus.checking,
+            channel: 'Dine-in',
+            reference: 'Table 7',
+            brand: sampleKitchenBoardTickets[0].data.brand,
+            items: const [
+              KitchenTicketItem(
+                quantity: 2,
+                name: 'Item Alpha',
+                modifiers: ['Note: Hot'],
+              ),
+              KitchenTicketItem(
+                quantity: 1,
+                name: 'Item Beta',
+                modifiers: [],
+              ),
+            ],
+            paymentStatus: 'Paid',
+          ),
+        );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [multiItemQcTicket],
+        );
+
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
+
+        // Open the QC dialog from the card button
+        final card = find.byKey(const ValueKey('kitchen-ticket-card-T-088'));
+        final qcCardButton = find.descendant(
+          of: card,
+          matching: find.byType(FilledButton),
+        );
+        await tester.tap(qcCardButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+
+        // Multiple item cards render with Pass/Fail buttons
+        expect(
+          find.descendant(
+            of: find.byType(KitchenTicketStatusDialog),
+            matching: find.text('Item Alpha'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(KitchenTicketStatusDialog),
+            matching: find.text('Item Beta'),
+          ),
+          findsOneWidget,
+        );
+
+        final allItemsPassedBtn = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(allItemsPassedBtn, findsOneWidget);
+
+        // 1. Initially, without clicking pass on every item, button is MUTED
+        expect(
+          tester.widget<FilledButton>(allItemsPassedBtn).onPressed,
+          isNull,
+        );
+
+        // Tapping muted button does not trigger pass or close dialog
+        await tester.tap(allItemsPassedBtn);
+        await tester.pumpAndSettle();
+        expect(repo.passedQcAttemptIds, isEmpty);
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+
+        // 2. Click Pass on Item Alpha only -> button remains MUTED
+        final passButtons = find.text('Pass');
+        expect(passButtons, findsNWidgets(2));
+
+        await tester.tap(passButtons.first);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<FilledButton>(allItemsPassedBtn).onPressed,
+          isNull,
+        );
+
+        // 3. Click Fail on Item Beta -> button remains MUTED
+        final failButtons = find.text('Fail');
+        expect(failButtons, findsNWidgets(2));
+
+        await tester.tap(failButtons.last);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<FilledButton>(allItemsPassedBtn).onPressed,
+          isNull,
+        );
+
+        // 4. Click Pass on Item Beta -> now EVERY item is passed, button is ENABLED
+        await tester.tap(passButtons.last);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<FilledButton>(allItemsPassedBtn).onPressed,
+          isNotNull,
+        );
+
+        // 5. Tapping the enabled button passes the ticket and closes dialog
+        await tester.tap(allItemsPassedBtn);
+        await tester.pumpAndSettle();
+
+        expect(
+          repo.passedQcAttemptIds,
+          contains('00000000-0000-4000-8000-000000000089'),
+        );
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );
 

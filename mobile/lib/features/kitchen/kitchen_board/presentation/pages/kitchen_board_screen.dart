@@ -34,6 +34,7 @@ class KitchenBoardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(userRoleInitializerProvider);
     final boardState = ref.watch(kitchenBoardProvider);
     final userRole = ref.watch(userRoleProvider);
     final roleLabel = _roleLabelFor(userRole);

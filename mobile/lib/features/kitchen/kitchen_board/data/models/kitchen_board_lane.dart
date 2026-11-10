@@ -75,7 +75,7 @@ enum KitchenBoardLane {
     KitchenBoardLane.queued => 'Acknowledge',
     KitchenBoardLane.preparing =>
       status == KkfcStatus.acknowledged ? 'Start Preparing' : 'Send to QC',
-    KitchenBoardLane.qcCheck => 'Pass',
+    KitchenBoardLane.qcCheck => 'QC check',
     KitchenBoardLane.ready => 'Hand over',
   };
 }

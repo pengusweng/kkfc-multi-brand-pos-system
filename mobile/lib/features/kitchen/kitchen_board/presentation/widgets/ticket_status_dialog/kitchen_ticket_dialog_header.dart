@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_meta.dart';
@@ -30,6 +31,13 @@ class KitchenTicketDialogHeader extends StatelessWidget {
     final isAcknowledged =
         data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
+
+    final isQc = lane == KitchenBoardLane.qcCheck ||
+        data.status == KkfcStatus.checking ||
+        ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
+        ticket.rawStatus.toUpperCase() == 'CHECKING';
+
+    final subtitle = isQc ? 'QUALITY CHECK' : 'TICKET DETAILS';
 
     final badgeIcon = statusIcon ??
         (isAcknowledged ? Icons.visibility_outlined : lane.icon);
@@ -105,9 +113,9 @@ class KitchenTicketDialogHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'TICKET DETAILS',
-                      style: TextStyle(
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 11,
                         fontWeight: KkfcFontWeights.bold,

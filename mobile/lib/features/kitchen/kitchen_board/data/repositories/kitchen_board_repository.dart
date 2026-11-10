@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_client.dart';
+import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
@@ -181,6 +182,113 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Claims checker assignment for a ticket via
+  /// `PATCH /api/kitchen-ticket/{kitchenTicketId}/checker`.
+  Future<void> assignChecker(
+    String kitchenTicketId,
+    String checkerId,
+  ) async {
+    try {
+      await _dio.patch<Object?>(
+        _endpoint('/kitchen-ticket/$kitchenTicketId/checker'),
+        data: {'checker_id': checkerId},
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
+  /// Starts a QC check attempt for a ticket in `FOR_CHECKING` state via
+  /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/check`.
+  /// Returns the created `qc_attempt_id` if available.
+  Future<String?> checkTicket(
+    String kitchenTicketId, {
+    String? checkerId,
+  }) async {
+    if (checkerId != null && checkerId.isNotEmpty) {
+      try {
+        await assignChecker(kitchenTicketId, checkerId);
+      } catch (_) {
+        // Continue in case already assigned to caller.
+      }
+    }
+
+    try {
+      final response = await _dio.post<dynamic>(
+        _endpoint('/kitchen-fulfillment/$kitchenTicketId/check'),
+      );
+      final data = response.data;
+      if (data is Map) {
+        final attempt = data['attempt'];
+        if (attempt is Map && attempt['qc_attempt_id'] is String) {
+          return attempt['qc_attempt_id'] as String;
+        }
+      }
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+    return null;
+  }
+
+  /// Fetches the latest QC attempt ID for a ticket via
+  /// `GET /api/kitchen-qc/ticket/{kitchenTicketId}/latest`.
+  Future<String?> fetchLatestQcAttemptId(String kitchenTicketId) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        _endpoint('/kitchen-qc/ticket/$kitchenTicketId/latest'),
+      );
+      final data = response.data;
+      if (data is Map && data['qc_attempt_id'] is String) {
+        return data['qc_attempt_id'] as String;
+      }
+    } catch (_) {
+      // Ignore lookup failure; caller can fall back to checking or ticket ID.
+    }
+    return null;
+  }
+
+  /// Passes a QC attempt via
+  /// `POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/pass`.
+  Future<void> passQcAttempt(String attemptId) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/qc-attempts/$attemptId/pass'),
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
+  /// Resolves the QC attempt ID for a ticket and marks it passed.
+  Future<void> passQcForTicket({
+    required String kitchenTicketId,
+    String? attemptId,
+    String? checkerId,
+  }) async {
+    var resolvedAttemptId = attemptId;
+    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
+      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
+    }
+    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
+      resolvedAttemptId = await checkTicket(
+        kitchenTicketId,
+        checkerId: checkerId,
+      );
+    }
+    resolvedAttemptId ??= kitchenTicketId;
+
+    await passQcAttempt(resolvedAttemptId);
+  }
+
   /// Advances a ticket's fulfillment stage on the backend.
   Future<void> advanceTicket(
     KitchenBoardTicket ticket, {
@@ -207,8 +315,21 @@ class KitchenBoardRepository {
       return;
     }
 
+    final isQcLane =
+        raw == 'FOR_CHECKING' ||
+        raw == 'CHECKING' ||
+        ticket.data.status == KkfcStatus.checking ||
+        ticket.lane == KitchenBoardLane.qcCheck;
+    if (isQcLane) {
+      await passQcForTicket(
+        kitchenTicketId: id,
+        attemptId: ticket.qcAttemptId,
+        checkerId: preparerId,
+      );
+      return;
+    }
+
     final actionPath = switch (raw) {
-      'FOR_CHECKING' => '/kitchen-fulfillment/$id/check',
       'READY' => '/kitchen-fulfillment/$id/hand-over',
       _ => null,
     };

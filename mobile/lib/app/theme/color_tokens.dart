@@ -232,6 +232,12 @@ abstract final class KkfcColors {
 
   /// Kitchen item note callout border (#FDE68A)
   static const Color ticketNoteBorder = Color(0xFFFDE68A);
+
+  /// QC item Pass button fill when active (#187A42)
+  static const Color qcPassBg = successSolid;
+
+  /// QC Fail button border / text (#B3261E)
+  static const Color qcFailBorder = danger;
 }
 
 /// Representation of a verified WCAG 2.2 AA contrast pair.
