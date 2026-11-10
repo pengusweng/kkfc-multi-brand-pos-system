@@ -49,15 +49,13 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
       parent: _controller,
       curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
     );
-    _cardSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
+    _cardSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   @override
@@ -83,11 +81,11 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
     final displayTable = draft?.tableReference?.isNotEmpty == true
         ? draft!.tableReference!
         : (reference.isNotEmpty
-            ? reference
-            : (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
+              ? reference
+              : (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
 
-    final isPaid = channel.isPlatform ||
-        (draft?.paymentStatus?.toUpperCase() == 'PAID');
+    final isPaid =
+        channel.isPlatform || (draft?.paymentStatus?.toUpperCase() == 'PAID');
     final paymentLabel = isPaid ? 'Paid' : 'Unpaid';
 
     return Column(
@@ -348,11 +346,7 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 20.0,
-                            ),
+                            Icon(Icons.add, color: Colors.white, size: 20.0),
                             SizedBox(width: 6.0),
                             Text(
                               'New order',

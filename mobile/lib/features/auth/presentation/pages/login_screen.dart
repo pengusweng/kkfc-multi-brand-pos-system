@@ -177,21 +177,9 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // =========================================================================
     final path1 = Path()
       ..moveTo(0, h * 0.90)
-      ..cubicTo(
-        w * 0.18, h * 0.84,
-        w * 0.32, h * 0.88,
-        w * 0.48, h * 0.80,
-      )
-      ..cubicTo(
-        w * 0.64, h * 0.72,
-        w * 0.78, h * 0.78,
-        w * 0.90, h * 0.68,
-      )
-      ..cubicTo(
-        w * 0.95, h * 0.63,
-        w * 0.98, h * 0.60,
-        w, h * 0.58,
-      )
+      ..cubicTo(w * 0.18, h * 0.84, w * 0.32, h * 0.88, w * 0.48, h * 0.80)
+      ..cubicTo(w * 0.64, h * 0.72, w * 0.78, h * 0.78, w * 0.90, h * 0.68)
+      ..cubicTo(w * 0.95, h * 0.63, w * 0.98, h * 0.60, w, h * 0.58)
       ..lineTo(w, h)
       ..lineTo(0, h)
       ..close();
@@ -211,16 +199,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // =========================================================================
     final path2 = Path()
       ..moveTo(w * 0.18, h)
-      ..cubicTo(
-        w * 0.32, h * 0.88,
-        w * 0.46, h * 0.82,
-        w * 0.60, h * 0.85,
-      )
-      ..cubicTo(
-        w * 0.74, h * 0.88,
-        w * 0.86, h * 0.74,
-        w, h * 0.68,
-      )
+      ..cubicTo(w * 0.32, h * 0.88, w * 0.46, h * 0.82, w * 0.60, h * 0.85)
+      ..cubicTo(w * 0.74, h * 0.88, w * 0.86, h * 0.74, w, h * 0.68)
       ..lineTo(w, h)
       ..close();
 
@@ -239,16 +219,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // =========================================================================
     final path3 = Path()
       ..moveTo(w * 0.42, h)
-      ..cubicTo(
-        w * 0.58, h * 0.91,
-        w * 0.70, h * 0.84,
-        w * 0.82, h * 0.86,
-      )
-      ..cubicTo(
-        w * 0.91, h * 0.88,
-        w * 0.96, h * 0.80,
-        w, h * 0.78,
-      )
+      ..cubicTo(w * 0.58, h * 0.91, w * 0.70, h * 0.84, w * 0.82, h * 0.86)
+      ..cubicTo(w * 0.91, h * 0.88, w * 0.96, h * 0.80, w, h * 0.78)
       ..lineTo(w, h)
       ..close();
 
@@ -268,16 +240,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     final path4 = Path()
       ..moveTo(0, 0)
       ..lineTo(w * 0.36, 0)
-      ..cubicTo(
-        w * 0.28, h * 0.14,
-        w * 0.22, h * 0.22,
-        w * 0.12, h * 0.30,
-      )
-      ..cubicTo(
-        w * 0.06, h * 0.35,
-        w * 0.02, h * 0.40,
-        0, h * 0.44,
-      )
+      ..cubicTo(w * 0.28, h * 0.14, w * 0.22, h * 0.22, w * 0.12, h * 0.30)
+      ..cubicTo(w * 0.06, h * 0.35, w * 0.02, h * 0.40, 0, h * 0.44)
       ..close();
 
     final fill4 = Paint()
@@ -297,21 +261,9 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 1: Tracing the ridge of Wave 1
     final strokePath1 = Path()
       ..moveTo(0, h * 0.90)
-      ..cubicTo(
-        w * 0.18, h * 0.84,
-        w * 0.32, h * 0.88,
-        w * 0.48, h * 0.80,
-      )
-      ..cubicTo(
-        w * 0.64, h * 0.72,
-        w * 0.78, h * 0.78,
-        w * 0.90, h * 0.68,
-      )
-      ..cubicTo(
-        w * 0.95, h * 0.63,
-        w * 0.98, h * 0.60,
-        w, h * 0.58,
-      );
+      ..cubicTo(w * 0.18, h * 0.84, w * 0.32, h * 0.88, w * 0.48, h * 0.80)
+      ..cubicTo(w * 0.64, h * 0.72, w * 0.78, h * 0.78, w * 0.90, h * 0.68)
+      ..cubicTo(w * 0.95, h * 0.63, w * 0.98, h * 0.60, w, h * 0.58);
 
     final strokePaint1 = Paint()
       ..isAntiAlias = true
@@ -328,21 +280,9 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 2: Harmonic Echo line floating above Wave 1
     final strokePath2 = Path()
       ..moveTo(0, h * 0.87)
-      ..cubicTo(
-        w * 0.18, h * 0.81,
-        w * 0.32, h * 0.85,
-        w * 0.48, h * 0.77,
-      )
-      ..cubicTo(
-        w * 0.64, h * 0.69,
-        w * 0.78, h * 0.75,
-        w * 0.90, h * 0.65,
-      )
-      ..cubicTo(
-        w * 0.95, h * 0.60,
-        w * 0.98, h * 0.57,
-        w, h * 0.55,
-      );
+      ..cubicTo(w * 0.18, h * 0.81, w * 0.32, h * 0.85, w * 0.48, h * 0.77)
+      ..cubicTo(w * 0.64, h * 0.69, w * 0.78, h * 0.75, w * 0.90, h * 0.65)
+      ..cubicTo(w * 0.95, h * 0.60, w * 0.98, h * 0.57, w, h * 0.55);
 
     final strokePaint2 = Paint()
       ..isAntiAlias = true
@@ -359,16 +299,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 3: Tracing the ridge of Wave 2
     final strokePath3 = Path()
       ..moveTo(w * 0.18, h)
-      ..cubicTo(
-        w * 0.32, h * 0.88,
-        w * 0.46, h * 0.82,
-        w * 0.60, h * 0.85,
-      )
-      ..cubicTo(
-        w * 0.74, h * 0.88,
-        w * 0.86, h * 0.74,
-        w, h * 0.68,
-      );
+      ..cubicTo(w * 0.32, h * 0.88, w * 0.46, h * 0.82, w * 0.60, h * 0.85)
+      ..cubicTo(w * 0.74, h * 0.88, w * 0.86, h * 0.74, w, h * 0.68);
 
     final strokePaint3 = Paint()
       ..isAntiAlias = true
@@ -385,16 +317,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 4: Tracing the ridge of Wave 3 (Warm copper foreground crest)
     final strokePath4 = Path()
       ..moveTo(w * 0.42, h)
-      ..cubicTo(
-        w * 0.58, h * 0.91,
-        w * 0.70, h * 0.84,
-        w * 0.82, h * 0.86,
-      )
-      ..cubicTo(
-        w * 0.91, h * 0.88,
-        w * 0.96, h * 0.80,
-        w, h * 0.78,
-      );
+      ..cubicTo(w * 0.58, h * 0.91, w * 0.70, h * 0.84, w * 0.82, h * 0.86)
+      ..cubicTo(w * 0.91, h * 0.88, w * 0.96, h * 0.80, w, h * 0.78);
 
     final strokePaint4 = Paint()
       ..isAntiAlias = true
@@ -411,16 +335,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 5: Top-Left Aura contour stroke
     final strokePath5 = Path()
       ..moveTo(w * 0.36, 0)
-      ..cubicTo(
-        w * 0.28, h * 0.14,
-        w * 0.22, h * 0.22,
-        w * 0.12, h * 0.30,
-      )
-      ..cubicTo(
-        w * 0.06, h * 0.35,
-        w * 0.02, h * 0.40,
-        0, h * 0.44,
-      );
+      ..cubicTo(w * 0.28, h * 0.14, w * 0.22, h * 0.22, w * 0.12, h * 0.30)
+      ..cubicTo(w * 0.06, h * 0.35, w * 0.02, h * 0.40, 0, h * 0.44);
 
     final strokePaint5 = Paint()
       ..isAntiAlias = true
@@ -437,16 +353,8 @@ class _LoginCanvasWavesPainter extends CustomPainter {
     // Contour 6: Inner Top-Left echo arc
     final strokePath6 = Path()
       ..moveTo(w * 0.26, 0)
-      ..cubicTo(
-        w * 0.20, h * 0.10,
-        w * 0.15, h * 0.16,
-        w * 0.08, h * 0.22,
-      )
-      ..cubicTo(
-        w * 0.04, h * 0.26,
-        w * 0.01, h * 0.29,
-        0, h * 0.32,
-      );
+      ..cubicTo(w * 0.20, h * 0.10, w * 0.15, h * 0.16, w * 0.08, h * 0.22)
+      ..cubicTo(w * 0.04, h * 0.26, w * 0.01, h * 0.29, 0, h * 0.32);
 
     final strokePaint6 = Paint()
       ..isAntiAlias = true

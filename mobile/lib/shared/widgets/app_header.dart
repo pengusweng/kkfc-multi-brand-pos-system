@@ -93,7 +93,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       child: SizedBox(
         height: height,
         child: Padding(
-          padding: padding ??
+          padding:
+              padding ??
               EdgeInsets.symmetric(
                 horizontal: isCompact ? KkfcSpace.s16 : KkfcSpace.s20,
               ),
@@ -175,11 +176,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
 /// Role badge / pill displayed on the right side of [AppHeader].
 class AppHeaderRoleChip extends StatelessWidget {
-  const AppHeaderRoleChip({
-    super.key,
-    required this.role,
-    this.onTap,
-  });
+  const AppHeaderRoleChip({super.key, required this.role, this.onTap});
 
   final String role;
   final VoidCallback? onTap;
@@ -192,17 +189,11 @@ class AppHeaderRoleChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(KkfcRadius.pill),
         child: Ink(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 7,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: const Color(0xFF24364D),
             borderRadius: BorderRadius.circular(KkfcRadius.pill),
-            border: Border.all(
-              color: const Color(0xFF384B66),
-              width: 1.0,
-            ),
+            border: Border.all(color: const Color(0xFF384B66), width: 1.0),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

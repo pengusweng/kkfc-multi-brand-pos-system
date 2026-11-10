@@ -52,10 +52,7 @@ class CurrentMenuCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10.0),
-                border: Border.all(
-                  color: const Color(0xFFDDD6C9),
-                  width: 1.0,
-                ),
+                border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

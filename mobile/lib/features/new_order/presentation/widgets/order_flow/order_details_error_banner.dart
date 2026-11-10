@@ -3,10 +3,7 @@ import 'package:mobile/app/theme/typography.dart';
 
 /// Top alert banner shown when order details validation fails.
 class OrderDetailsErrorBanner extends StatelessWidget {
-  const OrderDetailsErrorBanner({
-    super.key,
-    required this.message,
-  });
+  const OrderDetailsErrorBanner({super.key, required this.message});
 
   final String message;
 

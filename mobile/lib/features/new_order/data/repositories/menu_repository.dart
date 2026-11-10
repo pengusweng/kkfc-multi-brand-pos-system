@@ -32,10 +32,7 @@ class MenuRepository {
     while (page <= totalPages) {
       final response = await _dio.get<Map<String, dynamic>>(
         '/menu-catalog/brand/$brandId',
-        queryParameters: {
-          'page': page,
-          'limit': _pageSize,
-        },
+        queryParameters: {'page': page, 'limit': _pageSize},
       );
       final body = response.data;
       final data = body?['data'];
@@ -53,7 +50,9 @@ class MenuRepository {
 
       final parsedTotalPages = meta['totalPages'];
       if (parsedTotalPages is! int || parsedTotalPages < 1) {
-        throw const FormatException('Invalid menu-catalog pagination metadata.');
+        throw const FormatException(
+          'Invalid menu-catalog pagination metadata.',
+        );
       }
       totalPages = parsedTotalPages;
       page++;

@@ -191,7 +191,14 @@ void main() {
     expect(item.name, 'Bibimbap');
     expect(item.priceFor(MenuChannel.dineIn), 22900);
     expect(item.priceFor(MenuChannel.grabFood), 25900);
-    expect(item.channels, containsAll([MenuChannel.dineIn, MenuChannel.grabFood, MenuChannel.foodpanda]));
+    expect(
+      item.channels,
+      containsAll([
+        MenuChannel.dineIn,
+        MenuChannel.grabFood,
+        MenuChannel.foodpanda,
+      ]),
+    );
 
     expect(item.modifierGroups, hasLength(2));
     expect(item.modifierGroups[0].title, 'Add egg');

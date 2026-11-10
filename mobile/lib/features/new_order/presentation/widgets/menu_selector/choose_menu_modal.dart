@@ -112,8 +112,7 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (final brand in widget.brands)
-                      _buildBrandCard(brand),
+                    for (final brand in widget.brands) _buildBrandCard(brand),
                   ],
                 ),
               ),
@@ -140,7 +139,9 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                           ));
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFA8562A), // Brand Brown
+                          backgroundColor: const Color(
+                            0xFFA8562A,
+                          ), // Brand Brown
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8.0),
                           ),

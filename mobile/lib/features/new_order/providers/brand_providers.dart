@@ -76,7 +76,10 @@ final activeBrandProvider =
     );
 
 /// Resolves the real UUID of the currently active brand.
-String resolveActiveBrandId(AssignedBrand brand, List<AssignedBrand> allBrands) {
+String resolveActiveBrandId(
+  AssignedBrand brand,
+  List<AssignedBrand> allBrands,
+) {
   final uuidRegex = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   );
@@ -151,5 +154,3 @@ final brandChannelsProvider =
                 : const [MenuChannel.dineIn, MenuChannel.takeaway]),
       );
     });
-
-

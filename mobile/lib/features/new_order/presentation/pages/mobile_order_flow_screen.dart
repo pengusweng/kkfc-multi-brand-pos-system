@@ -145,19 +145,17 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) {
                 return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset(_slideDirection * 0.05, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
+                  position:
+                      Tween<Offset>(
+                        begin: Offset(_slideDirection * 0.05, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                  child: FadeTransition(opacity: animation, child: child),
                 );
               },
               child: _buildCurrentStepView(),
@@ -181,9 +179,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
       case 3:
         return KeyedSubtree(
           key: const ValueKey('step-3-details'),
-          child: OrderDetailsStepView(
-            onContinue: () => _goToStep(4),
-          ),
+          child: OrderDetailsStepView(onContinue: () => _goToStep(4)),
         );
       case 4:
         return KeyedSubtree(

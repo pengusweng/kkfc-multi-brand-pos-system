@@ -55,8 +55,7 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
               ? GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
@@ -135,10 +134,7 @@ class _SkeletonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(
-          color: const Color(0xFFDDD6C9),
-          width: 1.0,
-        ),
+        border: Border.all(color: const Color(0xFFDDD6C9), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -183,8 +179,10 @@ class _SkeletonCard extends StatelessWidget {
               Container(
                 height: 32.0,
                 width: 74.0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: subtleShimmer,
                   borderRadius: BorderRadius.circular(8.0),
@@ -271,11 +269,7 @@ class MenuMessageCard extends StatelessWidget {
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      icon,
-                      size: 28,
-                      color: const Color(0xFFB42318),
-                    ),
+                    child: Icon(icon, size: 28, color: const Color(0xFFB42318)),
                   ),
                 ),
                 const SizedBox(height: 18),

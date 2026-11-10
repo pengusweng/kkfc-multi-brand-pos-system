@@ -46,14 +46,13 @@ void main() {
       final router = GoRouter(
         initialLocation: AppRoutes.menu,
         routes: [
-          GoRoute(
-            path: AppRoutes.menu,
-            builder: (_, _) => const MenuScreen(),
-          ),
+          GoRoute(path: AppRoutes.menu, builder: (_, _) => const MenuScreen()),
           GoRoute(
             path: AppRoutes.mobileOrderFlow,
             builder: (_, state) => Scaffold(
-              body: Text('Order flow step ${(state.extra as Map?)?['initialStep'] ?? 2}'),
+              body: Text(
+                'Order flow step ${(state.extra as Map?)?['initialStep'] ?? 2}',
+              ),
             ),
           ),
         ],
@@ -68,10 +67,7 @@ void main() {
             ),
             menuItemsProvider.overrideWith((ref) async => [_testItem]),
           ],
-          child: MaterialApp.router(
-            theme: counterTheme,
-            routerConfig: router,
-          ),
+          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
         ),
       );
       await tester.pumpAndSettle();

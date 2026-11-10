@@ -52,39 +52,42 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
       parent: _entranceController,
       curve: const Interval(0.0, 0.60, curve: Curves.easeOut),
     );
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0.0, -0.06),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
-    ));
+    _headerSlide =
+        Tween<Offset>(
+          begin: const Offset(0.0, -0.06),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // 2. Catalog view rises up smoothly and dissolves in
     _catalogFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.10, 0.85, curve: Curves.easeOut),
     );
-    _catalogSlide = Tween<Offset>(
-      begin: const Offset(0.0, 0.04),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.10, 0.90, curve: Curves.easeOutCubic),
-    ));
+    _catalogSlide =
+        Tween<Offset>(begin: const Offset(0.0, 0.04), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.10, 0.90, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // 3. Tablet/Desktop Cart Panel glides in from the right edge
     _cartPanelFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.18, 1.0, curve: Curves.easeOut),
     );
-    _cartPanelSlide = Tween<Offset>(
-      begin: const Offset(0.06, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _entranceController,
-      curve: const Interval(0.18, 1.0, curve: Curves.easeOutCubic),
-    ));
+    _cartPanelSlide =
+        Tween<Offset>(begin: const Offset(0.06, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.18, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _entranceController.forward();
   }

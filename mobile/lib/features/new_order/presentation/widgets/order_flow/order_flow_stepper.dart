@@ -95,10 +95,8 @@ class OrderFlowStepper extends StatelessWidget {
       child: Center(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) => ScaleTransition(
-            scale: animation,
-            child: child,
-          ),
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
           child: (isCompleted || isFinalSent)
               ? const Icon(
                   Icons.check,

@@ -126,11 +126,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(container: container, child: const App()),
       );
-      for (final route in [
-        AppRoutes.menu,
-        AppRoutes.orders,
-        AppRoutes.menu,
-      ]) {
+      for (final route in [AppRoutes.menu, AppRoutes.orders, AppRoutes.menu]) {
         container.read(routerProvider).go(route);
         await tester.pumpAndSettle();
         expect(container.read(cartProvider), same(before));

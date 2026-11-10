@@ -201,13 +201,10 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-
           return Column(
             children: [
               const AppHeader(),
-              Expanded(
-                child: _buildContent(context),
-              ),
+              Expanded(child: _buildContent(context)),
             ],
           );
         },

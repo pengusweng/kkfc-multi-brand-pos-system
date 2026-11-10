@@ -146,7 +146,9 @@ class _CartBarState extends ConsumerState<CartBar> {
                                       fontSize: 16.0,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
-                                      fontFeatures: [FontFeature.tabularFigures()],
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
                                     ),
                                   ),
                                 ),

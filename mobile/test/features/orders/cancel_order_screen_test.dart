@@ -133,7 +133,9 @@ void main() {
       await pumpCancelOrder(tester);
 
       // Tap Cancel order with empty reason
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -150,7 +152,9 @@ void main() {
       await pumpCancelOrder(tester);
 
       // Trigger error first
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
       expect(
         find.text('Enter a reason for cancelling (up to 280 characters).'),
@@ -190,16 +194,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       // Success card
       expect(find.text('Order cancelled'), findsOneWidget);
       expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(
-        find.text('No refund or stock change was made.'),
-        findsOneWidget,
-      );
+      expect(find.text('No refund or stock change was made.'), findsOneWidget);
 
       // Check order code and ticket number in RichText
       expect(find.byType(RichText), findsWidgets);
@@ -230,7 +233,9 @@ void main() {
         find.byType(TextField),
         'Guest changed their mind',
       );
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       expect(repository.calls, hasLength(1));
@@ -257,7 +262,9 @@ void main() {
       await pumpLiveCancelOrder(tester, repository);
 
       await tester.enterText(find.byType(TextField), 'Guest changed mind');
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -288,7 +295,9 @@ void main() {
 
       // Enter text and cancel
       await tester.enterText(find.byType(TextField), 'Wrong item');
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       // Tap Back to menu

@@ -85,9 +85,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
     super.initState();
     _isCancelled = widget.initialStep == CancelOrderStep.cancelled;
     _hasError = widget.initialStep == CancelOrderStep.reasonRequired;
-    _reasonController = TextEditingController(
-      text: widget.initialReason ?? '',
-    );
+    _reasonController = TextEditingController(text: widget.initialReason ?? '');
     _focusNode = FocusNode();
 
     _reasonController.addListener(() {
@@ -184,11 +182,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
 
     final result = await ref
         .read(cancelOrderRepositoryProvider)
-        .cancel(
-          brandId: brandId,
-          orderId: effectiveOrderId,
-          reason: reason,
-        );
+        .cancel(brandId: brandId, orderId: effectiveOrderId, reason: reason);
 
     if (!mounted) return;
 
@@ -248,10 +242,8 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
     if (router != null) {
       router.go(AppRoutes.menu);
     } else {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.menu,
-        (route) => false,
-      );
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRoutes.menu, (route) => false);
     }
   }
 
@@ -267,11 +259,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
         child: Column(
           children: [
             // Top AppHeader: Navy ("Orders" / "Cashier Staff v") matching the mockup without logout icon
-            const AppHeader(
-              title: 'Orders',
-              compact: true,
-              showLogout: false,
-            ),
+            const AppHeader(title: 'Orders', compact: true, showLogout: false),
 
             if (!_isCancelled) ...[
               // White Title Bar: "Cancel order"
@@ -423,8 +411,8 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
     final borderColor = _hasError
         ? const Color(0xFFD92D20)
         : _focusNode.hasFocus
-            ? const Color(0xFF2E90FA)
-            : const Color(0xFFDDD6C9);
+        ? const Color(0xFF2E90FA)
+        : const Color(0xFFDDD6C9);
 
     final borderWidth = _hasError || _focusNode.hasFocus ? 1.5 : 1.0;
 
@@ -452,8 +440,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
             required currentLength,
             required isFocused,
             maxLength,
-          }) =>
-              null,
+          }) => null,
           style: const TextStyle(
             fontFamily: KkfcFonts.ibmPlexSans,
             fontSize: 14.0,
@@ -573,9 +560,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFEDE8DF), width: 1.0),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFEDE8DF), width: 1.0)),
       ),
       child: Row(
         children: [
@@ -732,9 +717,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFEDE8DF), width: 1.0),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFEDE8DF), width: 1.0)),
       ),
       child: SizedBox(
         width: double.infinity,

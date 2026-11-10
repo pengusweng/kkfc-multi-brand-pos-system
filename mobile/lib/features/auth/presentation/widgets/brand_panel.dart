@@ -106,10 +106,7 @@ class _HeaderWavesPainter extends CustomPainter {
       ..shader = const RadialGradient(
         center: Alignment.topRight,
         radius: 0.9,
-        colors: [
-          Color(0x18B86843),
-          Color(0x0019293E),
-        ],
+        colors: [Color(0x18B86843), Color(0x0019293E)],
       ).createShader(rect);
     canvas.drawRect(rect, glowPaint);
 
@@ -126,11 +123,7 @@ class _HeaderWavesPainter extends CustomPainter {
     // Arc 1: Innermost subtle ripple
     final path1 = Path()
       ..moveTo(w * 0.35, 0)
-      ..cubicTo(
-        w * 0.58, h * 0.35,
-        w * 0.78, h * 0.65,
-        w, h * 0.40,
-      );
+      ..cubicTo(w * 0.58, h * 0.35, w * 0.78, h * 0.65, w, h * 0.40);
     final paint1 = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
@@ -142,11 +135,7 @@ class _HeaderWavesPainter extends CustomPainter {
     // Arc 2: Primary harmonic arc
     final path2 = Path()
       ..moveTo(w * 0.48, 0)
-      ..cubicTo(
-        w * 0.68, h * 0.48,
-        w * 0.85, h * 0.82,
-        w, h * 0.58,
-      );
+      ..cubicTo(w * 0.68, h * 0.48, w * 0.85, h * 0.82, w, h * 0.58);
     final paint2 = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
@@ -158,11 +147,7 @@ class _HeaderWavesPainter extends CustomPainter {
     // Arc 3: Secondary outer arc
     final path3 = Path()
       ..moveTo(w * 0.62, 0)
-      ..cubicTo(
-        w * 0.78, h * 0.58,
-        w * 0.90, h * 0.92,
-        w, h * 0.74,
-      );
+      ..cubicTo(w * 0.78, h * 0.58, w * 0.90, h * 0.92, w, h * 0.74);
     final paint3 = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke
@@ -174,11 +159,7 @@ class _HeaderWavesPainter extends CustomPainter {
     // Arc 4: Outer fine echo arc
     final path4 = Path()
       ..moveTo(w * 0.76, 0)
-      ..cubicTo(
-        w * 0.86, h * 0.68,
-        w * 0.94, h * 0.98,
-        w, h * 0.88,
-      );
+      ..cubicTo(w * 0.86, h * 0.68, w * 0.94, h * 0.98, w, h * 0.88);
     final paint4 = Paint()
       ..isAntiAlias = true
       ..style = PaintingStyle.stroke

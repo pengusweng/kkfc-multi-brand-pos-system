@@ -129,7 +129,8 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
       if (lines.isEmpty) {
         setState(() {
           _isSubmitting = false;
-          _apiErrorMessage = 'Add at least one item before reviewing the order.';
+          _apiErrorMessage =
+              'Add at least one item before reviewing the order.';
         });
         return;
       }
@@ -192,13 +193,9 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
               children: [
                 // Error Alert Banner (e.g. "Enter the table before reviewing a dine-in order." or API error)
                 if (hasError)
-                  OrderDetailsErrorBanner(
-                    message: _bannerErrorMessage(channel),
-                  )
+                  OrderDetailsErrorBanner(message: _bannerErrorMessage(channel))
                 else if (_apiErrorMessage != null)
-                  OrderDetailsErrorBanner(
-                    message: _apiErrorMessage!,
-                  ),
+                  OrderDetailsErrorBanner(message: _apiErrorMessage!),
 
                 // Card 1: Channel & Table Input
                 OrderDetailsChannelCard(
@@ -208,8 +205,10 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
                     setState(() {
                       _apiErrorMessage = null;
                       if (_showValidationError) {
-                        _showValidationError =
-                            !_isValidForChannel(c, _referenceController.text);
+                        _showValidationError = !_isValidForChannel(
+                          c,
+                          _referenceController.text,
+                        );
                       }
                     });
                   },
@@ -268,8 +267,9 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text(

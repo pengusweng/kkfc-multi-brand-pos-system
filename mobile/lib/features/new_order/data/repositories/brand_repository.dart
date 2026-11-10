@@ -13,11 +13,7 @@ class BrandRepository {
   Future<List<AssignedBrand>> getAll({bool activeOnly = true}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/brands',
-      queryParameters: {
-        'page': 1,
-        'limit': 100,
-        'activeOnly': activeOnly,
-      },
+      queryParameters: {'page': 1, 'limit': 100, 'activeOnly': activeOnly},
     );
     final data = response.data?['data'];
     if (data is! List) {

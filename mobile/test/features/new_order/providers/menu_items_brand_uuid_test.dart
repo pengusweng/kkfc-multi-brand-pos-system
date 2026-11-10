@@ -57,57 +57,51 @@ void main() {
     mockMenuRepo = _MockMenuRepository();
   });
 
-  test(
-    'menuItemsProvider resolves slug brand to real backend UUID before calling getByBrand',
-    () async {
-      final container = ProviderContainer(
-        overrides: [
-          brandRepositoryProvider.overrideWithValue(mockBrandRepo),
-          menuRepositoryProvider.overrideWithValue(mockMenuRepo),
-        ],
-      );
-      addTearDown(container.dispose);
+  test('menuItemsProvider resolves slug brand to real backend UUID before calling getByBrand', () async {
+    final container = ProviderContainer(
+      overrides: [
+        brandRepositoryProvider.overrideWithValue(mockBrandRepo),
+        menuRepositoryProvider.overrideWithValue(mockMenuRepo),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      // Initially activeBrand has slug 'gamcheon'
-      expect(container.read(activeBrandProvider).id, 'gamcheon');
+    // Initially activeBrand has slug 'gamcheon'
+    expect(container.read(activeBrandProvider).id, 'gamcheon');
 
-      // Keep autoDispose provider alive during async execution
-      final sub = container.listen(menuItemsProvider, (previous, next) {});
-      addTearDown(sub.close);
+    // Keep autoDispose provider alive during async execution
+    final sub = container.listen(menuItemsProvider, (previous, next) {});
+    addTearDown(sub.close);
 
-      // Fetch menu items
-      final items = await container.read(menuItemsProvider.future);
+    // Fetch menu items
+    final items = await container.read(menuItemsProvider.future);
 
-      expect(items, isNotEmpty);
-      // Verify the requested ID was the UUID, NOT the slug 'gamcheon'
-      expect(mockMenuRepo.requestedBrandIds, contains(gamcheonUuid));
-      expect(mockMenuRepo.requestedBrandIds, isNot(contains('gamcheon')));
-    },
-  );
+    expect(items, isNotEmpty);
+    // Verify the requested ID was the UUID, NOT the slug 'gamcheon'
+    expect(mockMenuRepo.requestedBrandIds, contains(gamcheonUuid));
+    expect(mockMenuRepo.requestedBrandIds, isNot(contains('gamcheon')));
+  });
 
-  test(
-    'menuItemsProvider uses brand UUID directly when activeBrand already has a UUID',
-    () async {
-      final container = ProviderContainer(
-        overrides: [
-          brandRepositoryProvider.overrideWithValue(mockBrandRepo),
-          menuRepositoryProvider.overrideWithValue(mockMenuRepo),
-        ],
-      );
-      addTearDown(container.dispose);
+  test('menuItemsProvider uses brand UUID directly when activeBrand already has a UUID', () async {
+    final container = ProviderContainer(
+      overrides: [
+        brandRepositoryProvider.overrideWithValue(mockBrandRepo),
+        menuRepositoryProvider.overrideWithValue(mockMenuRepo),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      // Select Aurelia directly with UUID
-      container
-          .read(activeBrandProvider.notifier)
-          .select(backendBrands[1]); // aureliaUuid
+    // Select Aurelia directly with UUID
+    container
+        .read(activeBrandProvider.notifier)
+        .select(backendBrands[1]); // aureliaUuid
 
-      final sub = container.listen(menuItemsProvider, (previous, next) {});
-      addTearDown(sub.close);
+    final sub = container.listen(menuItemsProvider, (previous, next) {});
+    addTearDown(sub.close);
 
-      final items = await container.read(menuItemsProvider.future);
+    final items = await container.read(menuItemsProvider.future);
 
-      expect(items, isNotEmpty);
-      expect(mockMenuRepo.requestedBrandIds.last, aureliaUuid);
-    },
-  );
+    expect(items, isNotEmpty);
+    expect(mockMenuRepo.requestedBrandIds.last, aureliaUuid);
+  });
 }

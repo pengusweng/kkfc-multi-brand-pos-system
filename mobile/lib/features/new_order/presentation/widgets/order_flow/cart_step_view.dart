@@ -162,10 +162,11 @@ class CartStepView extends ConsumerWidget {
                                 ),
                                 AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) => FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  ),
+                                  transitionBuilder: (child, animation) =>
+                                      FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
                                   child: Text(
                                     formatPeso(total),
                                     key: ValueKey('subtotal-$total'),
@@ -204,10 +205,11 @@ class CartStepView extends ConsumerWidget {
                                 ),
                                 AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) => FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  ),
+                                  transitionBuilder: (child, animation) =>
+                                      FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
                                   child: Text(
                                     formatPeso(total),
                                     key: ValueKey('total-$total'),

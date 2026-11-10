@@ -81,23 +81,21 @@ class OrderFlowHeader extends StatelessWidget {
               layoutBuilder: (currentChild, previousChildren) {
                 return Stack(
                   alignment: Alignment.centerLeft,
-                  children: <Widget>[
-                    ...previousChildren,
-                    ?currentChild,
-                  ],
+                  children: <Widget>[...previousChildren, ?currentChild],
                 );
               },
               transitionBuilder: (child, animation) {
                 return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.15),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(0.0, 0.15),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
                   child: FadeTransition(opacity: animation, child: child),
                 );
               },

@@ -57,9 +57,7 @@ class LogoutButton extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Do you want to logout?'),
-        content: const Text(
-          'Any active order draft will be cleared.',
-        ),
+        content: const Text('Any active order draft will be cleared.'),
         actions: [
           KkfcOutlinedButton(
             label: 'Cancel',

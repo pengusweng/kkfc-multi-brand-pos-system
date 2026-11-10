@@ -46,10 +46,7 @@ class FakeOrderEntryRepository implements OrderEntryRepository {
       'brand_id': brandId,
       'status': 'CONFIRMED',
       'payment_status': paymentStatus ?? 'UNPAID',
-      'kitchen_tickets_order': {
-        'ticket_number': 'T-017',
-        'status': 'QUEUED',
-      },
+      'kitchen_tickets_order': {'ticket_number': 'T-017', 'status': 'QUEUED'},
     };
   }
 
@@ -87,8 +84,7 @@ void main() {
   final sampleItem = MenuItem(
     id: 'gamcheon-samgyupsal',
     name: 'Gamcheon Samgyupsal Rice Bowl',
-    description:
-        'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and scallions over warm rice.',
+    description: 'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and scallions over warm rice.',
     pricesCentavos: const {
       MenuChannel.dineIn: 22000,
       MenuChannel.takeaway: 22000,
@@ -134,9 +130,7 @@ void main() {
   Widget createSubject(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
-        home: MobileOrderFlowScreen(),
-      ),
+      child: const MaterialApp(home: MobileOrderFlowScreen()),
     );
   }
 
@@ -152,15 +146,11 @@ void main() {
       );
 
       // Configure cart with 1 line, quantity 2, matching the screenshot
-      container.read(cartProvider.notifier).addConfigured(
-        sampleItem,
-        {
-          'rice-choice': 'garlic-butter-rice',
-          'spice-level': 'mild',
-          'fried-egg': ModifierGroup.addOnOn,
-        },
-        2,
-      );
+      container.read(cartProvider.notifier).addConfigured(sampleItem, {
+        'rice-choice': 'garlic-butter-rice',
+        'spice-level': 'mild',
+        'fried-egg': ModifierGroup.addOnOn,
+      }, 2);
 
       await tester.pumpWidget(createSubject(container));
       await tester.pumpAndSettle();

@@ -36,10 +36,7 @@ class _CategoryChipState extends State<CategoryChip> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18.0,
-            vertical: 10.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 10.0),
           decoration: BoxDecoration(
             color: widget.selected
                 ? const Color(0xFF1D2940)

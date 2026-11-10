@@ -161,25 +161,25 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
                 decoration: BoxDecoration(
                   color: hideUnavailable
                       ? (_unavailablePressed
-                          ? const Color(0xFF151E2E)
-                          : const Color(0xFF1D2940))
+                            ? const Color(0xFF151E2E)
+                            : const Color(0xFF1D2940))
                       : (_unavailablePressed
-                          ? const Color(0xFFEEE8DC)
-                          : Colors.white),
+                            ? const Color(0xFFEEE8DC)
+                            : Colors.white),
                   borderRadius: BorderRadius.circular(KkfcRadius.sm),
                   border: Border.all(
                     color: hideUnavailable
                         ? const Color(0xFF1D2940)
                         : (_unavailablePressed
-                            ? const Color(0xFF19293E)
-                            : const Color(0xFF76849A)),
+                              ? const Color(0xFF19293E)
+                              : const Color(0xFF76849A)),
                     width: 1.0,
                   ),
                   boxShadow: hideUnavailable
                       ? [
                           BoxShadow(
-                            color:
-                                const Color(0xFF1D2940).withValues(alpha: 0.18),
+                            color: const Color(0xFF1D2940)
+                                .withValues(alpha: 0.18),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),

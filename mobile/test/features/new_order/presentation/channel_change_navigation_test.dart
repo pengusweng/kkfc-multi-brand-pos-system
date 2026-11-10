@@ -90,7 +90,9 @@ void main() {
         addTearDown(router.dispose);
 
         final container = ProviderContainer(
-          overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+          overrides: [
+            menuItemsProvider.overrideWith((ref) async => sampleMenu),
+          ],
         );
         addTearDown(container.dispose);
         container.read(cartProvider.notifier).add(sampleMenu[0]);
@@ -98,7 +100,10 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: MaterialApp.router(theme: counterTheme, routerConfig: router),
+            child: MaterialApp.router(
+              theme: counterTheme,
+              routerConfig: router,
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -106,7 +111,9 @@ void main() {
         expect(find.byType(ChannelRepricingScreen), findsNothing);
 
         // Open Choose Menu modal from CurrentMenuCard
-        await tester.tap(find.byKey(const ValueKey('current-menu-selector-card')));
+        await tester.tap(
+          find.byKey(const ValueKey('current-menu-selector-card')),
+        );
         await tester.pumpAndSettle();
 
         // Select GrabFood and tap Switch menu

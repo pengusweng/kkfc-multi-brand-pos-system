@@ -55,7 +55,9 @@ void main() {
           authenticatedBrandIdProvider.overrideWith((ref) async => 'brand-1'),
         ],
       );
-      container.read(activeOrderDraftProvider.notifier).set(
+      container
+          .read(activeOrderDraftProvider.notifier)
+          .set(
             const OrderDraft(
               orderId: 'mock-order-id',
               orderCode: 'ORD-2026-1105-017',
@@ -118,7 +120,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('submit-cancel-order-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('submit-cancel-order-button')),
+      );
       await tester.pumpAndSettle();
 
       // 6. Verify "Order cancelled" success screen

@@ -134,10 +134,9 @@ class HideUnavailableNotifier extends Notifier<bool> {
   void set(bool hide) => state = hide;
 }
 
-final hideUnavailableProvider =
-    NotifierProvider<HideUnavailableNotifier, bool>(
-      HideUnavailableNotifier.new,
-    );
+final hideUnavailableProvider = NotifierProvider<HideUnavailableNotifier, bool>(
+  HideUnavailableNotifier.new,
+);
 
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
@@ -155,7 +154,8 @@ final visibleMenuItemsProvider =
                   i.description.toLowerCase().contains(query);
               final matchesAvailability =
                   !hideUnavailable ||
-                  i.availabilityFor(currentChannel) == MenuAvailability.available;
+                  i.availabilityFor(currentChannel) ==
+                      MenuAvailability.available;
               return matchesQuery && matchesAvailability;
             }).toList(),
           );

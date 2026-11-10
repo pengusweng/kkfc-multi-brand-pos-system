@@ -198,7 +198,8 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
     final lineCount = cart.length;
     final effectiveReference = reference.isNotEmpty
         ? reference
-        : (draft?.tableReference ?? (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
+        : (draft?.tableReference ??
+              (channel == MenuChannel.dineIn ? 'Table 7' : 'Pickup'));
 
     return Column(
       children: [
@@ -453,7 +454,9 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
                                     ),
                                   ),
                                   if (cart[i].kitchenNote != null &&
-                                      cart[i].kitchenNote!.trim().isNotEmpty) ...[
+                                      cart[i].kitchenNote!
+                                          .trim()
+                                          .isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       'Note: ${cart[i].kitchenNote}',
@@ -576,8 +579,9 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Row(

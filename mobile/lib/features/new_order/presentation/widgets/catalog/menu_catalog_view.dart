@@ -114,9 +114,8 @@ class MenuCatalogView extends ConsumerWidget {
             bottomPadding,
           ),
           sliver: visibleItems.when(
-            loading: () => SliverToBoxAdapter(
-              child: MenuGridSkeleton(isWide: isWide),
-            ),
+            loading: () =>
+                SliverToBoxAdapter(child: MenuGridSkeleton(isWide: isWide)),
             error: (_, _) => SliverToBoxAdapter(
               child: MenuMessageCard(
                 icon: Icons.wifi_off,
@@ -128,10 +127,11 @@ class MenuCatalogView extends ConsumerWidget {
             ),
             data: (items) {
               if (items.isEmpty) {
-                final isSearching =
-                    ref.watch(menuSearchProvider).trim().isNotEmpty;
-                final isHidingUnavailable =
-                    ref.watch(hideUnavailableProvider);
+                final isSearching = ref
+                    .watch(menuSearchProvider)
+                    .trim()
+                    .isNotEmpty;
+                final isHidingUnavailable = ref.watch(hideUnavailableProvider);
 
                 if (isSearching || isHidingUnavailable) {
                   return const SliverToBoxAdapter(
@@ -177,11 +177,11 @@ class MenuCatalogView extends ConsumerWidget {
                   ? SliverGrid.builder(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16.0,
-                        mainAxisSpacing: 16.0,
-                        mainAxisExtent: 160.0,
-                      ),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16.0,
+                            mainAxisSpacing: 16.0,
+                            mainAxisExtent: 160.0,
+                          ),
                       itemCount: items.length,
                       itemBuilder: (context, index) => MenuItemCard(
                         item: items[index],

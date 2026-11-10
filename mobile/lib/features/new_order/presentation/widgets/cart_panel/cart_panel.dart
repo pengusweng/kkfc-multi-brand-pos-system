@@ -27,11 +27,7 @@ Future<void> showCartPanelSheet(BuildContext context) {
 
 /// "Current order" panel for tablet and desktop views, or slide-up sheet on phones.
 class CartPanel extends ConsumerStatefulWidget {
-  const CartPanel({
-    super.key,
-    this.isSheet = false,
-    this.onClose,
-  });
+  const CartPanel({super.key, this.isSheet = false, this.onClose});
 
   final bool isSheet;
   final VoidCallback? onClose;
@@ -247,9 +243,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF19293E),
-                              side: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
@@ -269,262 +263,274 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                       for (var index = 0; index < lines.length; index++) ...[
                         if (index > 0)
                           const Divider(height: 24, color: Color(0xFFEDE8DF)),
-                        Builder(builder: (context) {
-                          final line = lines[index];
-                          final modifiers = line.modifierSummary;
+                        Builder(
+                          builder: (context) {
+                            final line = lines[index];
+                            final modifiers = line.modifierSummary;
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Line title and line total
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        line.item.name,
-                                        style: const TextStyle(
-                                          fontFamily: KkfcFonts.ibmPlexSans,
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF19293E),
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Line title and line total
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          line.item.name,
+                                          style: const TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF19293E),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    AnimatedSwitcher(
-                                      duration:
-                                          const Duration(milliseconds: 200),
-                                      transitionBuilder: (child, animation) {
-                                        return SlideTransition(
-                                          position: Tween<Offset>(
-                                            begin: const Offset(0, 0.2),
-                                            end: Offset.zero,
-                                          ).animate(animation),
-                                          child: FadeTransition(
-                                            opacity: animation,
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: Text(
-                                        formatPeso(line.totalCentavos(channel)),
-                                        key: ValueKey(
-                                          'line-total-${line.id}-${line.totalCentavos(channel)}',
+                                      const SizedBox(width: 8),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 200,
                                         ),
+                                        transitionBuilder: (child, animation) {
+                                          return SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0, 0.2),
+                                              end: Offset.zero,
+                                            ).animate(animation),
+                                            child: FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          formatPeso(
+                                            line.totalCentavos(channel),
+                                          ),
+                                          key: ValueKey(
+                                            'line-total-${line.id}-${line.totalCentavos(channel)}',
+                                          ),
+                                          style: const TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF19293E),
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+
+                                  // Brand badge and unit price
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEDF0F4),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          brand.name,
+                                          style: const TextStyle(
+                                            fontSize: 11.0,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF43536A),
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${formatPeso(line.unitCentavos(channel))} each',
                                         style: const TextStyle(
-                                          fontFamily: KkfcFonts.ibmPlexSans,
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF19293E),
+                                          fontSize: 12.0,
+                                          color: Color(0xFF586579),
                                           fontFeatures: [
                                             FontFeature.tabularFigures(),
                                           ],
                                         ),
                                       ),
+                                    ],
+                                  ),
+
+                                  // Modifiers summary
+                                  if (modifiers.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      modifiers.join(' · '),
+                                      style: const TextStyle(
+                                        fontSize: 12.0,
+                                        color: Color(0xFF586579),
+                                      ),
                                     ),
                                   ],
-                                ),
-                                const SizedBox(height: 4),
 
-                                // Brand badge and unit price
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 4,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
+                                  // Kitchen note
+                                  if (line.kitchenNote != null &&
+                                      line.kitchenNote!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFEDF0F4),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        brand.name,
-                                        style: const TextStyle(
-                                          fontSize: 11.0,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF43536A),
+                                        color: const Color(0xFFFDF4E2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: const Color(0xFFE8D3A7),
                                         ),
                                       ),
-                                    ),
-                                    Text(
-                                      '${formatPeso(line.unitCentavos(channel))} each',
-                                      style: const TextStyle(
-                                        fontSize: 12.0,
-                                        color: Color(0xFF586579),
-                                        fontFeatures: [
-                                          FontFeature.tabularFigures(),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.edit_note,
+                                            size: 14,
+                                            color: Color(0xFF855B14),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              line.kitchenNote!,
+                                              style: const TextStyle(
+                                                fontStyle: FontStyle.italic,
+                                                fontSize: 11.5,
+                                                color: Color(0xFF855B14),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ],
-                                ),
+                                  const SizedBox(height: 12),
 
-                                // Modifiers summary
-                                if (modifiers.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    modifiers.join(' · '),
-                                    style: const TextStyle(
-                                      fontSize: 12.0,
-                                      color: Color(0xFF586579),
-                                    ),
-                                  ),
-                                ],
-
-                                // Kitchen note
-                                if (line.kitchenNote != null &&
-                                    line.kitchenNote!.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFDF4E2),
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(
-                                        color: const Color(0xFFE8D3A7),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.edit_note,
-                                          size: 14,
-                                          color: Color(0xFF855B14),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            line.kitchenNote!,
-                                            style: const TextStyle(
-                                              fontStyle: FontStyle.italic,
-                                              fontSize: 11.5,
-                                              color: Color(0xFF855B14),
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                  // Controls: [-] [qty] [+] [Edit] [Remove]
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Stepper: -
+                                          _QtyButton(
+                                            icon: Icons.remove,
+                                            onTap: () => ref
+                                                .read(cartProvider.notifier)
+                                                .decrementLine(line.id),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-
-                                // Controls: [-] [qty] [+] [Edit] [Remove]
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // Stepper: -
-                                        _QtyButton(
-                                          icon: Icons.remove,
-                                          onTap: () => ref
-                                              .read(cartProvider.notifier)
-                                              .decrementLine(line.id),
-                                        ),
-                                        SizedBox(
-                                          width: 32,
-                                          child: Center(
-                                            child: AnimatedSwitcher(
-                                              duration: const Duration(
-                                                milliseconds: 180,
-                                              ),
-                                              transitionBuilder:
-                                                  (child, animation) {
-                                                return ScaleTransition(
-                                                  scale: animation,
-                                                  child: FadeTransition(
-                                                    opacity: animation,
-                                                    child: child,
+                                          SizedBox(
+                                            width: 32,
+                                            child: Center(
+                                              child: AnimatedSwitcher(
+                                                duration: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                transitionBuilder:
+                                                    (child, animation) {
+                                                      return ScaleTransition(
+                                                        scale: animation,
+                                                        child: FadeTransition(
+                                                          opacity: animation,
+                                                          child: child,
+                                                        ),
+                                                      );
+                                                    },
+                                                child: Text(
+                                                  '${line.quantity}',
+                                                  key: ValueKey(
+                                                    'qty-${line.id}-${line.quantity}',
                                                   ),
-                                                );
-                                              },
-                                              child: Text(
-                                                '${line.quantity}',
-                                                key: ValueKey(
-                                                  'qty-${line.id}-${line.quantity}',
-                                                ),
-                                                style: const TextStyle(
-                                                  fontFamily:
-                                                      KkfcFonts.ibmPlexSans,
-                                                  fontSize: 15.0,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFF19293E),
-                                                  fontFeatures: [
-                                                    FontFeature
-                                                        .tabularFigures(),
-                                                  ],
+                                                  style: const TextStyle(
+                                                    fontFamily:
+                                                        KkfcFonts.ibmPlexSans,
+                                                    fontSize: 15.0,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF19293E),
+                                                    fontFeatures: [
+                                                      FontFeature.tabularFigures(),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        // Stepper: +
-                                        _QtyButton(
-                                          icon: Icons.add,
-                                          onTap: () => ref
-                                              .read(cartProvider.notifier)
-                                              .incrementLine(line.id),
-                                        ),
-                                        const SizedBox(width: 8),
+                                          // Stepper: +
+                                          _QtyButton(
+                                            icon: Icons.add,
+                                            onTap: () => ref
+                                                .read(cartProvider.notifier)
+                                                .incrementLine(line.id),
+                                          ),
+                                          const SizedBox(width: 8),
 
-                                        // Edit button
-                                        _EditButton(
-                                          onTap: () => openCustomize(
-                                            context,
-                                            ref,
-                                            item: line.item,
-                                            editing: line,
+                                          // Edit button
+                                          _EditButton(
+                                            onTap: () => openCustomize(
+                                              context,
+                                              ref,
+                                              item: line.item,
+                                              editing: line,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Remove button
+                                      TextButton(
+                                        onPressed: () => ref
+                                            .read(cartProvider.notifier)
+                                            .removeLine(line.id),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(
+                                            0xFFB3261E,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: const Text(
+                                          'Remove',
+                                          style: TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 13.0,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                      ],
-                                    ),
-
-                                    // Remove button
-                                    TextButton(
-                                      onPressed: () => ref
-                                          .read(cartProvider.notifier)
-                                          .removeLine(line.id),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFFB3261E),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                        ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
-                                      child: const Text(
-                                        'Remove',
-                                        style: TextStyle(
-                                          fontFamily: KkfcFonts.ibmPlexSans,
-                                          fontSize: 13.0,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ],
                   ),

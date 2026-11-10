@@ -40,5 +40,5 @@ class ActiveOrderDraftNotifier extends Notifier<OrderDraft?> {
 
 final activeOrderDraftProvider =
     NotifierProvider<ActiveOrderDraftNotifier, OrderDraft?>(
-  ActiveOrderDraftNotifier.new,
-);
+      ActiveOrderDraftNotifier.new,
+    );

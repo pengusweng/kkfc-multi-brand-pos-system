@@ -9,8 +9,7 @@ void main() {
   final testItem = MenuItem(
     id: 'gamcheon-samgyupsal',
     name: 'Gamcheon Samgyupsal Rice Bowl',
-    description:
-        'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and scallions over warm rice.',
+    description: 'Thinly sliced pork belly marinated in house gochujang sweet soy, sesame and scallions over warm rice.',
     pricesCentavos: const {
       MenuChannel.dineIn: 22000,
       MenuChannel.takeaway: 22000,
@@ -104,10 +103,7 @@ void main() {
 
       // Check header
       expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsOneWidget);
-      expect(
-        find.text('Gamcheon · Dine-in price · ₱220.00'),
-        findsOneWidget,
-      );
+      expect(find.text('Gamcheon · Dine-in price · ₱220.00'), findsOneWidget);
 
       // Check description
       expect(
@@ -116,7 +112,10 @@ void main() {
       );
 
       // Check Badges
-      expect(find.text('Chosen'), findsNWidgets(2)); // Rice Choice & Spice Level
+      expect(
+        find.text('Chosen'),
+        findsNWidgets(2),
+      ); // Rice Choice & Spice Level
       expect(find.text('Optional'), findsOneWidget); // Add-Ons
 
       // Check Radio options
@@ -200,10 +199,7 @@ void main() {
         id: 'simple-item',
         name: 'Simple Drink',
         description: 'Fresh brewed iced tea',
-        pricesCentavos: {
-          MenuChannel.dineIn: 7500,
-          MenuChannel.takeaway: 7500,
-        },
+        pricesCentavos: {MenuChannel.dineIn: 7500, MenuChannel.takeaway: 7500},
       );
 
       await tester.pumpWidget(

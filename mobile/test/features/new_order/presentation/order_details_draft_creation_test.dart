@@ -96,10 +96,7 @@ class MockOrderEntryRepository implements OrderEntryRepository {
       'brand_id': brandId,
       'status': 'CONFIRMED',
       'payment_status': paymentStatus ?? 'UNPAID',
-      'kitchen_tickets_order': {
-        'ticket_number': 'T-042',
-        'status': 'QUEUED',
-      },
+      'kitchen_tickets_order': {'ticket_number': 'T-042', 'status': 'QUEUED'},
     };
   }
 
@@ -141,9 +138,7 @@ void main() {
   Widget createSubject(ProviderContainer container) {
     return UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(
-        home: MobileOrderFlowScreen(initialStep: 3),
-      ),
+      child: const MaterialApp(home: MobileOrderFlowScreen(initialStep: 3)),
     );
   }
 
@@ -227,43 +222,42 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Step 3 displays API error banner when draft creation fails',
-    (tester) async {
-      final mockRepo = MockOrderEntryRepository(
-        shouldFailCreate: true,
-        createErrorMessage: 'Menu item is unavailable on this channel.',
-      );
-      final container = ProviderContainer(
-        overrides: [
-          orderEntryRepositoryProvider.overrideWithValue(mockRepo),
-          activeBrandProvider.overrideWith(
-            () => FakeActiveBrandNotifier(sampleBrand),
-          ),
-        ],
-      );
+  testWidgets('Step 3 displays API error banner when draft creation fails', (
+    tester,
+  ) async {
+    final mockRepo = MockOrderEntryRepository(
+      shouldFailCreate: true,
+      createErrorMessage: 'Menu item is unavailable on this channel.',
+    );
+    final container = ProviderContainer(
+      overrides: [
+        orderEntryRepositoryProvider.overrideWithValue(mockRepo),
+        activeBrandProvider.overrideWith(
+          () => FakeActiveBrandNotifier(sampleBrand),
+        ),
+      ],
+    );
 
-      container.read(cartProvider.notifier).addConfigured(sampleItem, {}, 1);
-      container.read(menuChannelProvider.notifier).select(MenuChannel.dineIn);
+    container.read(cartProvider.notifier).addConfigured(sampleItem, {}, 1);
+    container.read(menuChannelProvider.notifier).select(MenuChannel.dineIn);
 
-      await tester.pumpWidget(createSubject(container));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(createSubject(container));
+    await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), 'Table 5');
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Table 5');
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Review order'));
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Review order'));
+    await tester.pumpAndSettle();
 
-      expect(mockRepo.createCallCount, 1);
-      // Stays on Step 3 and shows server error message
-      expect(
-        find.text('Menu item is unavailable on this channel.'),
-        findsOneWidget,
-      );
-      expect(find.text('Review order'), findsOneWidget);
-    },
-  );
+    expect(mockRepo.createCallCount, 1);
+    // Stays on Step 3 and shows server error message
+    expect(
+      find.text('Menu item is unavailable on this channel.'),
+      findsOneWidget,
+    );
+    expect(find.text('Review order'), findsOneWidget);
+  });
 
   testWidgets(
     'Full flow: Step 3 creates draft -> Step 4 confirms order -> Step 5 shows real kitchen ticket',
