@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/button/button.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 
 const _meal = MenuItem(
@@ -65,9 +66,33 @@ void main() {
       expect(find.byType(LogoutButton), findsOneWidget);
       expect(find.byTooltip('Logout'), findsOneWidget);
 
+      // Tap logout: confirmation popup should appear
       await tester.tap(find.byTooltip('Logout'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Do you want to logout?'), findsOneWidget);
+      expect(find.widgetWithText(KkfcOutlinedButton, 'Cancel'), findsOneWidget);
+      expect(find.widgetWithText(KkfcPrimaryButton, 'Logout'), findsOneWidget);
+
+      // Tap Cancel: cancels logout, dialog closes, state remains unchanged
+      await tester.tap(find.widgetWithText(KkfcOutlinedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Do you want to logout?'), findsNothing);
+      expect(container.read(cartProvider), isNotEmpty);
+      expect(container.read(sessionTokenProvider), 'tok-abc');
+      expect(onLoggedOutCalled, isFalse);
+      expect(repo.logoutTokens, isEmpty);
+
+      // Tap logout again and confirm
+      await tester.tap(find.byTooltip('Logout'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Do you want to logout?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(KkfcPrimaryButton, 'Logout'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Do you want to logout?'), findsNothing);
       expect(container.read(cartProvider), isEmpty);
       expect(container.read(orderReferenceProvider), isEmpty);
       expect(container.read(storeReferenceProvider), isEmpty);

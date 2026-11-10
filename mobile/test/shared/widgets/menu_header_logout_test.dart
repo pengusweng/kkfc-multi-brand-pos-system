@@ -12,6 +12,7 @@ import 'package:mobile/features/new_order/data/seed/sample_brands.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
+import 'package:mobile/shared/widgets/button/button.dart';
 
 const _meal = MenuItem(
   id: 'meal',
@@ -66,6 +67,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Logout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Do you want to logout?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(KkfcPrimaryButton, 'Logout'));
     await tester.pumpAndSettle();
 
     expect(container.read(cartProvider), isEmpty);

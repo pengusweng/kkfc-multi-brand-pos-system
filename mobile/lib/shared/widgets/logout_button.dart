@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/button/button.dart';
 
 /// Themed logout button extracted from [AppHeader].
 ///
@@ -49,6 +50,42 @@ class LogoutButton extends ConsumerWidget {
     ref.read(sessionTokenProvider.notifier).setToken(null);
   }
 
+  /// Displays a confirmation dialog asking if the user wants to log out.
+  /// Returns `true` if the user confirmed, `false` otherwise.
+  static Future<bool> showConfirmationDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Do you want to logout?'),
+        content: const Text(
+          'Any active order draft will be cleared.',
+        ),
+        actions: [
+          KkfcOutlinedButton(
+            label: 'Cancel',
+            size: KkfcButtonSize.compact,
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          KkfcPrimaryButton(
+            label: 'Logout',
+            size: KkfcButtonSize.compact,
+            customBackground: const Color(0xFFB3261E),
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  Future<void> _handlePressed(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showConfirmationDialog(context);
+    if (confirmed && context.mounted) {
+      signOut(ref);
+      onLoggedOut?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final effectiveColor =
@@ -59,10 +96,7 @@ class LogoutButton extends ConsumerWidget {
       constraints: constraints,
       padding: padding,
       icon: Icon(Icons.logout, color: effectiveColor),
-      onPressed: () {
-        signOut(ref);
-        onLoggedOut?.call();
-      },
+      onPressed: () => _handlePressed(context, ref),
     );
   }
 }
