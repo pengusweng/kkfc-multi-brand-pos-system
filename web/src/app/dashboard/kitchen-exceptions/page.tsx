@@ -1,4 +1,4 @@
-import KitchenExceptionsPage from "@/src/features/dashboard/containers/kitchen-exceptions";
+import KitchenExceptionsPage from "@/src/features/kitchen-exceptions/containers/kitchen-exceptions";
 
 export default function KitchenExceptions() {
   return <KitchenExceptionsPage />;

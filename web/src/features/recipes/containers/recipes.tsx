@@ -1,4 +1,4 @@
-import PageTitle from "../components/atoms/page-title";
+import PageTitle from "@/src/features/dashboard/components/atoms/page-title";
 
 export default function RecipesPage() {
   return (
