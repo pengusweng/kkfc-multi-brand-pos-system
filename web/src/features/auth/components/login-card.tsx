@@ -137,7 +137,7 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
                 style={rise(3)}
               >
                 {busy && <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />}
-                {redirecting ? "Opening dashboard…" : isSubmitting ? "Signing in…" : "Sign in"}
+                {redirecting ? "Opening dashboard…" : isSubmitting ? "Signing in…" : "Sign In"}
               </Button>
             );
           }}
