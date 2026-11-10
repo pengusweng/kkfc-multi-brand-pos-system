@@ -18,6 +18,7 @@ class KitchenBoardTicket {
     this.rawStatus = 'QUEUED',
     this.sentToKitchenLabel = '—',
     this.preparationStartedLabel = 'Not started',
+    this.preparerId,
   });
 
   final String kitchenTicketId;
@@ -28,6 +29,7 @@ class KitchenBoardTicket {
   final String rawStatus;
   final String sentToKitchenLabel;
   final String preparationStartedLabel;
+  final String? preparerId;
 
   KitchenBoardTicket copyWith({
     String? kitchenTicketId,
@@ -38,6 +40,7 @@ class KitchenBoardTicket {
     String? rawStatus,
     String? sentToKitchenLabel,
     String? preparationStartedLabel,
+    String? preparerId,
   }) {
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
@@ -49,6 +52,7 @@ class KitchenBoardTicket {
       sentToKitchenLabel: sentToKitchenLabel ?? this.sentToKitchenLabel,
       preparationStartedLabel:
           preparationStartedLabel ?? this.preparationStartedLabel,
+      preparerId: preparerId ?? this.preparerId,
     );
   }
 
@@ -103,6 +107,7 @@ class KitchenBoardTicket {
       rawStatus: rawStatus,
       sentToKitchenLabel: sentToKitchenLabel,
       preparationStartedLabel: preparationStartedLabel,
+      preparerId: (json['preparer_id'] as String?)?.trim(),
       data: KitchenTicketData(
         ticketNumber: ticketNumber,
         elapsed: elapsed,

@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/models/user_role.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
@@ -56,6 +58,7 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   int fetchCount = 0;
   final List<String> acknowledgedTicketIds = [];
   final List<String> preparedTicketIds = [];
+  final List<({String ticketId, String preparerId})> assignedPreparers = [];
 
   @override
   Future<List<KitchenBoardTicket>> fetchTodaysTickets({DateTime? now}) {
@@ -64,14 +67,42 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   }
 
   @override
-  Future<void> acknowledgeTicket(String kitchenTicketId) async {
+  Future<void> acknowledgeTicket(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
     acknowledgedTicketIds.add(kitchenTicketId);
+    if (preparerId != null) {
+      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+    }
   }
 
   @override
-  Future<void> prepareTicket(String kitchenTicketId) async {
+  Future<void> prepareTicket(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
     preparedTicketIds.add(kitchenTicketId);
+    if (preparerId != null) {
+      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+    }
   }
+
+  @override
+  Future<void> assignPreparer(
+    String kitchenTicketId,
+    String preparerId,
+  ) async {
+    assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+  }
+}
+
+class _FakeAuthRepository extends AuthRepository {
+  _FakeAuthRepository() : super(Dio(), TokenStore());
+
+  @override
+  Future<String?> getCurrentUserId() async =>
+      '00000000-0000-4000-8000-000000000001';
 }
 
 void main() {
@@ -202,6 +233,40 @@ void main() {
         );
       },
     );
+
+    test(
+      'prepareTicket assigns preparer before calling prepare if preparerId is provided',
+      () async {
+        const ticketId = '00000000-0000-4000-8000-000000000016';
+        const preparerId = '00000000-0000-4000-8000-000000000001';
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse({
+            'kitchen_ticket_id': ticketId,
+            'status': 'PREPARING',
+          }),
+        );
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.prepareTicket(ticketId, preparerId: preparerId);
+
+        expect(adapter.requests, hasLength(2));
+        expect(adapter.requests[0].method, 'PATCH');
+        expect(
+          adapter.requests[0].uri.toString(),
+          'http://localhost:3000/api/kitchen-ticket/$ticketId/preparer',
+        );
+        expect(adapter.requests[0].data, {'preparer_id': preparerId});
+
+        expect(adapter.requests[1].method, 'POST');
+        expect(
+          adapter.requests[1].uri.toString(),
+          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
+        );
+      },
+    );
   });
 
   group('KitchenBoardScreen & KitchenTicketStatusDialog UI', () {
@@ -220,6 +285,7 @@ void main() {
         overrides: [
           kitchenBoardRepositoryProvider.overrideWithValue(repository),
           initialRoleProvider.overrideWithValue(role),
+          authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
         ],
       );
       addTearDown(container.dispose);
@@ -294,7 +360,7 @@ void main() {
     );
 
     testWidgets(
-      'acknowledging a ticket updates status badge to Acknowledged, button to Start Preparing with fire icon, and clicking Start Preparing calls prepare API',
+      'acknowledging ticket closes popup, updates board to Acknowledged lane with Start Preparing CTA, and opening popup shows fire icon & Acknowledged badge',
       (tester) async {
         final repo = _FakeKitchenBoardRepository(
           () async => sampleKitchenBoardTickets,
@@ -322,11 +388,11 @@ void main() {
         expect(find.text('Not started'), findsOneWidget);
 
         // Dialog initially displays 'Queued' status badge and 'Acknowledge' button with check icon
-        final statusBadge = find.byKey(
+        final queuedStatusBadge = find.byKey(
           const ValueKey('kitchen-ticket-dialog-status-badge'),
         );
         expect(
-          find.descendant(of: statusBadge, matching: find.text('Queued')),
+          find.descendant(of: queuedStatusBadge, matching: find.text('Queued')),
           findsOneWidget,
         );
 
@@ -352,55 +418,76 @@ void main() {
         await tester.tap(dialogActionButton);
         await tester.pumpAndSettle();
 
-        // Verify POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge was called
+        // 1. Verify POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge was called
         expect(repo.acknowledgedTicketIds, [
           '00000000-0000-4000-8000-000000000016',
         ]);
 
-        // Dialog stays open and reflects the acknowledged ticket state:
+        // 2. Popup closes after clicking the button inside it
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+
+        // 3. On the board, T-016 is now in Preparing lane with 'Start Preparing' CTA
+        final preparingCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-016'),
+        );
+        expect(preparingCard, findsOneWidget);
+        expect(find.text('Start'), findsNothing);
+        final startPreparingCta = find.descendant(
+          of: preparingCard,
+          matching: find.text('Start Preparing'),
+        );
+        expect(startPreparingCta, findsOneWidget);
+
+        // 4. Tap 'Start Preparing' on the card to open popup for acknowledged ticket
+        await tester.tap(startPreparingCta);
+        await tester.pumpAndSettle();
+
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
 
-        // 1. The status badge of the ticket should be acknowledged
+        // 5. Status badge of the ticket is now 'Acknowledged'
+        final ackBadge = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
         expect(
-          find.descendant(of: statusBadge, matching: find.text('Acknowledged')),
+          find.descendant(of: ackBadge, matching: find.text('Acknowledged')),
           findsOneWidget,
         );
 
-        // 2. The button should say 'Start Preparing' instead of just 'Start'
-        expect(find.text('Start'), findsNothing);
+        // 6. Button says 'Start Preparing' and icon changed from check to fire
+        final ackDialogButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
         expect(
           find.descendant(
-            of: dialogActionButton,
+            of: ackDialogButton,
             matching: find.text('Start Preparing'),
           ),
           findsOneWidget,
         );
-
-        // 3. Icon changed from check to fire
         expect(
           find.descendant(
-            of: dialogActionButton,
+            of: ackDialogButton,
             matching: find.byIcon(Icons.check_rounded),
           ),
           findsNothing,
         );
         expect(
           find.descendant(
-            of: dialogActionButton,
+            of: ackDialogButton,
             matching: find.byIcon(Icons.local_fire_department_rounded),
           ),
           findsOneWidget,
         );
 
-        // 4. Verify clicking the start preparing button calls the api: POST/api/kitchen-fulfillment/{kitchenTicketId}/prepare
-        await tester.tap(dialogActionButton);
+        // 7. Clicking the start preparing button calls the api: POST/api/kitchen-fulfillment/{kitchenTicketId}/prepare
+        await tester.tap(ackDialogButton);
         await tester.pumpAndSettle();
 
         expect(repo.preparedTicketIds, [
           '00000000-0000-4000-8000-000000000016',
         ]);
 
-        // After starting preparation, dialog closes
+        // 8. Popup closes after clicking the start preparing button inside it
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );

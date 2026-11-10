@@ -72,9 +72,37 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Assigns the given [preparerId] to the ticket via
+  /// `PATCH /api/kitchen-ticket/{kitchenTicketId}/preparer`.
+  ///
+  /// Silently succeeds if the ticket is already assigned (409 Conflict).
+  Future<void> assignPreparer(
+    String kitchenTicketId,
+    String preparerId,
+  ) async {
+    try {
+      await _dio.patch<Object?>(
+        _endpoint('/kitchen-ticket/$kitchenTicketId/preparer'),
+        data: {'preparer_id': preparerId},
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 409) return;
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   /// Acknowledges a queued kitchen ticket via
   /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge`.
-  Future<void> acknowledgeTicket(String kitchenTicketId) async {
+  ///
+  /// Optionally assigns [preparerId] so the acknowledging user is recorded
+  /// as the ticket's preparer.
+  Future<void> acknowledgeTicket(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
     try {
       await _dio.post<Object?>(
         _endpoint('/kitchen-fulfillment/$kitchenTicketId/acknowledge'),
@@ -85,11 +113,33 @@ class KitchenBoardRepository {
         statusCode: error.response?.statusCode,
       );
     }
+
+    if (preparerId != null && preparerId.isNotEmpty) {
+      try {
+        await assignPreparer(kitchenTicketId, preparerId);
+      } catch (_) {
+        // Non-blocking; prepareTicket will also ensure preparer is assigned.
+      }
+    }
   }
 
   /// Begins preparation on an acknowledged ticket via
   /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare`.
-  Future<void> prepareTicket(String kitchenTicketId) async {
+  ///
+  /// If [preparerId] is supplied, claims preparer assignment first so the
+  /// backend authorization check (`preparer_id === callerId`) passes.
+  Future<void> prepareTicket(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
+    if (preparerId != null && preparerId.isNotEmpty) {
+      try {
+        await assignPreparer(kitchenTicketId, preparerId);
+      } catch (_) {
+        // Continue to prepare in case caller is already assigned.
+      }
+    }
+
     try {
       await _dio.post<Object?>(
         _endpoint('/kitchen-fulfillment/$kitchenTicketId/prepare'),
@@ -103,15 +153,18 @@ class KitchenBoardRepository {
   }
 
   /// Advances a ticket's fulfillment stage on the backend.
-  Future<void> advanceTicket(KitchenBoardTicket ticket) async {
+  Future<void> advanceTicket(
+    KitchenBoardTicket ticket, {
+    String? preparerId,
+  }) async {
     final id = ticket.kitchenTicketId;
     final raw = ticket.rawStatus.toUpperCase();
     if (raw == 'QUEUED' || ticket.data.status == KkfcStatus.queued) {
-      await acknowledgeTicket(id);
+      await acknowledgeTicket(id, preparerId: preparerId);
       return;
     }
     if (raw == 'ACKNOWLEDGED' || ticket.data.status == KkfcStatus.acknowledged) {
-      await prepareTicket(id);
+      await prepareTicket(id, preparerId: preparerId);
       return;
     }
 

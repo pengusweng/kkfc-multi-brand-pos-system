@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
@@ -101,6 +102,18 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
+  Future<String?> _resolveCurrentUserId() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      return await authRepo.getCurrentUserId().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> acknowledgeTicket(String kitchenTicketId) async {
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
@@ -111,7 +124,8 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
-      await repo.acknowledgeTicket(kitchenTicketId);
+      final userId = await _resolveCurrentUserId();
+      await repo.acknowledgeTicket(kitchenTicketId, preparerId: userId);
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
@@ -158,7 +172,8 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
-      await repo.prepareTicket(kitchenTicketId);
+      final userId = await _resolveCurrentUserId();
+      await repo.prepareTicket(kitchenTicketId, preparerId: userId);
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
@@ -222,7 +237,8 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
-      await repo.advanceTicket(ticket);
+      final userId = await _resolveCurrentUserId();
+      await repo.advanceTicket(ticket, preparerId: userId);
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)..remove(id);
       state = state.copyWith(

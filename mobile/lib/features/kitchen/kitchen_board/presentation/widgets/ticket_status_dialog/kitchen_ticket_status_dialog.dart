@@ -211,23 +211,12 @@ Future<void> showKitchenTicketStatusDialog(
             isActionLoading: isLoading,
             onClose: () => Navigator.of(dialogContext).maybePop(),
             onAction: () async {
-              final raw = currentTicket.rawStatus.toUpperCase();
-              final wasQueued =
-                  raw == 'QUEUED' ||
-                  currentTicket.data.status == KkfcStatus.queued ||
-                  currentTicket.lane == KitchenBoardLane.queued;
-
               final success = await ref
                   .read(kitchenBoardProvider.notifier)
                   .performTicketAction(currentTicket);
 
               if (success && dialogContext.mounted) {
-                // When transitioning from QUEUED to ACKNOWLEDGED, keep the
-                // dialog open so the user sees the 'Acknowledged' status badge,
-                // the fire icon, and the 'Start Preparing' CTA.
-                if (!wasQueued) {
-                  Navigator.of(dialogContext).maybePop();
-                }
+                Navigator.of(dialogContext).maybePop();
               }
             },
           );
