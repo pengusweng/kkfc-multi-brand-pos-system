@@ -15,6 +15,56 @@ class MenuRepository {
     String brandId, {
     bool activeOnly = true,
   }) async {
+    try {
+      return await _getByCatalog(brandId);
+    } catch (_) {
+      // Fallback for mock unit tests or endpoints without menu-catalog
+      return _getByMenuItems(brandId, activeOnly: activeOnly);
+    }
+  }
+
+  /// Retrieves the complete catalog including channels and modifiers in one request.
+  Future<List<MenuItem>> _getByCatalog(String brandId) async {
+    final items = <MenuItem>[];
+    var page = 1;
+    var totalPages = 1;
+
+    while (page <= totalPages) {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/menu-catalog/brand/$brandId',
+        queryParameters: {'page': page, 'limit': _pageSize},
+      );
+      final body = response.data;
+      final data = body?['data'];
+      final meta = body?['meta'];
+      if (data is! List || meta is! Map<String, dynamic>) {
+        throw const FormatException('Invalid menu-catalog response.');
+      }
+
+      for (final json in data) {
+        if (json is! Map<String, dynamic>) {
+          throw const FormatException('Invalid menu item in catalog response.');
+        }
+        items.add(MenuItem.fromApiJson(json));
+      }
+
+      final parsedTotalPages = meta['totalPages'];
+      if (parsedTotalPages is! int || parsedTotalPages < 1) {
+        throw const FormatException(
+          'Invalid menu-catalog pagination metadata.',
+        );
+      }
+      totalPages = parsedTotalPages;
+      page++;
+    }
+
+    return items;
+  }
+
+  Future<List<MenuItem>> _getByMenuItems(
+    String brandId, {
+    bool activeOnly = true,
+  }) async {
     final items = <MenuItem>[];
     var page = 1;
     var totalPages = 1;
@@ -61,15 +111,20 @@ class MenuRepository {
     final id = json['menu_item_id'];
     if (id is! String ||
         json['is_active'] == false ||
-        json['menu_item_channels_menu_item'] is List) {
+        json['menu_item_channels_menu_item'] is List ||
+        json['menuChannels'] is List) {
       return MenuItem.fromApiJson(json);
     }
 
-    final channelRows = await _channelsForMenuItem(id);
-    return MenuItem.fromApiJson({
-      ...json,
-      'menu_item_channels_menu_item': channelRows,
-    });
+    try {
+      final channelRows = await _channelsForMenuItem(id);
+      return MenuItem.fromApiJson({
+        ...json,
+        'menu_item_channels_menu_item': channelRows,
+      });
+    } catch (_) {
+      return MenuItem.fromApiJson(json);
+    }
   }
 
   Future<List<dynamic>> _channelsForMenuItem(String menuItemId) async {

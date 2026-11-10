@@ -6,11 +6,11 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
+import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -18,38 +18,21 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 class ChannelRepricingScreen extends StatelessWidget {
   const ChannelRepricingScreen({super.key});
 
-  void _openSection(BuildContext context, int index) {
-    if (index == 1) {
-      context.go(AppRoutes.orders);
-    } else if (index == 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Audit is not available yet.')),
-      );
-    } else {
-      context.go(AppRoutes.menu);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          final showRail = width >= MenuLayout.compactMax;
           final showContext = width >= MenuLayout.compactMax;
 
           return Column(
             children: [
-              const MenuHeader(),
+              const AppHeader(),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (showRail)
-                      MenuRail(
-                        onSelected: (index) => _openSection(context, index),
-                      ),
                     Expanded(
                       child: Column(
                         children: [
@@ -57,11 +40,6 @@ class ChannelRepricingScreen extends StatelessWidget {
                             child: _RepricingBody(showContext: showContext),
                           ),
                           const _GotItBar(),
-                          if (!showRail)
-                            MenuBottomNav(
-                              onSelected: (index) =>
-                                  _openSection(context, index),
-                            ),
                         ],
                       ),
                     ),
@@ -139,6 +117,13 @@ class _RepricingBody extends ConsumerWidget {
           Text(
             'Channel change and undo',
             style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: MenuSpace.md),
+          ChannelTabs(
+            selected: channel,
+            onSelected: (newChannel) {
+              ref.read(menuChannelProvider.notifier).select(newChannel);
+            },
           ),
           const SizedBox(height: MenuSpace.lg),
           const RepricingNotice(

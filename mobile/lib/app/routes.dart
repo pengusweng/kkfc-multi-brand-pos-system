@@ -10,5 +10,6 @@ abstract final class AppRoutes {
   static const orderNotSent = '/order-not-sent';
   static const duplicatePlatformOrder = '/duplicate-platform-order';
   static const platformReference = '/platform-reference';
+  static const mobileOrderFlow = '/order-flow';
   static const kitchenTickets = '/kitchen-tickets';
 }

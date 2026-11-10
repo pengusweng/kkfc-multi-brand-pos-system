@@ -64,17 +64,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          final reference = find.descendant(
-            of: find.byType(CartPanel),
-            matching: find.byType(TextField),
-          );
-          await tester.ensureVisible(reference);
-          await tester.pumpAndSettle();
-          await tester.enterText(reference, 'Table 7');
-          FocusManager.instance.primaryFocus?.unfocus();
-          await tester.pumpAndSettle();
-          expect(tester.takeException(), isNull);
-          final add = find.byTooltip('Add one');
+          final add = find.byIcon(Icons.add);
           await tester.ensureVisible(add);
           await tester.pumpAndSettle();
           expect(add.hitTestable(), findsOneWidget);
@@ -82,14 +72,13 @@ void main() {
           await tester.pumpAndSettle();
           expect(container.read(cartCountProvider), 2);
           expect(container.read(cartTotalProvider), 20000);
-          final send = find.text('Check and send');
+          final send = find.text('Continue to order details');
           await tester.ensureVisible(send);
           await tester.pumpAndSettle();
           expect(send.hitTestable(), findsOneWidget);
           await tester.tap(send);
           await tester.pumpAndSettle();
           expect(find.text('Review route'), findsOneWidget);
-          expect(container.read(orderReferenceProvider), 'Table 7');
           expect(container.read(cartCountProvider), 2);
           expect(tester.takeException(), isNull);
         },

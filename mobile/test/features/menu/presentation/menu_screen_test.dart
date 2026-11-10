@@ -1,257 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 
-import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
-import 'package:mobile/features/availability/presentation/pages/availability_management_screen.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
-import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
-import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
+import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 
 const _phone = Size(412, 1400);
 const _narrowPhone = Size(320, 900);
 const _desktop = Size(1280, 1000);
 
-Future<void> _pumpMenu(WidgetTester tester, Size size) async {
+Future<ProviderContainer> _pumpMenu(
+  WidgetTester tester,
+  Size size, {
+  void Function(ProviderContainer container)? onInit,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
+  final container = ProviderContainer(
+    overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+  );
+  addTearDown(container.dispose);
+  onInit?.call(container);
+
   await tester.pumpWidget(
-    ProviderScope(
-      // Skip the fake latency of the seed provider.
-      overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+    UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(theme: counterTheme, home: const MenuScreen()),
     ),
   );
   await tester.pumpAndSettle();
+  return container;
 }
 
 void main() {
   group('MenuScreen layout', () {
-    testWidgets('the menu bar is merged into the header', (tester) async {
+    testWidgets(
+      'the header displays application title and cashier controls on desktop',
+      (tester) async {
+        await _pumpMenu(tester, _desktop);
+
+        expect(find.byType(AppHeader), findsOneWidget);
+        expect(find.text('Orders'), findsOneWidget);
+        expect(find.byType(LogoutButton), findsOneWidget);
+        expect(find.byType(CurrentMenuCard), findsOneWidget);
+      },
+    );
+
+    testWidgets('the header spans the full width', (tester) async {
       await _pumpMenu(tester, _desktop);
 
-      expect(find.byType(MenuHeader), findsOneWidget);
-      expect(find.byType(ChannelTabs), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(MenuHeader),
-          matching: find.byType(ChannelTabs),
-        ),
-        findsOneWidget,
-      );
+      expect(tester.getSize(find.byType(AppHeader)).width, _desktop.width);
     });
 
-    testWidgets('tapping Menu tab navigates to availability screen', (
-      tester,
-    ) async {
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-
-      final router = GoRouter(
-        initialLocation: AppRoutes.menu,
-        routes: [
-          GoRoute(
-            path: AppRoutes.menu,
-            builder: (context, state) => const MenuScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.availability,
-            builder: (context, state) => const AvailabilityManagementScreen(),
-          ),
-        ],
-      );
-      addTearDown(router.dispose);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            menuItemsProvider.overrideWith((ref) async => sampleMenu),
-          ],
-          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AvailabilityManagementScreen), findsNothing);
-      expect(find.byType(MenuBottomNav), findsOneWidget);
-
-      await tester.tap(find.text('Menu'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AvailabilityManagementScreen), findsOneWidget);
-
-      expect(find.byType(ChannelTabs), findsOneWidget);
-      expect(find.text('Takeaway'), findsOneWidget);
-      expect(find.text('foodpanda'), findsOneWidget);
-
-      await tester.tap(find.text('Takeaway'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AvailabilityManagementScreen), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.ancestor(
-            of: find.text('Takeaway'),
-            matching: find.byType(InkWell),
-          ),
-          matching: find.byIcon(Icons.check),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('the header shows the active brand logo', (tester) async {
-      await _pumpMenu(tester, _desktop);
-
-      final logo = find.descendant(
-        of: find.byType(MenuHeader),
-        matching: find.byType(Image),
-      );
-
-      expect(logo, findsOneWidget);
-      expect(
-        (tester.widget<Image>(logo).image as AssetImage).assetName,
-        'assets/images/aurelia.png',
-      );
-    });
-
-    testWidgets('the menu bar shares the header row on a wide screen', (
-      tester,
-    ) async {
-      await _pumpMenu(tester, _desktop);
-
-      expect(find.byType(MenuHeader), findsOneWidget);
-      expect(find.byType(ChannelTabs), findsOneWidget);
-
-      final headerTop = tester.getTopLeft(find.byType(MenuHeader)).dy;
-      final headerBottom = tester.getBottomLeft(find.byType(MenuHeader)).dy;
-      final tabsTop = tester.getTopLeft(find.byType(ChannelTabs)).dy;
-
-      expect(tabsTop, greaterThanOrEqualTo(headerTop));
-      expect(tabsTop, lessThan(headerBottom));
-    });
-
-    testWidgets('the header content is centered on a wide screen', (
-      tester,
-    ) async {
-      await _pumpMenu(tester, _desktop);
-
-      final logout = find.descendant(
-        of: find.byType(MenuHeader),
-        matching: find.byType(IconButton),
-      );
-      final brand = find
-          .ancestor(
-            of: find.byType(BrandLogo),
-            matching: find.byType(Container),
-          )
-          .first;
-      final groupLeft = tester.getTopLeft(brand).dx;
-      final groupRight = tester.getTopRight(logout).dx;
-      final headerCenter = tester.getCenter(find.byType(MenuHeader)).dx;
-
-      expect((groupLeft + groupRight) / 2, closeTo(headerCenter, 1));
-    });
-
-    testWidgets('the menu bar spans the full width', (tester) async {
-      await _pumpMenu(tester, _desktop);
-
-      expect(tester.getSize(find.byType(MenuHeader)).width, _desktop.width);
-    });
-
-    testWidgets('the cart panel docks under the header on a wide screen', (
-      tester,
-    ) async {
+    testWidgets('the cart panel docks on a wide screen', (tester) async {
       await _pumpMenu(tester, _desktop);
 
       expect(find.byType(CartPanel), findsOneWidget);
 
-      final headerBottom = tester.getBottomLeft(find.byType(MenuHeader)).dy;
+      final headerBottom = tester.getBottomLeft(find.byType(AppHeader)).dy;
       final panelTop = tester.getTopLeft(find.byType(CartPanel)).dy;
 
       expect(panelTop, greaterThanOrEqualTo(headerBottom));
     });
 
     testWidgets(
-      'a phone shows the menu bar under the header and the cart bar',
+      'a phone docks the catalog without side cart panel and shows floating cart bar when not empty',
       (tester) async {
-        await _pumpMenu(tester, _phone);
+        final container = await _pumpMenu(tester, _phone);
 
-        expect(find.byType(MenuHeader), findsOneWidget);
-        expect(find.byType(ChannelTabs), findsOneWidget);
-        expect(find.byType(CartBar), findsOneWidget);
-        expect(find.byType(MenuBottomNav), findsOneWidget);
+        expect(find.byType(AppHeader), findsOneWidget);
+        expect(find.byType(CurrentMenuCard), findsOneWidget);
 
-        // The docked panel is replaced by the bottom summary on a phone.
+        // On phone, side CartPanel is not docked
         expect(find.byType(CartPanel), findsNothing);
 
+        // AnimatedSlide offset is offscreen when count is 0
+        final slideFinder = find.byType(AnimatedSlide);
         expect(
-          find.descendant(
-            of: find.byType(MenuHeader),
-            matching: find.byType(ChannelTabs),
-          ),
-          findsOneWidget,
+          tester.widget<AnimatedSlide>(slideFinder).offset,
+          const Offset(0, 1.2),
         );
 
-        final accountRowBottom = tester
-            .getBottomLeft(find.byTooltip('Logout'))
-            .dy;
-        final tabsTop = tester.getTopLeft(find.byType(ChannelTabs)).dy;
+        // Add item to cart: offset moves to zero and item count appears
+        container.read(cartProvider.notifier).add(sampleMenu[0]);
+        await tester.pumpAndSettle();
 
-        expect(tabsTop, greaterThanOrEqualTo(accountRowBottom));
+        expect(tester.widget<AnimatedSlide>(slideFinder).offset, Offset.zero);
+        expect(find.text('1 item'), findsOneWidget);
+        expect(find.textContaining('View order'), findsOneWidget);
       },
     );
 
-    testWidgets('the header content is centered on a phone', (tester) async {
-      await _pumpMenu(tester, _phone);
-
-      final logout = find.descendant(
-        of: find.byType(MenuHeader),
-        matching: find.byType(IconButton),
-      );
-      final headerCenter = tester.getCenter(find.byType(MenuHeader)).dx;
-      final brand = find
-          .ancestor(
-            of: find.byType(BrandLogo),
-            matching: find.byType(Container),
-          )
-          .first;
-      final accountLeft = tester.getTopLeft(brand).dx;
-      final accountRight = tester.getTopRight(logout).dx;
-      final tabsCenter = tester.getCenter(find.byType(ChannelTabs)).dx;
-
-      expect((accountLeft + accountRight) / 2, closeTo(headerCenter, 1));
-      expect(tabsCenter, closeTo(headerCenter, 1));
-    });
-
-    testWidgets('every channel tab stays inside the header on a narrow phone', (
+    testWidgets('the current menu card shows the active brand and channel', (
       tester,
     ) async {
-      await _pumpMenu(tester, _narrowPhone);
+      await _pumpMenu(tester, _desktop);
 
-      expect(tester.takeException(), isNull);
-
-      final tabs = tester.getRect(find.byType(ChannelTabs));
-      for (final label in ['Dine-in', 'Takeaway', 'GrabFood', 'foodpanda']) {
-        final tab = tester.getRect(find.text(label));
-
-        expect(tab.left, greaterThanOrEqualTo(tabs.left), reason: label);
-        expect(tab.right, lessThanOrEqualTo(tabs.right), reason: label);
-        expect(tab.top, greaterThanOrEqualTo(tabs.top), reason: label);
-        expect(tab.bottom, lessThanOrEqualTo(tabs.bottom), reason: label);
-      }
+      expect(find.byType(CurrentMenuCard), findsOneWidget);
+      expect(find.textContaining('Gamcheon'), findsWidgets);
+      expect(find.textContaining('Dine-in'), findsWidgets);
     });
+
+    testWidgets('tapping current menu card opens choose menu modal', (
+      tester,
+    ) async {
+      await _pumpMenu(tester, _phone);
+
+      await tester.tap(find.byType(CurrentMenuCard));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choose menu'), findsOneWidget);
+      expect(find.text('Only menus you can manage are shown.'), findsOneWidget);
+    });
+
+    testWidgets(
+      'the catalog search bar displays search field and unavailable toggle',
+      (tester) async {
+        await _pumpMenu(tester, _phone);
+
+        expect(find.byType(CatalogSearchBar), findsOneWidget);
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      },
+    );
 
     testWidgets('the header does not overflow on a narrow phone', (
       tester,
@@ -260,22 +140,12 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      final logout = find.byTooltip('Logout');
-      final brand = find.byType(BrandLogo);
-
+      final logout = find.byType(LogoutButton);
       expect(logout, findsOneWidget);
-      expect(brand, findsOneWidget);
-      expect(find.text('Ana R.'), findsOneWidget);
+      expect(find.text('Cashier Staff'), findsOneWidget);
+      expect(find.text('Orders'), findsOneWidget);
       expect(
         tester.getTopRight(logout).dx,
-        lessThanOrEqualTo(_narrowPhone.width),
-      );
-      expect(
-        tester.getBottomRight(brand).dx,
-        lessThanOrEqualTo(_narrowPhone.width),
-      );
-      expect(
-        tester.getTopRight(find.text('Ana R.')).dx,
         lessThanOrEqualTo(_narrowPhone.width),
       );
     });

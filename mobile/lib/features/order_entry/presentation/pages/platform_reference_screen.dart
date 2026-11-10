@@ -6,12 +6,10 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
-import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/features/order_entry/data/models/platform_reference_view_data.dart';
 
 import '../widgets/order_entry_header.dart';
@@ -97,27 +95,10 @@ class _PlatformReferenceScreenState
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final showRail = constraints.maxWidth >= MenuLayout.compactMax;
-
           return Column(
             children: [
-              const MenuHeader(),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Expanded(child: _buildContent(context)),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const AppHeader(),
+              Expanded(child: _buildContent(context)),
             ],
           );
         },

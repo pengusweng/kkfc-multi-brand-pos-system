@@ -1,194 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/shared/widgets/fade_slide_in.dart';
-import 'package:mobile/shared/widgets/menu_header.dart';
-import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
-import 'package:mobile/shared/widgets/menu_navigation.dart';
-import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
-import 'package:mobile/shared/widgets/responsive_card_grid.dart';
+import 'package:mobile/features/new_order/presentation/widgets/catalog/menu_catalog_view.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
-import 'package:mobile/shared/widgets/kkfc_pagination.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
+/// Screen breakpoint for wide tablet/desktop layout vs single-column phone layout.
+const double _kWideBreakpoint = 850.0;
+
+/// The revamped New Order / Orders screen matching the modern KKFC POS design.
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return KkfcScaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final showRail = width >= MenuLayout.compactMax;
-          final showCartPanel = width >= MenuLayout.wideMin;
-
-          return Column(
-            children: [
-              const MenuHeader(),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (showRail) const MenuRail(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Expanded(child: _MenuBody()),
-                          if (!showCartPanel) const CartBar(),
-                          if (!showRail) const MenuBottomNav(),
-                        ],
-                      ),
-                    ),
-                    if (showCartPanel) ...[
-                      const VerticalDivider(width: 1),
-                      const SizedBox(
-                        width: MenuLayout.cartPanelWidth,
-                        child: CartPanel(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+    return const KkfcScaffold(body: _ResponsiveMenuLayout());
   }
 }
 
-class _MenuBody extends ConsumerStatefulWidget {
-  const _MenuBody();
+class _ResponsiveMenuLayout extends ConsumerStatefulWidget {
+  const _ResponsiveMenuLayout();
 
   @override
-  ConsumerState<_MenuBody> createState() => _MenuBodyState();
+  ConsumerState<_ResponsiveMenuLayout> createState() =>
+      _ResponsiveMenuLayoutState();
 }
 
-class _MenuBodyState extends ConsumerState<_MenuBody> {
-  final _search = TextEditingController();
+class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final Animation<double> _headerFade;
+  late final Animation<Offset> _headerSlide;
+  late final Animation<double> _catalogFade;
+  late final Animation<Offset> _catalogSlide;
+  late final Animation<double> _cartPanelFade;
+  late final Animation<Offset> _cartPanelSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+
+    // Choreographed entrance:
+    // 1. App Header drops down subtly and fades in
+    _headerFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.60, curve: Curves.easeOut),
+    );
+    _headerSlide =
+        Tween<Offset>(
+          begin: const Offset(0.0, -0.06),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.65, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    // 2. Catalog view rises up smoothly and dissolves in
+    _catalogFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.10, 0.85, curve: Curves.easeOut),
+    );
+    _catalogSlide =
+        Tween<Offset>(begin: const Offset(0.0, 0.04), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.10, 0.90, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    // 3. Tablet/Desktop Cart Panel glides in from the right edge
+    _cartPanelFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.18, 1.0, curve: Curves.easeOut),
+    );
+    _cartPanelSlide =
+        Tween<Offset>(begin: const Offset(0.06, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.18, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _entranceController.forward();
+  }
 
   @override
   void dispose() {
-    _search.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<String>(menuSearchProvider, (_, query) {
-      if (_search.text != query) _search.text = query;
-    });
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= _kWideBreakpoint;
+    final cartCount = ref.watch(cartCountProvider);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final channel = ref.watch(menuChannelProvider);
-    final query = ref.watch(menuSearchProvider);
-    final visible = ref.watch(visibleMenuItemsProvider);
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    final Widget body = visible.when(
-      loading: () => const MenuGridSkeleton(key: ValueKey('loading')),
-      error: (_, _) => MenuMessageCard(
-        key: const ValueKey('error'),
-        icon: Icons.wifi_off,
-        title: "Couldn't load the menu",
-        body: 'Check the Wi-Fi, then try again.',
-        actionLabel: 'Try again',
-        onAction: () => ref.invalidate(menuItemsProvider),
-      ),
-      data: (items) => items.isEmpty
-          ? MenuMessageCard(
-              key: const ValueKey('empty'),
-              icon: Icons.search_off,
-              title: 'No items match "$query"',
-              body: "This brand has no item with that name.",
-              actionLabel: 'Clear search',
-              onAction: () => ref.read(menuSearchProvider.notifier).clear(),
-            )
-          : ResponsiveCardGrid(
-              key: ValueKey('grid-$query'),
-              itemCount: items.length,
-              itemBuilder: (context, i) => FadeSlideIn(
-                index: i,
-                child: MenuItemCard(item: items[i], channel: channel),
-              ),
-            ),
-    );
+    // Safe clearance when floating CartBar is present on phone
+    final bottomPadding = (!isWide && cartCount > 0)
+        ? (80.0 + bottomInset)
+        : (16.0 + bottomInset);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MenuSpace.lg,
-            MenuSpace.lg,
-            MenuSpace.lg,
-            MenuSpace.xs,
-          ),
-          child: Text(
-            'New order',
-            style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        // App header with entrance transition
+        SlideTransition(
+          position: _headerSlide,
+          child: FadeTransition(
+            opacity: _headerFade,
+            child: AppHeader(title: 'Orders', compact: !isWide),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MenuSpace.lg,
-            0,
-            MenuSpace.lg,
-            MenuSpace.sm,
-          ),
-          child: SearchBar(
-            controller: _search,
-            hintText: 'Search menu',
-            leading: const Icon(Icons.search),
-            elevation: const WidgetStatePropertyAll(0),
-            onChanged: ref.read(menuSearchProvider.notifier).set,
-            trailing: [
-              if (query.isNotEmpty)
-                IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close),
-                  onPressed: () =>
-                      ref.read(menuSearchProvider.notifier).clear(),
+
+        // Main body with choreographed entrance
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left / Center catalog
+              Expanded(
+                child: SlideTransition(
+                  position: _catalogSlide,
+                  child: FadeTransition(
+                    opacity: _catalogFade,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Container(
+                            color: const Color(0xFFF7F3EC), // Canvas ground
+                            child: MenuCatalogView(
+                              isWide: isWide,
+                              bottomPadding: bottomPadding,
+                            ),
+                          ),
+                        ),
+
+                        // Phone-only floating cart bar
+                        if (!isWide)
+                          const Align(
+                            alignment: Alignment.bottomCenter,
+                            child: CartBar(),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tablet / Desktop-only right cart panel
+              if (isWide)
+                SlideTransition(
+                  position: _cartPanelSlide,
+                  child: FadeTransition(
+                    opacity: _cartPanelFade,
+                    child: const SizedBox(width: 380.0, child: CartPanel()),
+                  ),
                 ),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MenuSpace.lg),
-          child: Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: MenuSpace.md,
-              runSpacing: MenuSpace.xs,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  'All menu items',
-                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (visible.hasValue)
-                  Text(
-                    '${visible.requireValue.length} items',
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: context.motion(MenuMotion.medium),
-            switchInCurve: MenuMotion.curve,
-            child: body,
-          ),
-        ),
-        KkfcPagination(currentPage: 1, totalPages: 1, onPageChanged: (_) {}),
       ],
     );
   }

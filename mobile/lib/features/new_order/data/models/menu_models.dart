@@ -86,6 +86,7 @@ class MenuItem {
     this.availability = const {},
     this.modifierGroups = const [],
     this.channels = const {},
+    this.category,
   });
 
   final String id;
@@ -98,6 +99,9 @@ class MenuItem {
   /// Channels the backend lists this item under (empty when unknown).
   final Set<MenuChannel> channels;
 
+  /// Menu category (e.g. 'Rice bowls', 'Sets', 'Snacks').
+  final String? category;
+
   MenuItem withModifierGroups(List<ModifierGroup> groups) => MenuItem(
     id: id,
     name: name,
@@ -106,6 +110,7 @@ class MenuItem {
     availability: availability,
     modifierGroups: groups,
     channels: channels,
+    category: category,
   );
 
   /// Maps the `/menu-items/brand/:brandId` payload to the UI model.
@@ -134,7 +139,8 @@ class MenuItem {
             : MenuAvailability.stockout,
     };
 
-    final channelRows = json['menu_item_channels_menu_item'];
+    final channelRows =
+        json['menuChannels'] ?? json['menu_item_channels_menu_item'];
     final listed = <MenuChannel>{};
     if (isActive && channelRows is List) {
       listed.addAll(const [MenuChannel.dineIn, MenuChannel.takeaway]);
@@ -151,6 +157,38 @@ class MenuItem {
       }
     }
 
+    final modifierRows =
+        json['menuItemModifiers'] ?? json['menu_item_modifiers'];
+    final groups = <ModifierGroup>[];
+    if (modifierRows is List) {
+      for (final row in modifierRows) {
+        if (row is! Map<String, dynamic>) continue;
+        if (row['is_available'] == false) continue;
+        final mod = row['modifier'] as Map<String, dynamic>?;
+        final name = mod?['name'] as String? ?? row['name'] as String?;
+        final modId =
+            row['modifier_id'] as String? ??
+            mod?['modifier_id'] as String? ??
+            row['menu_item_modifier_id'] as String? ??
+            mod?['code'] as String? ??
+            row['code'] as String? ??
+            'mod_${groups.length}';
+        final addPrice = row['additional_price'];
+        if (name == null || addPrice == null) continue;
+        groups.add(
+          ModifierGroup.addOn(
+            id: modId,
+            name: name,
+            priceCentavos: decimalToCentavos(addPrice),
+          ),
+        );
+      }
+    }
+    final existingGroups = json['modifier_groups'] ?? json['modifierGroups'];
+    if (existingGroups is List<ModifierGroup>) {
+      groups.addAll(existingGroups);
+    }
+
     return MenuItem(
       id: id,
       name: name,
@@ -158,6 +196,8 @@ class MenuItem {
       pricesCentavos: prices,
       availability: availability,
       channels: listed,
+      category: json['category'] as String? ?? json['category_name'] as String?,
+      modifierGroups: groups,
     );
   }
 
@@ -205,25 +245,35 @@ class CartLine {
     required this.item,
     required this.quantity,
     this.selections = const {},
+    this.kitchenNote,
   });
 
   final String id;
   final MenuItem item;
   final int quantity;
   final Map<String, String> selections; // groupId -> optionId
+  final String? kitchenNote;
 
-  CartLine copyWith({int? quantity, Map<String, String>? selections}) =>
-      CartLine(
-        id: id,
-        item: item,
-        quantity: quantity ?? this.quantity,
-        selections: selections ?? this.selections,
-      );
+  CartLine copyWith({
+    int? quantity,
+    Map<String, String>? selections,
+    String? kitchenNote,
+  }) => CartLine(
+    id: id,
+    item: item,
+    quantity: quantity ?? this.quantity,
+    selections: selections ?? this.selections,
+    kitchenNote: kitchenNote ?? this.kitchenNote,
+  );
 
   int unitCentavos(MenuChannel channel) =>
       item.priceFor(channel) + modifiersCentavosFor(item, selections);
 
   int totalCentavos(MenuChannel channel) => unitCentavos(channel) * quantity;
+
+  static final _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
 
   /// Active modifier IDs selected for this cart line.
   List<String> get selectedModifierIds {
@@ -231,7 +281,10 @@ class CartLine {
     for (final g in item.modifierGroups) {
       final id = selections[g.id] ?? g.defaultOptionId;
       if (id == g.defaultOptionId) continue;
-      ids.add(g.isAddOn ? g.id : id);
+      final effectiveId = g.isAddOn ? g.id : id;
+      if (_uuidRegex.hasMatch(effectiveId)) {
+        ids.add(effectiveId);
+      }
     }
     return ids;
   }

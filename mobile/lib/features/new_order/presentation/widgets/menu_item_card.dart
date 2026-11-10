@@ -1,254 +1,311 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
-import 'package:mobile/app/theme/theme_context.dart';
+import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/shared/shared_layout.dart';
-import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/widgets/item_customization_dialog.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 class MenuItemCard extends ConsumerStatefulWidget {
-  const MenuItemCard({super.key, required this.item, required this.channel});
+  const MenuItemCard({
+    super.key,
+    required this.item,
+    required this.channel,
+    this.compact = false,
+  });
 
   final MenuItem item;
   final MenuChannel channel;
+  final bool compact;
 
   @override
   ConsumerState<MenuItemCard> createState() => _MenuItemCardState();
 }
 
 class _MenuItemCardState extends ConsumerState<MenuItemCard> {
-  bool _pressed = false;
+  bool _cardPressed = false;
+  bool _buttonPressed = false;
+  bool _justAdded = false;
+  Timer? _flashTimer;
 
-  ({String title, String detail})? _note(MenuAvailability a) => switch (a) {
-    MenuAvailability.available => null,
-    MenuAvailability.stockout => (
-      title: 'Out of stock',
-      detail: 'Shared inventory',
-    ),
-    MenuAvailability.manualOff => (
-      title: 'Manual unavailable',
-      detail: 'On ${widget.channel.label}',
-    ),
-    MenuAvailability.inactive => (
-      title: 'Inactive item',
-      detail: 'Not on sale',
-    ),
-  };
+  @override
+  void dispose() {
+    _flashTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _onAdd(MenuItem item) async {
+    HapticFeedback.lightImpact();
+
+    final brand = ref.read(activeBrandProvider);
+    final added = await showItemCustomizationDialog(
+      context,
+      item: item,
+      channel: widget.channel,
+      brandName: brand.name,
+    );
+
+    if (added == true && mounted) {
+      setState(() {
+        _buttonPressed = false;
+        _justAdded = true;
+      });
+
+      _flashTimer?.cancel();
+      _flashTimer = Timer(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          setState(() => _justAdded = false);
+        }
+      });
+    } else if (mounted) {
+      setState(() {
+        _buttonPressed = false;
+        _cardPressed = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
     final availability = item.availabilityFor(widget.channel);
     final orderable = availability == MenuAvailability.available;
-    final note = _note(availability);
     final price = formatPeso(item.priceFor(widget.channel));
 
-    final qty = ref.watch(
-      cartProvider.select(
-        (lines) => lines
-            .where((l) => l.item.id == item.id)
-            .fold(0, (sum, l) => sum + l.quantity),
-      ),
-    );
-    final selected = qty > 0;
-
-    return Semantics(
-      button: true,
-      enabled: orderable,
-      selected: selected,
-      label: '${item.name}, $price',
-      child: AnimatedScale(
-        scale: _pressed && orderable ? 0.97 : 1,
-        duration: context.motion(MenuMotion.fast),
-        curve: MenuMotion.curve,
-        child: AnimatedContainer(
-          duration: context.motion(MenuMotion.medium),
-          curve: MenuMotion.curve,
-          decoration: BoxDecoration(
-            color: selected
-                ? context.semanticColors.highlightsSecondary
-                : scheme.surface,
-            borderRadius: BorderRadius.circular(MenuRadius.md),
-            border: Border.all(
-              color: selected
-                  ? context.semanticColors.highlights
-                  : scheme.outlineVariant,
-              width: selected ? MenuBorder.thick : MenuBorder.thin,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: scheme.shadow.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    return AnimatedScale(
+      scale: _cardPressed ? KkfcMotion.pressScale : 1.0,
+      duration: KkfcMotion.durPress,
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: orderable ? () => _onAdd(item) : null,
+          onTapDown: (_) => setState(() => _cardPressed = true),
+          onTapCancel: () => setState(() => _cardPressed = false),
+          onTapUp: (_) => setState(() => _cardPressed = false),
+          child: AnimatedContainer(
+            duration: KkfcMotion.durMicro,
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.0),
+              border: Border.all(
+                color: _cardPressed
+                    ? const Color(0xFF76849A)
+                    : const Color(0xFFDDD6C9),
+                width: 1.0,
               ),
-            ],
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(MenuRadius.md),
-              onTap: orderable
-                  ? () => ref.read(cartProvider.notifier).add(item)
-                  : null,
-              onHighlightChanged: (v) => setState(() => _pressed = v),
-              child: Opacity(
-                opacity: orderable ? 1 : MenuLayout.disabledOpacity,
-                child: Padding(
-                  padding: const EdgeInsets.all(MenuSpace.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Stack(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 10 / 12,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(
-                                  MenuRadius.sm,
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.restaurant,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (!orderable)
-                            Positioned(
-                              left: MenuSpace.sm,
-                              top: MenuSpace.sm,
-                              child: _AvailabilityBadge(availability),
-                            ),
-                          Positioned(
-                            right: MenuSpace.sm,
-                            top: MenuSpace.sm,
-                            child: AnimatedSwitcher(
-                              duration: context.motion(MenuMotion.fast),
-                              transitionBuilder: (child, anim) =>
-                                  ScaleTransition(scale: anim, child: child),
-                              child: qty > 0
-                                  ? _QtyBadge(
-                                      key: ValueKey(qty),
-                                      qty: qty,
-                                      selected: selected,
-                                    )
-                                  : const SizedBox.shrink(key: ValueKey(0)),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: MenuSpace.sm),
-                      AnimatedDefaultTextStyle(
-                        duration: context.motion(MenuMotion.fast),
-                        curve: MenuMotion.curve,
-                        style: (text.titleSmall ?? const TextStyle()).copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: selected ? scheme.primary : scheme.onSurface,
-                        ),
-                        child: Text(item.name),
-                      ),
-                      const SizedBox(height: MenuSpace.xs),
-                      if (note == null)
-                        AnimatedDefaultTextStyle(
-                          duration: context.motion(MenuMotion.fast),
-                          curve: MenuMotion.curve,
-                          style: (text.bodySmall ?? const TextStyle()).copyWith(
-                            color: selected
-                                ? scheme.primary.withValues(
-                                    alpha: KkfcOpacity.soft,
-                                  )
-                                : scheme.onSurfaceVariant,
-                          ),
-                          child: Text(
-                            item.description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )
-                      else ...[
-                        AnimatedDefaultTextStyle(
-                          duration: context.motion(MenuMotion.fast),
-                          curve: MenuMotion.curve,
-                          style: (text.bodySmall ?? const TextStyle()).copyWith(
-                            color: selected ? scheme.primary : scheme.onSurface,
-                          ),
-                          child: Text(note.title),
-                        ),
-                        AnimatedDefaultTextStyle(
-                          duration: context.motion(MenuMotion.fast),
-                          curve: MenuMotion.curve,
-                          style: (text.bodySmall ?? const TextStyle()).copyWith(
-                            color: selected
-                                ? scheme.onPrimary.withValues(
-                                    alpha: KkfcOpacity.soft,
-                                  )
-                                : scheme.onSurfaceVariant,
-                          ),
-                          child: Text(note.detail),
-                        ),
-                      ],
-                      const SizedBox(height: MenuSpace.sm),
-                      // No maxLines/ellipsis on prices.
-                      AnimatedSwitcher(
-                        duration: context.motion(MenuMotion.fast),
-                        layoutBuilder: (current, previous) => Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [...previous, ?current],
-                        ),
-                        child: AnimatedDefaultTextStyle(
-                          duration: context.motion(MenuMotion.fast),
-                          curve: MenuMotion.curve,
-                          style: (text.titleMedium ?? const TextStyle())
-                              .copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: selected
-                                    ? scheme.primary
-                                    : scheme.onSurface,
-                              ),
-                          child: Text(price, key: ValueKey(price)),
-                        ),
-                      ),
-                    ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: _cardPressed ? 0.08 : 0.03,
                   ),
+                  blurRadius: _cardPressed ? 10 : 6,
+                  offset: Offset(0, _cardPressed ? 4 : 2),
                 ),
-              ),
+              ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Item name and availability badge
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            maxLines: widget.compact ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF19293E),
+                            ),
+                          ),
+                        ),
+                        if (!orderable) ...[
+                          const SizedBox(width: 8),
+                          _AvailabilityBadge(availability),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
 
-class _QtyBadge extends StatelessWidget {
-  const _QtyBadge({super.key, required this.qty, required this.selected});
-  final int qty;
-  final bool selected;
+                    // Item description
+                    if (item.description.isNotEmpty)
+                      Text(
+                        item.description,
+                        maxLines: widget.compact ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13.0,
+                          height: 1.35,
+                          color: Color(0xFF586579),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
 
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: selected ? scheme.onPrimary : scheme.primary,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(MenuSpace.xs),
-            child: Text(
-              '$qty',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: selected ? scheme.primary : scheme.onPrimary,
-              ),
+                // Bottom row: Price and Add button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Animated Price for channel changes
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.2),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        price,
+                        key: ValueKey('price-${widget.item.id}-$price'),
+                        style: const TextStyle(
+                          fontFamily: KkfcFonts.ibmPlexSans,
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF19293E),
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+
+                    // Tactile Add Button with quick confirmation pop
+                    AnimatedScale(
+                      scale: _buttonPressed ? 0.92 : (_justAdded ? 1.05 : 1.0),
+                      duration: const Duration(milliseconds: 120),
+                      curve: Curves.easeOutCubic,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8.0),
+                          onTapDown: (_) => setState(() {
+                            _cardPressed = true;
+                            _buttonPressed = true;
+                          }),
+                          onTapCancel: () => setState(() {
+                            _cardPressed = false;
+                            _buttonPressed = false;
+                          }),
+                          onTapUp: (_) => setState(() {
+                            _cardPressed = false;
+                          }),
+                          onTap: orderable ? () => _onAdd(item) : null,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _justAdded
+                                  ? const Color(
+                                      0xFFA8562A,
+                                    ) // Burnished copper flash
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8.0),
+                              border: Border.all(
+                                color: _justAdded
+                                    ? const Color(0xFFA8562A)
+                                    : const Color(0xFF43536A),
+                                width: 1.0,
+                              ),
+                              boxShadow: _justAdded
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFFA8562A)
+                                            .withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 150),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: _justAdded
+                                  ? const Row(
+                                      key: ValueKey('added'),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.check,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Added',
+                                          style: TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 14.0,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : const Row(
+                                      key: ValueKey('add'),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.add,
+                                          size: 16,
+                                          color: Color(0xFF19293E),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Add',
+                                          style: TextStyle(
+                                            fontFamily: KkfcFonts.ibmPlexSans,
+                                            fontSize: 14.0,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF19293E),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -263,43 +320,43 @@ class _AvailabilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = Theme.of(context).colorScheme;
-    // TODO: swap for context.semanticColors tones (warning / neutral).
     final (bg, fg, label) = switch (availability) {
       MenuAvailability.stockout => (
-        s.errorContainer,
-        s.onErrorContainer,
+        const Color(0xFFFEE4E2),
+        const Color(0xFFB42318),
         'STOCKOUT',
       ),
       MenuAvailability.manualOff => (
-        s.errorContainer,
-        s.onErrorContainer,
+        const Color(0xFFFEE4E2),
+        const Color(0xFFB42318),
         'MANUAL OFF',
       ),
       MenuAvailability.inactive => (
-        s.surfaceContainerHighest,
-        s.onSurfaceVariant,
+        const Color(0xFFF2F4F7),
+        const Color(0xFF475467),
         'INACTIVE',
       ),
       MenuAvailability.available => (
-        s.primaryContainer,
-        s.onPrimaryContainer,
+        Colors.transparent,
+        Colors.transparent,
         '',
       ),
     };
-    return DecoratedBox(
+    if (label.isEmpty) return const SizedBox.shrink();
+
+    return Container(
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(MenuRadius.sm),
+        borderRadius: BorderRadius.circular(4.0),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: MenuSpace.sm,
-          vertical: MenuSpace.xs,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg),
+      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: KkfcFonts.ibmPlexSans,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: fg,
         ),
       ),
     );

@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T23:05:00.000Z",
+  "title": "Design System: KKFC Multi-Brand POS",
+  "extensions": {
+    "colorMeta": {
+      "ground-canvas": {
+        "role": "neutral",
+        "displayName": "Warm Sand Canvas",
+        "canonical": "#F7F3EC",
+        "tonalRamp": ["#FAF8F5", "#F7F3EC", "#EFE9DE", "#E5DDCF", "#D4C7B3", "#B5A48C", "#8B7A63", "#5C4F3C"]
+      },
+      "ground-sunken": {
+        "role": "neutral",
+        "displayName": "Sunken Ground",
+        "canonical": "#EEE8DC",
+        "tonalRamp": ["#F8F5EF", "#EEE8DC", "#DFD7C7", "#C9BFAB", "#AFA38D", "#8C806C", "#695E4D", "#484033"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Pure White Surface",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#FFFFFF", "#FDFDFD", "#F9F9F9", "#F1F1F1", "#E5E5E5", "#CCCCCC", "#999999", "#666666"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Soft Oat Border",
+        "canonical": "#DDD6C9",
+        "tonalRamp": ["#F4F1EB", "#E7E2D8", "#DDD6C9", "#C7BEAF", "#ABA190", "#8A8070", "#685F51", "#484136"]
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Control Border Strong",
+        "canonical": "#76849A",
+        "tonalRamp": ["#EFF2F6", "#D9E0EB", "#BAC6D7", "#98A8BE", "#76849A", "#5A677C", "#404C5F", "#2A3342"]
+      },
+      "shell-navy": {
+        "role": "primary",
+        "displayName": "Deep Industrial Navy",
+        "canonical": "#19293E",
+        "tonalRamp": ["#E7ECF4", "#C4D1E5", "#8BA5CB", "#4F76AA", "#2A5288", "#1D3B62", "#19293E", "#0B111D"]
+      },
+      "selected-navy": {
+        "role": "primary",
+        "displayName": "Selected Navy",
+        "canonical": "#1D2940",
+        "tonalRamp": ["#E8EDF5", "#C5D2E5", "#8CA6CB", "#5278AA", "#2F568A", "#203E64", "#1D2940", "#0D1320"]
+      },
+      "action-copper": {
+        "role": "primary",
+        "displayName": "Burnished Copper",
+        "canonical": "#A8562A",
+        "tonalRamp": ["#F9EBE2", "#F0CEBB", "#E09C75", "#C86F3E", "#A8562A", "#8E4722", "#743A1B", "#4A220E"]
+      },
+      "accent-orange": {
+        "role": "accent",
+        "displayName": "Signal Orange",
+        "canonical": "#FF9248",
+        "tonalRamp": ["#FFF1E8", "#FFDEC7", "#FFB786", "#FF9248", "#E66D1B", "#BA4E05", "#8D3700", "#5C2300"]
+      },
+      "brand-gamcheon": {
+        "role": "accent",
+        "displayName": "Gamcheon Slate Teal",
+        "canonical": "#3D5A80",
+        "tonalRamp": ["#EBF1F7", "#CDDDEE", "#9CBBDE", "#6593C5", "#3D5A80", "#2E4564", "#203147", "#131E2D"]
+      },
+      "brand-aurelias": {
+        "role": "accent",
+        "displayName": "Aurelia's Ember Rust",
+        "canonical": "#9A4A1F",
+        "tonalRamp": ["#F8ECE5", "#ECCEC0", "#D89A7E", "#BD673E", "#9A4A1F", "#7B3814", "#5B270C", "#3E1805"]
+      },
+      "brand-king-kungs": {
+        "role": "accent",
+        "displayName": "King Kungs Roast Espresso",
+        "canonical": "#5C4033",
+        "tonalRamp": ["#F2EEEB", "#DDD2CB", "#B9A396", "#8F7262", "#5C4033", "#473025", "#322119", "#1F130E"]
+      },
+      "status-success": {
+        "role": "status",
+        "displayName": "Ready Green",
+        "canonical": "#166B3A",
+        "tonalRamp": ["#E3F4E9", "#BEE7CC", "#83CE9E", "#47B071", "#166B3A", "#10552D", "#0A3F20", "#052A14"]
+      },
+      "status-warning": {
+        "role": "status",
+        "displayName": "Warning Gold",
+        "canonical": "#6A5200",
+        "tonalRamp": ["#FCF3CF", "#F8E290", "#EEC842", "#C99E05", "#6A5200", "#544000", "#3E2F00", "#291E00"]
+      },
+      "status-danger": {
+        "role": "status",
+        "displayName": "Danger Red",
+        "canonical": "#B3261E",
+        "tonalRamp": ["#FCEBEA", "#F8C6C3", "#EE8E88", "#DC5047", "#B3261E", "#901C15", "#6D120D", "#4B0906"]
+      },
+      "status-info": {
+        "role": "status",
+        "displayName": "Preparing Blue",
+        "canonical": "#1B5A96",
+        "tonalRamp": ["#E6F0FA", "#C1DAF3", "#82B2E4", "#438BD1", "#1B5A96", "#144677", "#0D3357", "#072038"]
+      },
+      "status-review": {
+        "role": "status",
+        "displayName": "QC Review Violet",
+        "canonical": "#5A3EA6",
+        "tonalRamp": ["#F0ECFB", "#D9CEF6", "#B49EED", "#8C69DE", "#5A3EA6", "#462E85", "#332064", "#201243"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Sign-in displays, major metrics, and order totals." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles and top-level brand sections." },
+      "title": { "displayName": "Title", "purpose": "Menu item names and drawer headers." },
+      "body": { "displayName": "Body", "purpose": "Standard POS counter interaction and order notes." },
+      "label": { "displayName": "Label / Monospace", "purpose": "Ticket numbers, status tags, prices, and tabular timers." }
+    },
+    "shadows": [
+      {
+        "name": "shadow-1",
+        "value": "0 1px 4px rgba(25, 41, 62, 0.06)",
+        "purpose": "Ambient lift for resting cards and menu item tiles."
+      },
+      {
+        "name": "shadow-2",
+        "value": "0 2px 8px rgba(25, 41, 62, 0.08), 0 1px 4px rgba(25, 41, 62, 0.04)",
+        "purpose": "Hover and active card state elevation."
+      },
+      {
+        "name": "shadow-3",
+        "value": "0 8px 24px rgba(25, 41, 62, 0.14), 0 2px 8px rgba(25, 41, 62, 0.08)",
+        "purpose": "Modals, bottom sheets, slide-out carts, and dialogs."
+      }
+    ],
+    "motion": [
+      { "name": "dur-press", "value": "90ms", "purpose": "Instant touch acknowledgement on finger press." },
+      { "name": "dur-micro", "value": "150ms", "purpose": "Hover, focus, and state color changes." },
+      { "name": "dur-exit", "value": "140ms", "purpose": "Exits and dismissals (faster than entries)." },
+      { "name": "dur-overlay", "value": "220ms", "purpose": "Menus, scrims, and modal dialog entries." },
+      { "name": "dur-screen", "value": "240ms", "purpose": "Tab switches and screen navigations." },
+      { "name": "dur-release", "value": "280ms", "purpose": "Physical spring release when finger lifts." },
+      { "name": "dur-layout", "value": "320ms", "purpose": "Drawer slides, cart panel expands, ticket lane changes." },
+      { "name": "dur-focal", "value": "520ms", "purpose": "Order sent to kitchen confirmation animation." },
+      { "name": "ease-spring", "value": "cubic-bezier(0.34, 1.3, 0.64, 1.0)", "purpose": "Soft mechanical spring with 5% overshoot on confirmed actions." }
+    ],
+    "breakpoints": [
+      { "name": "min", "value": "320px" },
+      { "name": "android-phone", "value": "360px" },
+      { "name": "iphone", "value": "390px" },
+      { "name": "tablet-portrait", "value": "768px" },
+      { "name": "pos-rail", "value": "900px" },
+      { "name": "tablet-landscape", "value": "1024px" },
+      { "name": "split-profile", "value": "1280px" },
+      { "name": "web-primary", "value": "1440px" },
+      { "name": "web-wide", "value": "1920px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid Burnished Copper action button for forward momentum ('Add to Cart', 'Send to Kitchen'). 56px POS primary target.",
+      "html": "<button class=\"ds-btn-primary\"><span class=\"ds-btn-text\">SEND TO KITCHEN</span><svg class=\"ds-btn-icon\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 56px; padding: 0 24px; background: #A8562A; color: #FFFFFF; font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 1px 4px rgba(25, 41, 62, 0.06); transition: background 90ms ease-out, transform 90ms ease-out, box-shadow 90ms ease-out; outline: none; } .ds-btn-primary:hover { background: #8E4722; box-shadow: 0 2px 8px rgba(25, 41, 62, 0.12); } .ds-btn-primary:active { background: #743A1B; transform: scale(0.97); } .ds-btn-primary:focus-visible { box-shadow: 0 0 0 3px #1F66C9; }"
+    },
+    {
+      "name": "Outlined Secondary Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "High-contrast outlined button for secondary workflows ('Cancel', 'Add Modifier'). 48px POS standard target.",
+      "html": "<button class=\"ds-btn-outlined\"><span class=\"ds-btn-text\">ADD NOTE</span></button>",
+      "css": ".ds-btn-outlined { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 20px; background: transparent; color: #19293E; font-family: 'AtkinsonHyperlegibleNext', sans-serif; font-size: 15px; font-weight: 600; border: 1.5px solid #76849A; border-radius: 10px; cursor: pointer; transition: background 90ms ease-out, transform 90ms ease-out, border-color 90ms ease-out; outline: none; } .ds-btn-outlined:hover { background: #EEE8DC; border-color: #19293E; } .ds-btn-outlined:active { transform: scale(0.97); background: #E7ECF4; } .ds-btn-outlined:focus-visible { box-shadow: 0 0 0 3px #1F66C9; }"
+    },
+    {
+      "name": "Standard Search Input",
+      "kind": "input",
+      "refersTo": "input-standard",
+      "description": "56px touch-optimized POS text input with leading search icon and high-contrast focus ring.",
+      "html": "<div class=\"ds-input-container\"><svg class=\"ds-input-icon\" viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"#76849A\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"M21 21l-4.35-4.35\"/></svg><input class=\"ds-input-field\" type=\"text\" placeholder=\"Search catalog or order #...\" /></div>",
+      "css": ".ds-input-container { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: #FFFFFF; border: 1px solid #DDD6C9; border-radius: 10px; box-shadow: 0 1px 4px rgba(25, 41, 62, 0.04); transition: border-color 150ms ease-out, box-shadow 150ms ease-out; } .ds-input-container:focus-within { border-color: #1F66C9; box-shadow: 0 0 0 3px rgba(31, 102, 201, 0.25); } .ds-input-icon { flex-shrink: 0; } .ds-input-field { width: 100%; border: none; outline: none; background: transparent; font-family: 'AtkinsonHyperlegibleNext', sans-serif; font-size: 16px; color: #19293E; } .ds-input-field::placeholder { color: #586579; }"
+    },
+    {
+      "name": "Status Badge (Ready / Success)",
+      "kind": "chip",
+      "refersTo": "badge-status-success",
+      "description": "Tactile status pill badge for ready orders, active items, and passed QC checks.",
+      "html": "<div class=\"ds-status-badge ds-badge-success\"><span class=\"ds-badge-dot\"></span><span class=\"ds-badge-label\">READY FOR PICKUP</span></div>",
+      "css": ".ds-status-badge { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; font-family: 'AtkinsonHyperlegibleMono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; } .ds-badge-success { background: #E3F4E9; border: 1px solid #9ED2B0; color: #166B3A; } .ds-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #166B3A; }"
+    },
+    {
+      "name": "POS Menu Item Card",
+      "kind": "card",
+      "refersTo": "card-menu-item",
+      "description": "Tactile counter ordering card featuring brand pill, tabular price badge, and touch spring feedback.",
+      "html": "<div class=\"ds-menu-card\"><div class=\"ds-card-header\"><span class=\"ds-brand-pill ds-brand-gc\">GC</span><span class=\"ds-card-price\">₱245.00</span></div><div class=\"ds-card-body\"><h4 class=\"ds-card-title\">Spicy Pork Bulgogi Box</h4><p class=\"ds-card-desc\">Marinated pork loin, kimchi slaw, pickled radish, jasmine rice.</p></div></div>",
+      "css": ".ds-menu-card { display: flex; flex-direction: column; justify-content: space-between; padding: 16px; background: #FFFFFF; border: 1px solid #DDD6C9; border-radius: 10px; box-shadow: 0 1px 4px rgba(25, 41, 62, 0.06); cursor: pointer; transition: transform 90ms ease-out, box-shadow 90ms ease-out, border-color 90ms ease-out; } .ds-menu-card:hover { border-color: #76849A; box-shadow: 0 2px 8px rgba(25, 41, 62, 0.10); } .ds-menu-card:active { transform: scale(0.97); } .ds-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; } .ds-brand-pill { display: inline-flex; align-items: center; justify-content: center; height: 22px; padding: 0 8px; border-radius: 4px; font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 11px; font-weight: 700; color: #FFFFFF; } .ds-brand-gc { background: #3D5A80; } .ds-card-price { font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 18px; font-weight: 700; color: #19293E; } .ds-card-title { font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 18px; font-weight: 700; color: #19293E; margin: 0 0 6px 0; } .ds-card-desc { font-family: 'AtkinsonHyperlegibleNext', sans-serif; font-size: 13px; line-height: 1.4; color: #43536A; margin: 0; }"
+    },
+    {
+      "name": "Kitchen Ticket Card",
+      "kind": "custom",
+      "refersTo": "card-kitchen-ticket",
+      "description": "Signature Back-of-House KDS ticket card with color-coded aging header, massive tabular order number, and item fulfillment checklist.",
+      "html": "<div class=\"ds-ticket-card\"><div class=\"ds-ticket-header ds-aging-due-soon\"><div class=\"ds-ticket-id-row\"><span class=\"ds-ticket-id\">#108</span><span class=\"ds-ticket-channel\">DINE-IN</span></div><div class=\"ds-ticket-timer-row\"><span class=\"ds-ticket-timer\">06:42</span><span class=\"ds-brand-pill ds-brand-ai\">AI</span></div></div><div class=\"ds-ticket-body\"><div class=\"ds-ticket-item\"><span class=\"ds-item-qty\">1×</span><span class=\"ds-item-name\">Chicken Inasal Pecho Combo</span></div><div class=\"ds-ticket-modifier\">• EXTRA GARLIC RICE</div><div class=\"ds-ticket-modifier\">• SPICY DIPPING SAUCE</div><div class=\"ds-ticket-item\" style=\"margin-top: 10px;\"><span class=\"ds-item-qty\">2×</span><span class=\"ds-item-name\">Calamansi Iced Tea</span></div></div><button class=\"ds-ticket-action\">COMPLETE PREP</button></div>",
+      "css": ".ds-ticket-card { width: 300px; background: #141D2E; border: 1px solid #293F58; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); font-family: 'AtkinsonHyperlegibleNext', sans-serif; color: #F7F3EC; } .ds-ticket-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #293F58; } .ds-aging-due-soon { background: #6A5200; color: #FFFFFF; } .ds-ticket-id { font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 32px; font-weight: 700; line-height: 1; } .ds-ticket-channel { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; background: rgba(0, 0, 0, 0.25); padding: 3px 6px; border-radius: 4px; margin-left: 6px; } .ds-ticket-timer { font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 22px; font-weight: 700; } .ds-brand-ai { background: #9A4A1F; margin-left: 8px; } .ds-ticket-body { padding: 16px; } .ds-ticket-item { display: flex; gap: 8px; font-size: 16px; font-weight: 600; color: #FFFFFF; } .ds-item-qty { font-family: 'IBMPlexSansCondensed', sans-serif; color: #FF9248; font-weight: 700; } .ds-ticket-modifier { font-size: 13px; font-weight: 600; color: #FFC18E; margin-left: 24px; margin-top: 2px; } .ds-ticket-action { width: 100%; height: 48px; background: #A8562A; color: #FFFFFF; font-family: 'IBMPlexSansCondensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; border: none; cursor: pointer; transition: background 90ms ease-out; } .ds-ticket-action:hover { background: #8E4722; } .ds-ticket-action:active { background: #743A1B; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Precision Mess Hall",
+    "overview": "The KKFC Multi-Brand POS design system merges the mechanical precision of commercial kitchen gear with the warm hospitality and sensory delight of an active food hall. Built for high-volume retail environments where cashiers punch orders with rapid muscle memory and cooks monitor urgent order tickets through steam and grease, the interface rejects cold corporate tech aesthetics in favor of a grounded, physical visual language. Warm sand canvas grounds the experience, providing an organic, non-fatiguing backdrop where work sits comfortably over long shifts. Structural deep navy defines the application shell, navigation, and persistent selection states, while burnished copper acts as an unmistakable beacon for forward momentum—commanding the operator's eye to 'do this next.'\n\nInteractive controls possess physical mass. Every button, menu card, and kitchen ticket provides responsive tactile feedback: an instant 90ms compression on press followed by a soft 5% spring overshoot on release. This tactile rhythm gives operators the confidence of mechanical switches while maintaining the speed and fluidity of a modern Android tablet. Front-of-House counter screens operate in a high-clarity Light Theme tuned for rapid touch-scanning under bright ambient lighting, while Back-of-House stations transition into a specialized high-contrast Dark Theme engineered for glare-free glanceability from across a crowded prep line.\n\nThe system explicitly rejects the tropes of generic SaaS: no sterile monochromatic enterprise blue fills, no fragile 1px hairline wireframes devoid of surface contrast, and no unstyled Material defaults. Multi-brand identity is celebrated with dignity—distinct brand accents for Gamcheon, Aurelia's Inasal, and King Kungs Kafé integrate smoothly into the unified shell without disturbing universal operational mechanics.",
+    "keyCharacteristics": [
+      "Warm Earth & Industrial Marine Palette: Warm Sand ground (#F7F3EC) paired with Deep Industrial Navy (#19293E) and Burnished Copper (#A8562A) action triggers.",
+      "Strict Semantic Color Assignment: Copper exclusively for forward progress; Navy for structure and selection; Orange for shell alerts; status tones isolated from decoration.",
+      "Physical Tactile Feedback: 48–56px generous touch targets, subtle ambient resting shadows, 0.97 scale press compression, and 280ms spring recovery.",
+      "Dual Environmental Themes: High-clarity counter Light Mode alongside high-contrast Back-of-House KDS Dark Mode.",
+      "High-Velocity Tabular Readability: Condensed display headers and slashed-zero tabular numbers guarantee instant data parsing across rapid scanning lines."
+    ],
+    "rules": [
+      {
+        "name": "The Strict Semantic Chromatic Rule",
+        "body": "Copper (#A8562A) is reserved solely for 'do this next' primary forward actions; Navy (#19293E / #1D2940) owns selection, structure, and navigation; Orange (#FF9248) commands shell attention; status tones never act as decorative accents.",
+        "section": "colors"
+      },
+      {
+        "name": "The WCAG 2.2 AA Contrast Rule",
+        "body": "Every foreground/background pair must meet or exceed WCAG 2.2 AA (minimum 4.5:1 for body copy and 3.0:1 for essential graphical UI elements).",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Number Rule",
+        "body": "All monetary values, quantities, order numbers, and elapsed timers must use tabular figures with slashed zeroes to preserve rigid vertical alignment across scanning columns.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Operational Scale Rule",
+        "body": "Type sizes on counter and kitchen terminals remain locked to fixed, predictable scale increments (~1.15 ratio) to prevent layout shifts and maintain muscle memory.",
+        "section": "typography"
+      },
+      {
+        "name": "The Thumbs & Fingers Rule",
+        "body": "Every primary interaction on counter tablets must sit comfortably within the 48–56px touch target zone with at least 8px clearance between adjacent hit targets.",
+        "section": "layout"
+      },
+      {
+        "name": "The Physical Compression Rule",
+        "body": "Interactive controls compress to 97% scale on press (90ms) and release with a soft 5% spring overshoot (280ms cubic-bezier(0.34, 1.3, 0.64, 1.0)), reinforcing tactile mechanical confirmation.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Nested Radius Rule",
+        "body": "Child elements nested inside 10px or 14px containers must scale down to 6px radius to maintain concentric optical harmony.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do maintain strict 48×48 dp minimum touch targets across all interactive POS and KDS elements.",
+      "Do reserve Burnished Copper (#A8562A) strictly for primary forward-moving calls to action.",
+      "Do format all currency, timers, and quantities using IBMPlexSansCondensed or AtkinsonHyperlegibleMono with tabular figures and slashed zero.",
+      "Do compress interactive elements to 0.97 scale on 90ms touch press and spring back with 5% overshoot.",
+      "Do use high-contrast Dark Theme for Kitchen Display System screens to preserve glanceability and reduce glare in kitchen environments.",
+      "Do honor individual brand colors (Gamcheon Slate Teal, Aurelia's Ember Rust, King Kungs Roast Espresso) on brand badges and category indicators without breaking unified navigation."
+    ],
+    "donts": [
+      "Don't use Burnished Copper for selected tabs, checkboxes, or non-action elements (use Navy #1D2940 instead).",
+      "Don't ship thin, unstyled 1px hairline cards without ambient depth or surface contrast.",
+      "Don't create floating or stacked Floating Action Buttons (FABs); follow dedicated 56px action button bars.",
+      "Don't use fluid typography on POS terminals; maintain fixed rem scale sizes (~1.15 ratio) to avoid operational mis-clicks.",
+      "Don't display raw, un-padded numbers in financial or ticket data; always use tabular font features.",
+      "Don't use generic cold blue SaaS enterprise styling; preserve the warm organic sand ground and industrial marine character."
+    ]
+  }
+}

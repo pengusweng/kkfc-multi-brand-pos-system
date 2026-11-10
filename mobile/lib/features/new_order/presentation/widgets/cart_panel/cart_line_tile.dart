@@ -41,14 +41,27 @@ class CartLineTile extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: modifiers.isEmpty
-                    ? const SizedBox.shrink()
-                    : Text(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (modifiers.isNotEmpty)
+                      Text(
                         modifiers.join(' · '),
                         style: text.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
+                    if (line.kitchenNote != null &&
+                        line.kitchenNote!.isNotEmpty)
+                      Text(
+                        'Note: ${line.kitchenNote}',
+                        style: text.bodySmall?.copyWith(
+                          color: const Color(0xFF855B14),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               IconButton.outlined(
                 tooltip: 'Remove one',

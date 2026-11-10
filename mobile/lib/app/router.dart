@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../core/models/user_role.dart';
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
-import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
+import '../features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import '../features/availability/presentation/pages/availability_read_only_screen.dart';
 import '../features/order_entry/data/models/order_confirmed_view_data.dart';
@@ -64,7 +64,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => LoginScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: LoginScreen(),
+          transitionDuration: const Duration(milliseconds: 320),
+          reverseTransitionDuration: const Duration(milliseconds: 240),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              ),
+              child: child,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: AppRoutes.kitchenTickets,
@@ -72,11 +86,40 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.menu,
-        builder: (context, state) => const MenuScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: const MenuScreen(),
+          transitionDuration: const Duration(milliseconds: 450),
+          reverseTransitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, 0.025),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: child,
+              ),
+            );
+          },
+        ),
       ),
       GoRoute(
-        path: AppRoutes.channelChange,
-        builder: (context, state) => const ChannelRepricingScreen(),
+        path: AppRoutes.mobileOrderFlow,
+        builder: (context, state) {
+          final extra = state.extra;
+          final initialStep =
+              extra is Map<String, dynamic> && extra['initialStep'] is int
+              ? extra['initialStep'] as int
+              : 2;
+          return MobileOrderFlowScreen(initialStep: initialStep);
+        },
       ),
       GoRoute(
         path: AppRoutes.orders,
@@ -91,6 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return CancelOrderScreen(
             orderId: query['orderId'],
             orderCode: query['orderCode'],
+            ticketNumber: query['ticketNumber'],
           );
         },
       ),

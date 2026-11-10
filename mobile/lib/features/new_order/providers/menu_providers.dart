@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
-import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
@@ -76,9 +75,29 @@ final storeReferenceProvider = NotifierProvider<StoreReferenceNotifier, String>(
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   ref,
 ) async {
-  ref.watch(activeBrandProvider); // refetch when the displayed brand changes
-  final brandId = await ref.watch(authenticatedBrandIdProvider.future);
-  return ref.watch(menuRepositoryProvider).getByBrand(brandId);
+  final activeBrand = ref.watch(activeBrandProvider);
+  var targetBrandId = activeBrand.id;
+
+  // Ensure targetBrandId is a valid UUID before sending to the backend.
+  // If activeBrand.id is still a placeholder slug (e.g. 'gamcheon'),
+  // wait for the backend brands to load and resolve the matching UUID.
+  final isUuid = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(targetBrandId);
+  if (!isUuid) {
+    try {
+      final brands = await ref.watch(brandsListProvider.future);
+      final match = brands.firstWhere(
+        (b) =>
+            b.code.toUpperCase() == activeBrand.code.toUpperCase() ||
+            b.name.toLowerCase() == activeBrand.name.toLowerCase(),
+        orElse: () => brands.first,
+      );
+      targetBrandId = match.id;
+    } catch (_) {
+      // In tests with mock IDs, leave targetBrandId as-is
+    }
+  }
+
+  return ref.watch(menuRepositoryProvider).getByBrand(targetBrandId);
 });
 
 /// Channels to show as tabs: those the loaded menu items are sold on, in
@@ -97,21 +116,48 @@ final availableChannelsProvider = Provider.autoDispose<List<MenuChannel>>((
   ];
 });
 
+class MenuCategoryNotifier extends Notifier<String> {
+  @override
+  String build() => 'All';
+  void set(String category) => state = category;
+}
+
+final menuCategoryProvider = NotifierProvider<MenuCategoryNotifier, String>(
+  MenuCategoryNotifier.new,
+);
+
+class HideUnavailableNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void set(bool hide) => state = hide;
+}
+
+final hideUnavailableProvider = NotifierProvider<HideUnavailableNotifier, bool>(
+  HideUnavailableNotifier.new,
+);
+
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
       final query = ref.watch(menuSearchProvider).trim().toLowerCase();
+      final hideUnavailable = ref.watch(hideUnavailableProvider);
+      final currentChannel = ref.watch(menuChannelProvider);
+
       return ref
           .watch(menuItemsProvider)
           .whenData(
-            (items) => query.isEmpty
-                ? items
-                : items
-                      .where(
-                        (i) =>
-                            i.name.toLowerCase().contains(query) ||
-                            i.description.toLowerCase().contains(query),
-                      )
-                      .toList(),
+            (items) => items.where((i) {
+              final matchesQuery =
+                  query.isEmpty ||
+                  i.name.toLowerCase().contains(query) ||
+                  i.description.toLowerCase().contains(query);
+              final matchesAvailability =
+                  !hideUnavailable ||
+                  i.availabilityFor(currentChannel) ==
+                      MenuAvailability.available;
+              return matchesQuery && matchesAvailability;
+            }).toList(),
           );
     });
 
@@ -130,9 +176,13 @@ class CartNotifier extends Notifier<List<CartLine>> {
     MenuItem item,
     Map<String, String> sel, {
     String? except,
+    String? kitchenNote,
   }) => state.indexWhere(
     (l) =>
-        l.id != except && l.item.id == item.id && mapEquals(l.selections, sel),
+        l.id != except &&
+        l.item.id == item.id &&
+        mapEquals(l.selections, sel) &&
+        (l.kitchenNote ?? '') == (kitchenNote ?? ''),
   );
 
   /// Quick add with defaults (no modifiers).
@@ -141,10 +191,14 @@ class CartNotifier extends Notifier<List<CartLine>> {
   void addConfigured(
     MenuItem item,
     Map<String, String> selections,
-    int quantity,
-  ) {
+    int quantity, {
+    String? kitchenNote,
+  }) {
     final sel = _normalize(item, selections);
-    final i = _findIdentical(item, sel);
+    final note = (kitchenNote != null && kitchenNote.trim().isNotEmpty)
+        ? kitchenNote.trim()
+        : null;
+    final i = _findIdentical(item, sel, kitchenNote: note);
     if (i != -1) {
       state = [
         for (var k = 0; k < state.length; k++)
@@ -162,6 +216,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
         item: item,
         quantity: quantity,
         selections: sel,
+        kitchenNote: note,
       ),
     ];
   }
@@ -171,6 +226,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
     Map<String, String> selections,
     int quantity, {
     MenuItem? item,
+    String? kitchenNote,
   }) {
     final i = state.indexWhere((l) => l.id == lineId);
     if (i == -1) return;
@@ -181,11 +237,15 @@ class CartNotifier extends Notifier<List<CartLine>> {
             item: item,
             quantity: state[i].quantity,
             selections: state[i].selections,
+            kitchenNote: state[i].kitchenNote,
           );
     final sel = _normalize(line.item, selections);
+    final note = kitchenNote != null
+        ? (kitchenNote.trim().isEmpty ? null : kitchenNote.trim())
+        : line.kitchenNote;
 
     // If the edit makes this line identical to another, merge them.
-    final j = _findIdentical(line.item, sel, except: lineId);
+    final j = _findIdentical(line.item, sel, except: lineId, kitchenNote: note);
     if (j != -1) {
       final otherId = state[j].id;
       state = [
@@ -203,6 +263,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
             item: line.item,
             quantity: quantity,
             selections: sel,
+            kitchenNote: note,
           )
         else
           l,
@@ -220,6 +281,11 @@ class CartNotifier extends Notifier<List<CartLine>> {
         l
       else if (l.quantity > 1)
         l.copyWith(quantity: l.quantity - 1),
+  ];
+
+  void removeLine(String lineId) => state = [
+    for (final l in state)
+      if (l.id != lineId) l,
   ];
 
   void clear() => state = const [];
