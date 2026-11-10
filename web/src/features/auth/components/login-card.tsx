@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import type { useLogin } from "../hooks/useLogin";
 
 type LoginCardProps = Pick<ReturnType<typeof useLogin>, "form" | "serverError"> & {
-  redirecting: boolean;
+  redirecting?: boolean;
 };
 
 // Each block rises in slightly after the one above it.
 const rise = (step: number): CSSProperties => ({ animationDelay: `${180 + step * 70}ms` });
 
-export default function LoginCard({ form, serverError, redirecting }: LoginCardProps) {
+export default function LoginCard({ form, serverError, redirecting = false }: LoginCardProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
