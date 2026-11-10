@@ -152,6 +152,35 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Sends a preparing or reworking ticket to QC check via
+  /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/for-checking`.
+  ///
+  /// If [preparerId] is supplied, ensures the caller is assigned as preparer
+  /// so backend authorization (`preparer_id === callerId`) succeeds.
+  Future<void> sendToQc(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
+    if (preparerId != null && preparerId.isNotEmpty) {
+      try {
+        await assignPreparer(kitchenTicketId, preparerId);
+      } catch (_) {
+        // Continue in case already assigned to caller.
+      }
+    }
+
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/$kitchenTicketId/for-checking'),
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   /// Advances a ticket's fulfillment stage on the backend.
   Future<void> advanceTicket(
     KitchenBoardTicket ticket, {
@@ -168,8 +197,17 @@ class KitchenBoardRepository {
       return;
     }
 
+    final isPreparingOrReworking =
+        raw == 'PREPARING' ||
+        raw == 'REWORKING' ||
+        ticket.data.status == KkfcStatus.preparing ||
+        ticket.data.status == KkfcStatus.reworking;
+    if (isPreparingOrReworking) {
+      await sendToQc(id, preparerId: preparerId);
+      return;
+    }
+
     final actionPath = switch (raw) {
-      'PREPARING' || 'REWORKING' => '/kitchen-fulfillment/$id/for-checking',
       'FOR_CHECKING' => '/kitchen-fulfillment/$id/check',
       'READY' => '/kitchen-fulfillment/$id/hand-over',
       _ => null,

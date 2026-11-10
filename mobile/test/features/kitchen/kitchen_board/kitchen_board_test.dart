@@ -58,6 +58,7 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   int fetchCount = 0;
   final List<String> acknowledgedTicketIds = [];
   final List<String> preparedTicketIds = [];
+  final List<String> sentToQcTicketIds = [];
   final List<({String ticketId, String preparerId})> assignedPreparers = [];
 
   @override
@@ -83,6 +84,17 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     String? preparerId,
   }) async {
     preparedTicketIds.add(kitchenTicketId);
+    if (preparerId != null) {
+      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+    }
+  }
+
+  @override
+  Future<void> sendToQc(
+    String kitchenTicketId, {
+    String? preparerId,
+  }) async {
+    sentToQcTicketIds.add(kitchenTicketId);
     if (preparerId != null) {
       assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
     }
@@ -264,6 +276,32 @@ void main() {
         expect(
           adapter.requests[1].uri.toString(),
           'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
+        );
+      },
+    );
+
+    test(
+      'sendToQc sends POST /api/kitchen-fulfillment/{kitchenTicketId}/for-checking',
+      () async {
+        const ticketId = '00000000-0000-4000-8000-000000000015';
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse({
+            'kitchen_ticket_id': ticketId,
+            'status': 'FOR_CHECKING',
+          }),
+        );
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.sendToQc(ticketId);
+
+        expect(adapter.requests, hasLength(1));
+        expect(adapter.requests.first.method, 'POST');
+        expect(
+          adapter.requests.first.uri.toString(),
+          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/for-checking',
         );
       },
     );
@@ -602,6 +640,62 @@ void main() {
         await tester.tap(dialogActionButton);
         await tester.pumpAndSettle();
         expect(actionTapped, isTrue);
+      },
+    );
+
+    testWidgets(
+      'clicking Send to QC on the card and popup calls POST /api/kitchen-fulfillment/{kitchenTicketId}/for-checking and closes popup',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        await pumpBoard(tester, repository: repo);
+
+        // T-015 is in Preparing lane with Send to QC action
+        final cardSendToQcButton = find.descendant(
+          of: find.byKey(const ValueKey('kitchen-ticket-card-T-015')),
+          matching: find.text('Send to QC'),
+        );
+        expect(cardSendToQcButton, findsOneWidget);
+
+        // Tapping Send to QC on the card opens the popup
+        await tester.tap(cardSendToQcButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(repo.sentToQcTicketIds, isEmpty);
+
+        // The popup action button is 'Send to QC' with magnifying glass icon
+        final dialogActionButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.text('Send to QC'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.byIcon(Icons.search_rounded),
+          ),
+          findsOneWidget,
+        );
+
+        // Tapping Send to QC in the popup invokes sendToQc
+        await tester.tap(dialogActionButton);
+        await tester.pumpAndSettle();
+
+        // Verifies POST /api/kitchen-fulfillment/{id}/for-checking is called
+        expect(repo.sentToQcTicketIds, [
+          '00000000-0000-4000-8000-000000000015',
+        ]);
+
+        // Popup closes after successful call
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );
 

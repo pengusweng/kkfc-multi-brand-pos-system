@@ -211,6 +211,55 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
+  Future<bool> sendToQc(String kitchenTicketId) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      final userId = await _resolveCurrentUserId();
+      await repo.sendToQc(kitchenTicketId, preparerId: userId);
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+
+      final updatedTickets = tickets.map((t) {
+        if (t.kitchenTicketId == kitchenTicketId &&
+            (t.rawStatus.toUpperCase() == 'PREPARING' ||
+                t.rawStatus.toUpperCase() == 'REWORKING' ||
+                t.data.status == KkfcStatus.preparing ||
+                t.data.status == KkfcStatus.reworking)) {
+          return t.copyWith(
+            rawStatus: 'FOR_CHECKING',
+            lane: KitchenBoardLane.qcCheck,
+            data: t.data.copyWith(status: KkfcStatus.checking),
+          );
+        }
+        return t;
+      }).toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
     final raw = ticket.rawStatus.toUpperCase();
     final isQueued =
@@ -225,6 +274,15 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         raw == 'ACKNOWLEDGED' || ticket.data.status == KkfcStatus.acknowledged;
     if (isAcknowledged) {
       return prepareTicket(ticket.kitchenTicketId);
+    }
+
+    final isPreparingOrReworking =
+        raw == 'PREPARING' ||
+        raw == 'REWORKING' ||
+        ticket.data.status == KkfcStatus.preparing ||
+        ticket.data.status == KkfcStatus.reworking;
+    if (isPreparingOrReworking) {
+      return sendToQc(ticket.kitchenTicketId);
     }
 
     final id = ticket.kitchenTicketId;
