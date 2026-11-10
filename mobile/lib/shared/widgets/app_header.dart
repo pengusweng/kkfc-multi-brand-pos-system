@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
+import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
+import 'package:mobile/shared/menu_channel_mapping.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 
 /// The application top bar matching the KKFC POS design system.
@@ -87,90 +89,120 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final effectiveRole = staffRole ?? role;
     final isCompact = compact ?? (MediaQuery.sizeOf(context).width < 600);
+    final channelWidget = (channel != null && onChannelChanged != null)
+        ? ChannelTabs(
+            inverted: true,
+            selected: menuChannelForPos(channel!),
+            onSelected: (selected) =>
+                onChannelChanged!(posChannelForMenu(selected)),
+          )
+        : null;
 
-    return Material(
-      color: backgroundColor ?? KkfcColors.shell,
-      child: SizedBox(
-        height: height,
-        child: Padding(
-          padding:
-              padding ??
-              EdgeInsets.symmetric(
-                horizontal: isCompact ? KkfcSpace.s16 : KkfcSpace.s20,
-              ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Left side: [optional leading] + [KKFC POS if !isCompact] + [title / titleWidget]
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (leading != null) ...[
-                      leading!,
-                      const SizedBox(width: KkfcSpace.s12),
-                    ],
-                    if (!isCompact) ...[
-                      const Text(
-                        'KKFC POS',
-                        style: TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: KkfcTextSizes.textXs,
-                          fontWeight: KkfcFontWeights.bold,
-                          letterSpacing: 1.0,
-                          color: Color(0xFF8C9BAE),
-                        ),
-                      ),
-                      const SizedBox(width: KkfcSpace.s16),
-                    ],
-                    if (titleWidget != null) ...[
-                      Flexible(child: titleWidget!),
-                    ] else if (title != null && title!.isNotEmpty) ...[
-                      Flexible(
-                        child: Text(
-                          title!,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: isCompact ? 20.0 : KkfcTextSizes.textLg,
-                            fontWeight: KkfcFontWeights.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              // Right side: [actions] + [trailing or role badge] + [logout]
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...?actions,
-                    if (trailing != null)
-                      trailing!
-                    else if (effectiveRole != null && effectiveRole.isNotEmpty)
-                      Flexible(
-                        child: AppHeaderRoleChip(
-                          role: effectiveRole,
-                          onTap: onRoleTap,
-                        ),
-                      ),
-                    if (showLogout) ...[
-                      const SizedBox(width: KkfcSpace.s8),
-                      const LogoutButton(color: Colors.white),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+    final headerRow = Padding(
+      padding:
+          padding ??
+          EdgeInsets.symmetric(
+            horizontal: isCompact ? KkfcSpace.s16 : KkfcSpace.s20,
           ),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left side: [optional leading] + [KKFC POS if !isCompact] + [title / titleWidget]
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leading != null) ...[
+                  leading!,
+                  const SizedBox(width: KkfcSpace.s12),
+                ],
+                if (!isCompact) ...[
+                  const Text(
+                    'KKFC POS',
+                    style: TextStyle(
+                      fontFamily: KkfcFonts.ibmPlexSans,
+                      fontSize: KkfcTextSizes.textXs,
+                      fontWeight: KkfcFontWeights.bold,
+                      letterSpacing: 1.0,
+                      color: Color(0xFF8C9BAE),
+                    ),
+                  ),
+                  const SizedBox(width: KkfcSpace.s16),
+                ],
+                if (titleWidget != null) ...[
+                  Flexible(child: titleWidget!),
+                ] else if (title != null && title!.isNotEmpty) ...[
+                  Flexible(
+                    child: Text(
+                      title!,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: isCompact ? 20.0 : KkfcTextSizes.textLg,
+                        fontWeight: KkfcFontWeights.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          if (!isCompact && channelWidget != null) ...[
+            const SizedBox(width: KkfcSpace.s12),
+            Flexible(child: channelWidget),
+            const SizedBox(width: KkfcSpace.s12),
+          ],
+
+          // Right side: [actions] + [trailing or role badge] + [logout]
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...?actions,
+                if (trailing != null)
+                  trailing!
+                else if (effectiveRole != null && effectiveRole.isNotEmpty)
+                  Flexible(
+                    child: AppHeaderRoleChip(
+                      role: effectiveRole,
+                      onTap: onRoleTap,
+                    ),
+                  ),
+                if (showLogout) ...[
+                  const SizedBox(width: KkfcSpace.s8),
+                  const LogoutButton(color: Colors.white),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
+
+    final Widget content;
+    if (isCompact && channelWidget != null) {
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: height, child: headerRow),
+          Padding(
+            padding: const EdgeInsets.only(
+              left: KkfcSpace.s16,
+              right: KkfcSpace.s16,
+              bottom: KkfcSpace.s12,
+            ),
+            child: Center(child: channelWidget),
+          ),
+        ],
+      );
+    } else {
+      content = SizedBox(height: height, child: headerRow);
+    }
+
+    return Material(color: backgroundColor ?? KkfcColors.shell, child: content);
   }
 }
 

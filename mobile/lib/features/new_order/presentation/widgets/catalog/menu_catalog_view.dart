@@ -180,7 +180,7 @@ class MenuCatalogView extends ConsumerWidget {
                             crossAxisCount: 2,
                             crossAxisSpacing: 16.0,
                             mainAxisSpacing: 16.0,
-                            mainAxisExtent: 160.0,
+                            mainAxisExtent: 180.0,
                           ),
                       itemCount: items.length,
                       itemBuilder: (context, index) => MenuItemCard(

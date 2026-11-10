@@ -112,46 +112,52 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Item name and availability badge
-                Row(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
+                    // Item name and availability badge
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            maxLines: widget.compact ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF19293E),
+                            ),
+                          ),
+                        ),
+                        if (!orderable) ...[
+                          const SizedBox(width: 8),
+                          _AvailabilityBadge(availability),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Item description
+                    if (item.description.isNotEmpty)
+                      Text(
+                        item.description,
                         maxLines: widget.compact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontFamily: KkfcFonts.ibmPlexSans,
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19293E),
+                          fontSize: 13.0,
+                          height: 1.35,
+                          color: Color(0xFF586579),
                         ),
                       ),
-                    ),
-                    if (!orderable) ...[
-                      const SizedBox(width: 8),
-                      _AvailabilityBadge(availability),
-                    ],
                   ],
                 ),
-                const SizedBox(height: 6),
-
-                // Item description
-                if (item.description.isNotEmpty)
-                  Text(
-                    item.description,
-                    maxLines: widget.compact ? 1 : 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13.0,
-                      height: 1.35,
-                      color: Color(0xFF586579),
-                    ),
-                  ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
                 // Bottom row: Price and Add button
                 Row(
