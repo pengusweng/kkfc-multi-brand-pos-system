@@ -125,7 +125,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                       fontSize: KkfcTextSizes.textXs,
                       fontWeight: KkfcFontWeights.bold,
                       letterSpacing: 1.0,
-                      color: Color(0xFF8C9BAE),
+                      color: KkfcColors.shellMutedText,
                     ),
                   ),
                   const SizedBox(width: KkfcSpace.s16),
@@ -223,9 +223,9 @@ class AppHeaderRoleChip extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: const Color(0xFF24364D),
+            color: KkfcColors.shellRoleBg,
             borderRadius: BorderRadius.circular(KkfcRadius.pill),
-            border: Border.all(color: const Color(0xFF384B66), width: 1.0),
+            border: Border.all(color: KkfcColors.shellRoleBorder, width: 1.0),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

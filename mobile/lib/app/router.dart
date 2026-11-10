@@ -20,6 +20,7 @@ import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
 
 import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
+import '../features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -82,7 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.kitchenTickets,
-        builder: (context, state) => LoginScreen(),
+        builder: (context, state) => const KitchenBoardScreen(),
       ),
       GoRoute(
         path: AppRoutes.menu,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge.dart';
@@ -9,20 +10,38 @@ class KitchenTicketChannelLine extends StatelessWidget {
     super.key,
     required this.channel,
     required this.reference,
+    this.useChannelSpecificIcon = false,
   });
 
   final String channel;
   final String reference;
+  final bool useChannelSpecificIcon;
+
+  IconData _resolveIcon() {
+    if (!useChannelSpecificIcon) {
+      return Icons.shopping_bag_outlined;
+    }
+    final normalized = channel.toLowerCase();
+    if (normalized.contains('dine')) {
+      return Icons.chair_alt_outlined;
+    }
+    if (normalized.contains('grab') ||
+        normalized.contains('panda') ||
+        normalized.contains('delivery')) {
+      return Icons.moped_outlined;
+    }
+    return Icons.shopping_bag_outlined;
+  }
 
   @override
   Widget build(BuildContext context) {
     final label = reference.isNotEmpty ? '$channel · $reference' : channel;
     return Row(
       children: [
-        const Icon(
-          Icons.shopping_bag_outlined,
+        Icon(
+          _resolveIcon(),
           size: 16,
-          color: Color(0xFF102A43),
+          color: KkfcColors.ticketInk,
         ),
         const SizedBox(width: 6),
         Expanded(
@@ -31,7 +50,7 @@ class KitchenTicketChannelLine extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF102A43),
+              color: KkfcColors.ticketInk,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -55,14 +74,14 @@ class KitchenTicketBrandRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFF64748B), width: 1),
+            border: Border.all(color: KkfcColors.ticketMuted, width: 1),
           ),
           child: Text(
             brand.code,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF102A43),
+              color: KkfcColors.ticketInk,
             ),
           ),
         ),
@@ -73,7 +92,7 @@ class KitchenTicketBrandRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF475569),
+              color: KkfcColors.ticketBrandName,
             ),
             overflow: TextOverflow.ellipsis,
           ),

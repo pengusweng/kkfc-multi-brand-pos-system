@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
 class KitchenTicketHeader extends StatelessWidget {
@@ -39,7 +40,7 @@ class KitchenTicketHeader extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF102A43),
+                  color: KkfcColors.ticketInk,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -50,7 +51,7 @@ class KitchenTicketHeader extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF102A43),
+                color: KkfcColors.ticketInk,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
@@ -98,7 +99,7 @@ class _ProgressBarPainter extends CustomPainter {
 
     // Track
     final trackPaint = Paint()
-      ..color = const Color(0xFFE2E8F0)
+      ..color = KkfcColors.ticketBorder
       ..style = PaintingStyle.fill;
     final trackRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, barY, size.width, barHeight),
@@ -112,9 +113,9 @@ class _ProgressBarPainter extends CustomPainter {
     final fillWidth = size.width * progress;
 
     final fillColor = switch (age) {
-      KitchenTicketAge.onTime => const Color(0xFF506176),
-      KitchenTicketAge.dueSoon => const Color(0xFFD97706),
-      KitchenTicketAge.late => const Color(0xFFDC2626),
+      KitchenTicketAge.onTime => KkfcColors.ticketAgeOnTime,
+      KitchenTicketAge.dueSoon => KkfcColors.ticketAgeDueSoon,
+      KitchenTicketAge.late => KkfcColors.ticketAgeLate,
     };
 
     final fillPaint = Paint()
@@ -128,7 +129,7 @@ class _ProgressBarPainter extends CustomPainter {
 
     // Tick lines at 50% (5 min) and 75% (8 min)
     final tickPaint = Paint()
-      ..color = const Color(0xFF334155)
+      ..color = KkfcColors.ticketSubtleInk
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

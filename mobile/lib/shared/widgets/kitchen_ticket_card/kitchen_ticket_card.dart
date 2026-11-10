@@ -5,6 +5,7 @@ import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_action.
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_item_tile.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_meta.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 export 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
@@ -45,18 +46,23 @@ class KitchenTicketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultLabel = kitchenTicketActionLabel(ticket.status);
+    final isBoard = variant == KitchenTicketVariant.board;
+    final defaultLabel = isBoard && ticket.status == KkfcStatus.queued
+        ? 'Acknowledge'
+        : kitchenTicketActionLabel(ticket.status);
     final resolvedLabel = actionLabel ?? defaultLabel ?? 'Acknowledge';
     final showAction = onAction != null || actionLabel != null;
+    final hideDetailsForFullWidthAction =
+        isBoard && ticket.status == KkfcStatus.ready && onDetails == null;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: KkfcColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: KkfcColors.ticketBorder, width: 1),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x06000000),
+            color: KkfcColors.ticketShadow,
             blurRadius: 4,
             offset: Offset(0, 1),
           ),
@@ -83,6 +89,7 @@ class KitchenTicketCard extends StatelessWidget {
           KitchenTicketChannelLine(
             channel: ticket.channel,
             reference: ticket.reference,
+            useChannelSpecificIcon: isBoard,
           ),
           const SizedBox(height: 16),
 
@@ -99,85 +106,83 @@ class KitchenTicketCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: KkfcColors.ticketMuted,
             ),
           ),
           const SizedBox(height: 14),
 
           // 6. Action buttons footer (Details and Action)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: onDetails,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  foregroundColor: const Color(0xFF334155),
-                ),
-                child: const Text(
-                  'Details',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF334155),
-                  ),
-                ),
-              ),
-              if (showAction) ...[
-                const SizedBox(width: 8),
-                // Flexible so long labels wrap instead of overflowing at
-                // large text scales.
-                Flexible(
-                  child: FilledButton(
-                    onPressed: isActionEnabled && !isActionLoading
-                        ? onAction
-                        : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: KkfcColors.action, // #A8562A
-                      disabledBackgroundColor: const Color(0xFFCBD5E1),
-                      foregroundColor: Colors.white,
-                      disabledForegroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      minimumSize: const Size(100, 42),
+          if (hideDetailsForFullWidthAction && showAction)
+            _buildPrimaryActionButton(resolvedLabel)
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: onDetails,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    child: isActionLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            resolvedLabel,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: KkfcColors.ticketSubtleInk,
+                  ),
+                  child: const Text(
+                    'Details',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: KkfcColors.ticketSubtleInk,
+                    ),
                   ),
                 ),
+                if (showAction) ...[
+                  const SizedBox(width: 8),
+                  // Flexible so long labels wrap instead of overflowing at
+                  // large text scales.
+                  Flexible(child: _buildPrimaryActionButton(resolvedLabel)),
+                ],
               ],
-            ],
-          ),
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPrimaryActionButton(String resolvedLabel) {
+    return FilledButton(
+      onPressed: isActionEnabled && !isActionLoading ? onAction : null,
+      style: FilledButton.styleFrom(
+        backgroundColor: KkfcColors.action, // #A8562A
+        disabledBackgroundColor: KkfcColors.ticketDisabledBg,
+        foregroundColor: KkfcColors.onSolid,
+        disabledForegroundColor: KkfcColors.onSolid,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        minimumSize: const Size(100, 42),
+      ),
+      child: isActionLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: KkfcColors.onSolid,
+              ),
+            )
+          : Text(
+              resolvedLabel,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: KkfcColors.onSolid,
+              ),
+            ),
     );
   }
 }

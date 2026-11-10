@@ -185,6 +185,53 @@ abstract final class KkfcColors {
 
   /// `--k-on-warning-solid`: Foreground text on Gold warning-solid (#19293E, 8.43:1)
   static const Color onWarningSolid = Color(0xFF19293E);
+
+  // --- AppHeader & Shell tokens ---
+  /// Muted wordmark text on navy shell (#8C9BAE)
+  static const Color shellMutedText = Color(0xFF8C9BAE);
+
+  /// Role badge fill on navy shell (#24364D)
+  static const Color shellRoleBg = Color(0xFF24364D);
+
+  /// Role badge border on navy shell (#384B66)
+  static const Color shellRoleBorder = Color(0xFF384B66);
+
+  // --- Kitchen Ticket Card tokens ---
+  /// Deep navy ink for ticket header, quantity, and item titles (#102A43)
+  static const Color ticketInk = Color(0xFF102A43);
+
+  /// Card border and progress bar track (#E2E8F0)
+  static const Color ticketBorder = Color(0xFFE2E8F0);
+
+  /// Subtle resting card shadow (#06000000)
+  static const Color ticketShadow = Color(0x06000000);
+
+  /// Muted slate for modifiers, payment label, and brand badge border (#64748B)
+  static const Color ticketMuted = Color(0xFF64748B);
+
+  /// Secondary slate for Details link and timer tick marks (#334155)
+  static const Color ticketSubtleInk = Color(0xFF334155);
+
+  /// Medium slate for brand display name (#475569)
+  static const Color ticketBrandName = Color(0xFF475569);
+
+  /// Disabled primary button fill on ticket card (#CBD5E1)
+  static const Color ticketDisabledBg = Color(0xFFCBD5E1);
+
+  /// Progress bar fill when ticket is on time (#506176)
+  static const Color ticketAgeOnTime = Color(0xFF506176);
+
+  /// Progress bar fill when ticket is due soon (#D97706)
+  static const Color ticketAgeDueSoon = Color(0xFFD97706);
+
+  /// Progress bar fill when ticket is late (#DC2626)
+  static const Color ticketAgeLate = Color(0xFFDC2626);
+
+  /// Kitchen item note callout background (#FEF3C7)
+  static const Color ticketNoteBg = Color(0xFFFEF3C7);
+
+  /// Kitchen item note callout border (#FDE68A)
+  static const Color ticketNoteBorder = Color(0xFFFDE68A);
 }
 
 /// Representation of a verified WCAG 2.2 AA contrast pair.
