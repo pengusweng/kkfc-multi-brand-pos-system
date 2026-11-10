@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import UnauthorizedPage from "@/src/features/auth/containers/unauthorized";
-import PageBackground from "@/src/components/layout/page-background";
 import { validateCookie } from "@/src/features/auth/services/auth.service";
 import { WEB_ROLES } from "@/src/features/auth/utils/webRoles";
 import type { Metadata } from "next";
@@ -13,17 +12,16 @@ export const metadata: Metadata = {
   title: "Access restricted | KKFC Management",
 };
 
+// The page renders immediately; the session check streams in behind it and
+// redirects anyone who shouldn't be here.
 export default function Unauthorized() {
   return (
-    <Suspense
-      fallback={
-        <PageBackground>
-          <p role="status">Checking your session…</p>
-        </PageBackground>
-      }
-    >
-      <CheckAccess />
-    </Suspense>
+    <>
+      <UnauthorizedPage />
+      <Suspense fallback={null}>
+        <CheckAccess />
+      </Suspense>
+    </>
   );
 }
 
@@ -35,5 +33,5 @@ async function CheckAccess() {
   if (!user) redirect("/login");
   if (WEB_ROLES.has(user.role)) redirect("/dashboard");
 
-  return <UnauthorizedPage />;
+  return null;
 }

@@ -90,7 +90,7 @@ export default function LoginBackground({ children }: { children: ReactNode }) {
     <div
       ref={rootRef}
       data-login-background
-      className="flex min-w-0 flex-1 [&>main]:overflow-clip [&>main>svg:first-of-type]:w-72 [&>main>svg:last-of-type]:w-96 lg:[&>main>svg:first-of-type]:w-112 lg:[&>main>svg:last-of-type]:w-160"
+      className="flex min-w-0 flex-1 [&>main]:min-h-0 [&>main]:overflow-clip [&>main]:pt-10 sm:[&>main]:pt-16 lg:[&>main]:min-h-dvh lg:[&>main]:pt-8 [&>main>svg:first-of-type]:w-72 [&>main>svg:last-of-type]:w-96 lg:[&>main>svg:first-of-type]:w-112 lg:[&>main>svg:last-of-type]:w-160"
     >
       <PageBackground>{children}</PageBackground>
     </div>

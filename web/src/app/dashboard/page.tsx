@@ -1,5 +1,5 @@
-export default function Dashboard() {
-  return(
-    <h1>hi</h1>
-  );
+import WorkspacePage from "@/src/features/dashboard/containers/dashboard";
+
+export default function Workspace() {
+  return <WorkspacePage />;
 }

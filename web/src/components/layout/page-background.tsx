@@ -1,12 +1,15 @@
 import { ReactNode } from "react";
+import { cn } from "cn";
 
 export default function PageBackground({
   children,
+  className,
 }: {
-  children: ReactNode;
+  children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <main className="relative isolate flex min-h-dvh min-w-0 flex-1 items-start justify-center overflow-x-clip bg-[radial-gradient(ellipse_at_center,#fdf7f1,#fbeee2)] px-4 py-8 text-slate-800 sm:p-8 lg:items-center">
+    <main className={cn("relative isolate flex min-h-dvh min-w-0 flex-1 items-start justify-center overflow-x-clip bg-[radial-gradient(ellipse_at_center,var(--page-from),var(--page-to))] px-4 py-8 text-page-text sm:p-8 lg:items-center", className)}>
       <svg
         aria-hidden="true"
         viewBox="0 0 217 129"
@@ -14,11 +17,11 @@ export default function PageBackground({
       >
         <path
           d="M0 0H217C175 55 115 56 61 70C25 81 11 103 0 129Z"
-          fill="#fce6d6"
+          fill="var(--wave-1)"
         />
         <path
           d="M0 0H143C96 40 49 37 0 56Z"
-          fill="#fbdac0"
+          fill="var(--wave-2)"
         />
       </svg>
       <svg
@@ -28,11 +31,11 @@ export default function PageBackground({
       >
         <path
           d="M345 605C402 551 435 542 507 553C644 578 659 449 786 393V605Z"
-          fill="#fce6d6"
+          fill="var(--wave-1)"
         />
         <path
           d="M444 605C524 553 579 555 624 557C692 559 739 505 786 485V605Z"
-          fill="#fbdac0"
+          fill="var(--wave-2)"
         />
       </svg>
       {children}
