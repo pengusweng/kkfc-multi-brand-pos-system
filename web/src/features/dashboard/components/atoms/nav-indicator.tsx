@@ -8,7 +8,7 @@ export default function NavIndicator({ ref }: { ref: Ref<HTMLSpanElement> }) {
     <span
       ref={ref}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-3 top-0 h-9 rounded-md bg-white opacity-0 data-ready:opacity-100 data-ready:transition-transform data-ready:duration-300 data-ready:ease-drawer motion-reduce:transition-none"
+      className="pointer-events-none absolute inset-x-3 top-0 h-9 rounded-md bg-rail-pill opacity-0 data-ready:opacity-100 data-ready:transition-transform data-ready:duration-300 data-ready:ease-drawer motion-reduce:transition-none"
     />
   );
 }

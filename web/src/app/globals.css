@@ -6,6 +6,23 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-primary-ink: var(--primary-ink);
+  --color-danger-ink: var(--danger-ink);
+  --color-page-from: var(--page-from);
+  --color-page-to: var(--page-to);
+  --color-page-text: var(--page-text);
+  --color-wave-1: var(--wave-1);
+  --color-wave-2: var(--wave-2);
+  --color-field: var(--field);
+  --color-surface-hover: var(--surface-hover);
+  --color-hairline: var(--hairline);
+  --color-rail: var(--rail);
+  --color-rail-line: var(--rail-line);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-pill: var(--rail-pill);
+  --color-rail-pill-ink: var(--rail-pill-ink);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-ibm-plex-sans);
   --font-mono: var(--font-geist-mono);
@@ -108,6 +125,75 @@ body {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Brand surfaces. Components use these instead of raw hex so the dark
+     theme can swap them in one place. */
+  --ink: #19293e;
+  --ink-muted: #526070;
+  --primary-ink: rgb(168, 86, 42);
+  --danger-ink: #9f1d14;
+  --page-from: #fdf7f1;
+  --page-to: #fbeee2;
+  --page-text: #1e293b;
+  --wave-1: #fce6d6;
+  --wave-2: #fbdac0;
+  --field: #ffffff;
+  --surface-hover: #f6efe8;
+  --hairline: #e3d8cc;
+  /* The navy rail is the same in both themes; only the page moves around it. */
+  --rail: rgb(25, 41, 62);
+  --rail-line: #30445a;
+  --rail-muted: #c7d9ed;
+  --rail-pill: #ffffff;
+  --rail-pill-ink: #0f172a;
+}
+
+/* Night: the page drops below the rail into deep navy ink, so the rail reads
+   as the raised surface. Terracotta stays the accent; the cream waves become
+   faint warm glows. */
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.175 0.025 255);
+  --foreground: oklch(0.95 0.012 80);
+  --card: oklch(0.225 0.03 255);
+  --card-foreground: oklch(0.95 0.012 80);
+  --popover: oklch(0.245 0.034 255);
+  --popover-foreground: oklch(0.95 0.012 80);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.27 0.03 255);
+  --secondary-foreground: oklch(0.95 0.012 80);
+  --muted: oklch(0.27 0.03 255);
+  --muted-foreground: oklch(0.74 0.025 250);
+  --accent: oklch(0.29 0.032 255);
+  --accent-foreground: oklch(0.95 0.012 80);
+  --destructive: oklch(0.68 0.19 24);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.16);
+  --ring: oklch(0.62 0.03 255);
+
+  --ink: oklch(0.95 0.012 80);
+  --ink-muted: oklch(0.76 0.025 250);
+  --primary-ink: oklch(0.74 0.12 52);
+  --danger-ink: oklch(0.82 0.11 25);
+  --page-from: oklch(0.215 0.03 255);
+  --page-to: oklch(0.172 0.025 255);
+  --page-text: oklch(0.9 0.015 250);
+  --wave-1: oklch(0.62 0.13 45 / 0.05);
+  --wave-2: oklch(0.62 0.13 45 / 0.09);
+  --field: oklch(0.23 0.03 255);
+  --surface-hover: oklch(1 0 0 / 0.07);
+  --hairline: oklch(1 0 0 / 0.1);
+  --rail-pill: oklch(0.9 0.022 75);
+  --rail-pill-ink: oklch(0.22 0.035 255);
+}
+
+/* Applied for one frame while the theme flips, so every color swaps at once
+   instead of each element easing on its own schedule. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 @layer base {
@@ -117,7 +203,7 @@ body {
   body {
     /* Cream, not white: route transitions snapshot the body under the moving
        rail, and a white body flashes beside it. Every page paints its own surface. */
-    @apply bg-[#fbeee2] text-foreground;
+    @apply bg-page-to text-foreground;
   }
   html {
     @apply font-sans;
@@ -140,7 +226,7 @@ body {
 
 ::view-transition-group(.app-rail) {
   overflow: clip;
-  background: rgb(25 41 62);
+  background: var(--rail);
   animation-duration: 560ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

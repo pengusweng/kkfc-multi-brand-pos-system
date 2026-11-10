@@ -20,10 +20,10 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
   return (
     <section aria-labelledby="login-title" className="w-full max-w-sm lg:-mt-8">
       <header className="motion-safe:animate-rise" style={rise(0)}>
-        <h1 id="login-title" className="text-3xl leading-tight font-semibold tracking-[-0.02em] text-[#19293e]">
+        <h1 id="login-title" className="text-3xl leading-tight font-semibold tracking-[-0.02em] text-ink">
           Sign in
         </h1>
-        <p className="mt-2 text-base leading-6 text-[#526070]">
+        <p className="mt-2 text-base leading-6 text-ink-muted">
           Use your staff username and password.
         </p>
       </header>
@@ -43,7 +43,7 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
 
             return (
               <div className="grid gap-2 motion-safe:animate-rise" style={rise(1)}>
-                <Label htmlFor={field.name} className="leading-5 text-[#19293e]">Username</Label>
+                <Label htmlFor={field.name} className="leading-5 text-ink">Username</Label>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -75,7 +75,7 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
 
             return (
               <div className="grid gap-2 motion-safe:animate-rise" style={rise(2)}>
-                <Label htmlFor={field.name} className="leading-5 text-[#19293e]">Password</Label>
+                <Label htmlFor={field.name} className="leading-5 text-ink">Password</Label>
                 <div className="relative">
                   <Input
                     id={field.name}
@@ -95,7 +95,7 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute top-0.5 right-0.5 size-11 cursor-pointer text-[#526070] hover:bg-[#f6efe8] hover:text-[#19293e]"
+                    className="absolute top-0.5 right-0.5 size-11 cursor-pointer text-ink-muted hover:bg-surface-hover hover:text-ink"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     aria-controls="password"
                     aria-pressed={showPassword}
@@ -117,7 +117,7 @@ export default function LoginCard({ form, serverError, redirecting }: LoginCardP
         {serverError && (
           <p
             role="alert"
-            className="flex items-start gap-2.5 rounded-lg bg-destructive/8 px-3 py-2.5 text-sm leading-5 text-[#9f1d14] motion-safe:animate-rise"
+            className="flex items-start gap-2.5 rounded-lg bg-destructive/8 px-3 py-2.5 text-sm leading-5 text-danger-ink motion-safe:animate-rise"
           >
             <CircleAlert aria-hidden="true" className="mt-px size-4 shrink-0 text-destructive" />
             {serverError}

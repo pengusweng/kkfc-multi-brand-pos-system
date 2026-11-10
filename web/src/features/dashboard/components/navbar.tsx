@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import NavSection from "./molecules/nav-section";
 import NavIndicator from "./atoms/nav-indicator";
 import NavUser, { type NavUserProps } from "./molecules/nav-user";
+import NavThemeToggle from "./molecules/nav-theme-toggle";
 import { railFade } from "../utils/railFade";
 import { NAV_GROUPS } from "../utils/navItems";
 import { useLogout } from "@/src/features/auth/hooks/useLogout";
@@ -63,7 +64,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
     <RailTransition>
     <aside
       className={cn(
-        "sticky top-0 z-40 flex shrink-0 flex-col overflow-hidden bg-[rgb(25,41,62)] text-white transition-[width] duration-300 ease-drawer motion-reduce:transition-none lg:h-dvh",
+        "sticky top-0 z-40 flex shrink-0 flex-col overflow-hidden bg-rail text-white transition-[width] duration-300 ease-drawer motion-reduce:transition-none lg:h-dvh",
         collapsed ? "lg:w-16" : "lg:w-60",
       )}
     >
@@ -114,7 +115,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
           open ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0",
         )}
       >
-        <div className="flex max-h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden border-t border-[#30445a] lg:max-h-none lg:flex-1 lg:border-t-0">
+        <div className="flex max-h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden border-t border-rail-line lg:max-h-none lg:flex-1 lg:border-t-0">
         <nav
           id="dashboard-nav"
           aria-label="Dashboard"
@@ -132,12 +133,15 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
             />
           ))}
         </nav>
-        <NavUser
-          {...user}
-          collapsed={collapsed}
-          signingOut={logout.isPending}
-          onSignOut={() => logout.mutate()}
-        />
+        <div className="border-t border-rail-line">
+          <NavThemeToggle collapsed={collapsed} />
+          <NavUser
+            {...user}
+            collapsed={collapsed}
+            signingOut={logout.isPending}
+            onSignOut={() => logout.mutate()}
+          />
+        </div>
         </div>
       </div>
     </aside>

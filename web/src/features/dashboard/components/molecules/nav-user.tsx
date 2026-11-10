@@ -37,7 +37,7 @@ export default function NavUser({ name, role, username, collapsed, signingOut, o
   }, []);
 
   return (
-    <div className="border-t border-[#30445a] p-2">
+    <div className="p-2">
       <DropdownMenu
         open={menuOpen}
         onOpenChange={setMenuOpen}
@@ -58,7 +58,7 @@ export default function NavUser({ name, role, username, collapsed, signingOut, o
           <Avatar name={name} />
           <span className={cn("min-w-0 leading-tight", railFade(collapsed))}>
             <span className="block truncate text-sm font-semibold">{name}</span>
-            <span className="block truncate text-xs text-[#c7d9ed]">
+            <span className="block truncate text-xs text-rail-muted">
               {signingOut ? "Signing out…" : formatRole(role)}
             </span>
           </span>
@@ -74,13 +74,13 @@ export default function NavUser({ name, role, username, collapsed, signingOut, o
         >
           <DropdownMenuGroup>
             <DropdownMenuLabel className="px-2 pt-1.5 pb-2">
-              <span className="block text-xs text-[#526070]">Signed in as</span>
-              <span className="block truncate text-sm font-medium text-[#19293e]">{username}</span>
+              <span className="block text-xs text-ink-muted">Signed in as</span>
+              <span className="block truncate text-sm font-medium text-ink">{username}</span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="-mx-1.5 my-1" />
           <DropdownMenuItem
-            className="h-9 gap-2.5 rounded-lg px-2 text-[#19293e] focus:bg-[#f6efe8] focus:text-[#19293e] [&_svg]:text-[#526070]"
+            className="h-9 gap-2.5 rounded-lg px-2 text-ink focus:bg-surface-hover focus:text-ink [&_svg]:text-ink-muted"
             onClick={() => {
               leaving.current = true;
             }}

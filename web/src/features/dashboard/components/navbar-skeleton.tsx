@@ -8,7 +8,7 @@ export default function NavbarSkeleton() {
     <RailTransition>
       <aside
         aria-hidden="true"
-        className="sticky top-0 z-40 flex shrink-0 flex-col bg-[rgb(25,41,62)] text-white lg:h-dvh lg:w-60"
+        className="sticky top-0 z-40 flex shrink-0 flex-col bg-rail text-white lg:h-dvh lg:w-60"
       >
         <div className="flex h-16 items-center justify-between px-4">
           <WordmarkTransition>
@@ -31,9 +31,15 @@ export default function NavbarSkeleton() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 border-t border-[#30445a] px-3.5 py-4 lg:flex">
-          <span className="size-8 rounded-full bg-white/10" />
-          <span className="h-2.5 w-20 rounded-full bg-white/10" />
+        <div className="hidden border-t border-rail-line lg:block">
+          <div className="mx-3 mt-2 flex h-9 items-center gap-2.5 px-2.5">
+            <span className="size-5 rounded-md bg-white/10" />
+            <span className="h-2.5 w-20 rounded-full bg-white/10" />
+          </div>
+          <div className="flex items-center gap-3 px-4 py-4">
+            <span className="size-8 rounded-full bg-white/10" />
+            <span className="h-2.5 w-20 rounded-full bg-white/10" />
+          </div>
         </div>
       </aside>
     </RailTransition>

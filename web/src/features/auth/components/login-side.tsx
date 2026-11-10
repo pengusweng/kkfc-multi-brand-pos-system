@@ -16,7 +16,7 @@ export default function LoginSide({ className }: { className?: string }) {
     <aside
       aria-label="KKFC Web Management"
       className={cn(
-        "relative isolate flex flex-col gap-4 overflow-hidden bg-[rgb(25,41,62)] px-6 py-5 text-white sm:px-8 lg:justify-between lg:gap-0 lg:py-12",
+        "relative isolate flex flex-col gap-4 overflow-hidden bg-rail px-6 py-5 text-white sm:px-8 lg:justify-between lg:gap-0 lg:py-12",
         className,
       )}
     >
@@ -46,14 +46,14 @@ export default function LoginSide({ className }: { className?: string }) {
         <WordmarkTransition>
           <span className="inline-block text-xl font-bold tracking-[0.12em] lg:text-3xl">KKFC</span>
         </WordmarkTransition>{" "}
-        <span className="text-base text-[#c7d9ed] lg:mt-2 lg:block lg:text-lg">Web Management</span>
+        <span className="text-base text-rail-muted lg:mt-2 lg:block lg:text-lg">Web Management</span>
       </p>
 
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#c7d9ed] lg:block lg:text-base lg:text-white">
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-rail-muted lg:block lg:text-base lg:text-white">
         {BRANDS.map((brand, index) => (
           <li
             key={brand}
-            className="motion-safe:animate-rise lg:border-t lg:border-[#30445a] lg:py-4 lg:last:pb-0"
+            className="motion-safe:animate-rise lg:border-t lg:border-rail-line lg:py-4 lg:last:pb-0"
             style={{ animationDelay: `${300 + index * 80}ms` }}
           >
             {brand}

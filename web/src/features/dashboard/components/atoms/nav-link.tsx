@@ -27,7 +27,7 @@ export default function NavLink({ label, href, icon: Icon, count, active, collap
         "relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm font-semibold whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-white/60",
         // The white background comes from the shared NavIndicator behind the links.
         // Turn dark as the indicator arrives, not before (dark-on-navy would flash).
-        active ? "text-slate-900 delay-150" : "text-white hover:bg-white/10",
+        active ? "text-rail-pill-ink delay-150" : "text-white hover:bg-white/10",
       )}
     >
       <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
