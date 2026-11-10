@@ -166,4 +166,53 @@ void main() {
       expect(find.byType(MenuItemCard), findsNothing);
     },
   );
+
+  testWidgets(
+    'IT-MOB-MENU-006 Given available and unavailable items When tapping Unavailable button Then hide unavailable items',
+    (tester) async {
+      const availableItem = MenuItem(
+        id: 'avail-meal',
+        name: 'Available Meal',
+        description: 'Fresh and ready',
+        pricesCentavos: {MenuChannel.dineIn: 10000},
+        availability: {MenuChannel.dineIn: MenuAvailability.available},
+      );
+      const unavailableItem = MenuItem(
+        id: 'unavail-meal',
+        name: 'Soldout Meal',
+        description: 'Out of stock',
+        pricesCentavos: {MenuChannel.dineIn: 10000},
+        availability: {MenuChannel.dineIn: MenuAvailability.stockout},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          menuItemsProvider.overrideWith(
+            (ref) async => [availableItem, unavailableItem],
+          ),
+        ],
+      );
+      await _pump(tester, container, const MenuScreen());
+      await tester.pumpAndSettle();
+
+      // Initially both items are shown
+      expect(find.text('Available Meal'), findsOneWidget);
+      expect(find.text('Soldout Meal'), findsOneWidget);
+
+      // Tap Unavailable filter button to hide unavailable items
+      await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
+      await tester.pumpAndSettle();
+
+      // Only available item is shown
+      expect(find.text('Available Meal'), findsOneWidget);
+      expect(find.text('Soldout Meal'), findsNothing);
+
+      // Tap again to toggle back
+      await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
+      await tester.pumpAndSettle();
+
+      // Both items are visible again
+      expect(find.text('Available Meal'), findsOneWidget);
+      expect(find.text('Soldout Meal'), findsOneWidget);
+    },
+  );
 }

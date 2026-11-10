@@ -126,10 +126,26 @@ final menuCategoryProvider = NotifierProvider<MenuCategoryNotifier, String>(
   MenuCategoryNotifier.new,
 );
 
+class HideUnavailableNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void set(bool hide) => state = hide;
+}
+
+final hideUnavailableProvider =
+    NotifierProvider<HideUnavailableNotifier, bool>(
+      HideUnavailableNotifier.new,
+    );
+
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
       final query = ref.watch(menuSearchProvider).trim().toLowerCase();
       final category = ref.watch(menuCategoryProvider);
+      final hideUnavailable = ref.watch(hideUnavailableProvider);
+      final currentChannel = ref.watch(menuChannelProvider);
+
       return ref
           .watch(menuItemsProvider)
           .whenData(
@@ -142,7 +158,10 @@ final visibleMenuItemsProvider =
                   category == 'All' ||
                   (i.category != null &&
                       i.category!.toLowerCase() == category.toLowerCase());
-              return matchesQuery && matchesCategory;
+              final matchesAvailability =
+                  !hideUnavailable ||
+                  i.availabilityFor(currentChannel) == MenuAvailability.available;
+              return matchesQuery && matchesCategory && matchesAvailability;
             }).toList(),
           );
     });

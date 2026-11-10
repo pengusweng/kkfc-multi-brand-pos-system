@@ -190,8 +190,10 @@ class MenuCatalogView extends ConsumerWidget {
                     ref.watch(menuSearchProvider).trim().isNotEmpty;
                 final isCategoryFiltered =
                     ref.watch(menuCategoryProvider) != 'All';
+                final isHidingUnavailable =
+                    ref.watch(hideUnavailableProvider);
 
-                if (isSearching || isCategoryFiltered) {
+                if (isSearching || isCategoryFiltered || isHidingUnavailable) {
                   return const SliverToBoxAdapter(
                     child: Center(
                       child: Padding(
@@ -238,7 +240,7 @@ class MenuCatalogView extends ConsumerWidget {
                         crossAxisCount: 2,
                         crossAxisSpacing: 16.0,
                         mainAxisSpacing: 16.0,
-                        mainAxisExtent: 140.0,
+                        mainAxisExtent: 160.0,
                       ),
                       itemCount: items.length,
                       itemBuilder: (context, index) => MenuItemCard(

@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
@@ -64,6 +63,8 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
         _searchController.text = query;
       }
     });
+
+    final hideUnavailable = ref.watch(hideUnavailableProvider);
 
     return Row(
       children: [
@@ -135,7 +136,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
         ),
         const SizedBox(width: KkfcSpace.s12),
 
-        // Unavailable button with tactile press
+        // Unavailable filter toggle button with tactile press
         AnimatedScale(
           scale: _unavailablePressed ? KkfcMotion.pressScale : 1.0,
           duration: KkfcMotion.durPress,
@@ -143,42 +144,70 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
+              key: const ValueKey('unavailable-filter-button'),
               borderRadius: BorderRadius.circular(KkfcRadius.sm),
               onTapDown: (_) => setState(() => _unavailablePressed = true),
               onTapCancel: () => setState(() => _unavailablePressed = false),
               onTapUp: (_) => setState(() => _unavailablePressed = false),
-              onTap: () => context.go(AppRoutes.availability),
-              child: Ink(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                ref.read(hideUnavailableProvider.notifier).toggle();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
                 height: 44.0,
                 padding: const EdgeInsets.symmetric(horizontal: 14.0),
                 decoration: BoxDecoration(
-                  color: _unavailablePressed
-                      ? const Color(0xFFEEE8DC)
-                      : Colors.white,
+                  color: hideUnavailable
+                      ? (_unavailablePressed
+                          ? const Color(0xFF151E2E)
+                          : const Color(0xFF1D2940))
+                      : (_unavailablePressed
+                          ? const Color(0xFFEEE8DC)
+                          : Colors.white),
                   borderRadius: BorderRadius.circular(KkfcRadius.sm),
                   border: Border.all(
-                    color: _unavailablePressed
-                        ? const Color(0xFF19293E)
-                        : const Color(0xFF76849A),
+                    color: hideUnavailable
+                        ? const Color(0xFF1D2940)
+                        : (_unavailablePressed
+                            ? const Color(0xFF19293E)
+                            : const Color(0xFF76849A)),
                     width: 1.0,
                   ),
+                  boxShadow: hideUnavailable
+                      ? [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF1D2940).withValues(alpha: 0.18),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.block_outlined,
+                      hideUnavailable
+                          ? Icons.visibility_off_outlined
+                          : Icons.block_outlined,
                       size: 18,
-                      color: Color(0xFF19293E),
+                      color: hideUnavailable
+                          ? Colors.white
+                          : const Color(0xFF19293E),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
                       'Unavailable',
                       style: TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 14.0,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF19293E),
+                        color: hideUnavailable
+                            ? Colors.white
+                            : const Color(0xFF19293E),
                       ),
                     ),
                   ],
