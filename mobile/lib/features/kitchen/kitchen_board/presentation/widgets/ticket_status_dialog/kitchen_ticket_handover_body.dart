@@ -2,34 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_stepper.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_item_tile.dart';
 
 /// The 3 checklist requirements for outgoing handover.
 enum HandoverCheckItem {
-  matchesTicket('The item matches the ticket'),
-  cutleryIncluded('Cutlery, napkins and condiments included'),
-  packagingSealed('Packaging sealed');
+  matchesTicket,
+  cutleryIncluded,
+  packagingSealed;
 
-  const HandoverCheckItem(this.label);
-  final String label;
+  String resolveLabel({int itemCount = 1}) {
+    return switch (this) {
+      HandoverCheckItem.matchesTicket => itemCount > 1
+          ? 'All $itemCount items match the ticket'
+          : 'The item matches the ticket',
+      HandoverCheckItem.cutleryIncluded =>
+        'Cutlery, napkins and condiments included',
+      HandoverCheckItem.packagingSealed => 'Packaging sealed',
+    };
+  }
 }
 
 /// Scrollable body for the Handover ticket state popup.
 ///
-/// Contains the Stepper indicator (`1 Check — 2 Hand over`), the
-/// Outgoing check checklist card, the Order/Payment metadata card, and
-/// the "Items in this order" card.
+/// Contains the Stepper indicator (`1 Check — 2 Hand over` or `Check — Photo — Hand over`),
+/// Outgoing check checklist card, Photo evidence card (for delivery tickets),
+/// Order/Payment metadata card, and "Items in this order" card.
 class KitchenTicketHandoverBody extends StatelessWidget {
   const KitchenTicketHandoverBody({
     super.key,
     required this.ticket,
     required this.checklist,
     required this.onToggleItem,
+    this.photos = const [],
+    required this.onAddPhoto,
+    required this.onRemovePhoto,
+    this.maxPhotos = 5,
   });
 
   final KitchenBoardTicket ticket;
   final Map<HandoverCheckItem, bool> checklist;
   final ValueChanged<HandoverCheckItem> onToggleItem;
+  final List<HandoverPhotoEvidence> photos;
+  final VoidCallback onAddPhoto;
+  final ValueChanged<int> onRemovePhoto;
+  final int maxPhotos;
 
   bool get _isAllChecked =>
       HandoverCheckItem.values.every((item) => checklist[item] == true);
@@ -39,6 +57,8 @@ class KitchenTicketHandoverBody extends StatelessWidget {
     final data = ticket.data;
     final displayOrderCode =
         ticket.orderCode.isNotEmpty ? ticket.orderCode : data.ticketNumber;
+    final isDelivery = ticket.isDelivery;
+    final itemCount = data.items.length;
 
     return ColoredBox(
       color: KkfcColors.canvas,
@@ -48,8 +68,12 @@ class KitchenTicketHandoverBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Stepper indicator: 1 Check — 2 Hand over
-            _HandoverStepper(isChecklistComplete: _isAllChecked),
+            // Stepper indicator (2 steps for pickup/dine-in, 3 steps for delivery)
+            KitchenTicketHandoverStepper(
+              isDelivery: isDelivery,
+              isChecklistComplete: _isAllChecked,
+              isPhotoAttached: photos.isNotEmpty,
+            ),
             const SizedBox(height: KkfcSpace.s16),
 
             // Card 1: Outgoing check with 3 interactive checkboxes
@@ -85,7 +109,8 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                         thickness: KkfcBorderWidth.thin,
                       ),
                     _ChecklistRow(
-                      item: HandoverCheckItem.values[i],
+                      label: HandoverCheckItem.values[i]
+                          .resolveLabel(itemCount: itemCount),
                       isChecked: checklist[HandoverCheckItem.values[i]] == true,
                       onToggle: () =>
                           onToggleItem(HandoverCheckItem.values[i]),
@@ -96,7 +121,18 @@ class KitchenTicketHandoverBody extends StatelessWidget {
             ),
             const SizedBox(height: KkfcSpace.s12),
 
-            // Card 2: Order & Payment info
+            // Card 2: Photo evidence (only for delivery orders: GrabFood or foodpanda)
+            if (isDelivery) ...[
+              KitchenTicketHandoverPhotoCard(
+                photos: photos,
+                onAddPhoto: onAddPhoto,
+                onRemovePhoto: onRemovePhoto,
+                maxPhotos: maxPhotos,
+              ),
+              const SizedBox(height: KkfcSpace.s12),
+            ],
+
+            // Card 3: Order & Payment info
             Container(
               padding: const EdgeInsets.all(KkfcSpace.s16),
               decoration: BoxDecoration(
@@ -108,7 +144,6 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -118,9 +153,9 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                           'Order',
                           style: TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: KkfcTextSizes.textXs,
+                            fontSize: KkfcTextSizes.textSm,
                             fontWeight: KkfcFontWeights.regular,
-                            color: KkfcColors.ticketMuted,
+                            color: KkfcColors.ink2,
                           ),
                         ),
                         const SizedBox(height: KkfcSpace.s4),
@@ -136,7 +171,6 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: KkfcSpace.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,9 +179,9 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                           'Payment',
                           style: TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: KkfcTextSizes.textXs,
+                            fontSize: KkfcTextSizes.textSm,
                             fontWeight: KkfcFontWeights.regular,
-                            color: KkfcColors.ticketMuted,
+                            color: KkfcColors.ink2,
                           ),
                         ),
                         const SizedBox(height: KkfcSpace.s4),
@@ -168,7 +202,7 @@ class KitchenTicketHandoverBody extends StatelessWidget {
             ),
             const SizedBox(height: KkfcSpace.s12),
 
-            // Card 3: Items in this order
+            // Card 4: Items in this order
             Container(
               padding: const EdgeInsets.all(KkfcSpace.s16),
               decoration: BoxDecoration(
@@ -192,9 +226,14 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                       color: KkfcColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: KkfcSpace.s12),
                   for (var i = 0; i < data.items.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 14),
+                    if (i > 0)
+                      const Divider(
+                        color: KkfcColors.divider,
+                        height: 20,
+                        thickness: KkfcBorderWidth.thin,
+                      ),
                     KitchenTicketItemTile(item: data.items[i]),
                   ],
                 ],
@@ -207,149 +246,15 @@ class KitchenTicketHandoverBody extends StatelessWidget {
   }
 }
 
-/// The Stepper row matching Image 1 and 2:
-/// `1 Check — 2 Hand over` (transitions step 1 to checked green and step 2 to active).
-class _HandoverStepper extends StatelessWidget {
-  const _HandoverStepper({required this.isChecklistComplete});
-
-  final bool isChecklistComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // Step 1: Check
-        if (isChecklistComplete)
-          Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: KkfcColors.successBg,
-              border: Border.all(
-                color: KkfcColors.successBorder,
-                width: 1.5,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.check_rounded,
-              size: 14,
-              color: KkfcColors.success,
-            ),
-          )
-        else
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KkfcColors.ink,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              '1',
-              style: TextStyle(
-                fontFamily: KkfcFonts.ibmPlexSans,
-                fontSize: 12,
-                fontWeight: KkfcFontWeights.bold,
-                color: KkfcColors.onSolid,
-              ),
-            ),
-          ),
-        const SizedBox(width: KkfcSpace.s8),
-        Text(
-          'Check',
-          style: TextStyle(
-            fontFamily: KkfcFonts.ibmPlexSans,
-            fontSize: KkfcTextSizes.textSm,
-            fontWeight: isChecklistComplete
-                ? KkfcFontWeights.medium
-                : KkfcFontWeights.bold,
-            color: KkfcColors.ink,
-          ),
-        ),
-        const SizedBox(width: KkfcSpace.s8),
-
-        // Connecting line
-        Container(
-          width: 18,
-          height: 1.5,
-          color: KkfcColors.border,
-        ),
-        const SizedBox(width: KkfcSpace.s8),
-
-        // Step 2: Hand over
-        if (isChecklistComplete)
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KkfcColors.ink,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              '2',
-              style: TextStyle(
-                fontFamily: KkfcFonts.ibmPlexSans,
-                fontSize: 12,
-                fontWeight: KkfcFontWeights.bold,
-                color: KkfcColors.onSolid,
-              ),
-            ),
-          )
-        else
-          Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.transparent,
-              border: Border.all(
-                color: KkfcColors.ticketMuted,
-                width: 1.5,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              '2',
-              style: TextStyle(
-                fontFamily: KkfcFonts.ibmPlexSans,
-                fontSize: 12,
-                fontWeight: KkfcFontWeights.bold,
-                color: KkfcColors.ticketMuted,
-              ),
-            ),
-          ),
-        const SizedBox(width: KkfcSpace.s8),
-        Text(
-          'Hand over',
-          style: TextStyle(
-            fontFamily: KkfcFonts.ibmPlexSans,
-            fontSize: KkfcTextSizes.textSm,
-            fontWeight: isChecklistComplete
-                ? KkfcFontWeights.bold
-                : KkfcFontWeights.medium,
-            color: isChecklistComplete
-                ? KkfcColors.ink
-                : KkfcColors.ticketMuted,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// A single interactive checklist item row with rounded square checkbox.
 class _ChecklistRow extends StatelessWidget {
   const _ChecklistRow({
-    required this.item,
+    required this.label,
     required this.isChecked,
     required this.onToggle,
   });
 
-  final HandoverCheckItem item;
+  final String label;
   final bool isChecked;
   final VoidCallback onToggle;
 
@@ -392,7 +297,7 @@ class _ChecklistRow extends StatelessWidget {
             // Item label
             Expanded(
               child: Text(
-                item.label,
+                label,
                 style: const TextStyle(
                   fontFamily: KkfcFonts.ibmPlexSans,
                   fontSize: KkfcTextSizes.textBase,

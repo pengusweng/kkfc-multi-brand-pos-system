@@ -35,6 +35,10 @@ class KitchenBoardTicket {
   final String? checkerId;
   final String? qcAttemptId;
 
+  /// Whether this ticket is a delivery channel (GrabFood or foodpanda)
+  /// requiring photo evidence before handover.
+  bool get isDelivery => data.isDelivery;
+
   KitchenBoardTicket copyWith({
     String? kitchenTicketId,
     String? orderId,

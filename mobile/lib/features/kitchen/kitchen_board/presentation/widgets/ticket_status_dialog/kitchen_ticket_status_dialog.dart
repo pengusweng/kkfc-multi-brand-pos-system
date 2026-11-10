@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
@@ -30,6 +31,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.onAction,
     this.onFail,
     this.onClose,
+    this.imagePicker,
+    this.onPickImage,
   });
 
   final KitchenBoardTicket ticket;
@@ -42,6 +45,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final VoidCallback? onAction;
   final VoidCallback? onFail;
   final VoidCallback? onClose;
+  final ImagePicker? imagePicker;
+  final Future<XFile?> Function(ImageSource source)? onPickImage;
 
   static const double _maxDialogWidth = 480.0;
 
@@ -124,6 +129,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   ticket: ticket,
                   isActionLoading: isActionLoading,
                   onHandover: onAction,
+                  imagePicker: imagePicker,
+                  onPickImage: onPickImage,
                 ),
               )
             else ...[
@@ -238,6 +245,8 @@ Future<void> showKitchenTicketStatusDialog(
   IconData? actionIcon,
   String? statusLabel,
   bool? isActionEnabled,
+  ImagePicker? imagePicker,
+  Future<XFile?> Function(ImageSource source)? onPickImage,
 }) {
   return showDialog<void>(
     context: context,
@@ -271,6 +280,8 @@ Future<void> showKitchenTicketStatusDialog(
             statusLabel: statusLabel,
             isActionLoading: isLoading,
             isActionEnabled: effectiveActionEnabled,
+            imagePicker: imagePicker,
+            onPickImage: onPickImage,
             onClose: () => Navigator.of(dialogContext).maybePop(),
             onFail: effectiveActionEnabled
                 ? () async {

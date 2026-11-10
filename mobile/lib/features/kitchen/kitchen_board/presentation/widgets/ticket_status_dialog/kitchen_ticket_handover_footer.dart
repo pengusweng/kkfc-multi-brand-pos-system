@@ -4,40 +4,53 @@ import 'package:mobile/app/theme/typography.dart';
 
 /// Bottom action footer for the Handover ticket state popup.
 ///
-/// When the outgoing check items are not yet all ticked, the button displays
-/// `Finish the check to hand over` in a disabled, muted state.
-/// Once all 3 check items are ticked, it activates to `Confirm handover`.
+/// Supports 3 dynamic button states:
+/// 1. Checklist incomplete: `Finish the check to hand over` (disabled, muted)
+/// 2. Delivery order missing photos: `Add the photo to hand over` (disabled, muted)
+/// 3. All requirements satisfied: `Confirm handover` (active, terracotta)
 class KitchenTicketHandoverFooter extends StatelessWidget {
   const KitchenTicketHandoverFooter({
     super.key,
+    required this.canHandover,
     required this.isChecklistComplete,
+    this.isDelivery = false,
+    this.isPhotoAttached = false,
     required this.isActionLoading,
     required this.onConfirmHandover,
   });
 
+  final bool canHandover;
   final bool isChecklistComplete;
+  final bool isDelivery;
+  final bool isPhotoAttached;
   final bool isActionLoading;
   final VoidCallback? onConfirmHandover;
 
   @override
   Widget build(BuildContext context) {
-    final canHandover = isChecklistComplete && !isActionLoading;
+    final effectiveCanHandover = canHandover && !isActionLoading;
 
-    final backgroundColor = isChecklistComplete
+    final backgroundColor = effectiveCanHandover
         ? KkfcColors.action
         : KkfcColors.action.withValues(alpha: 0.45);
 
-    final foregroundColor = isChecklistComplete
+    final foregroundColor = effectiveCanHandover
         ? KkfcColors.onSolid
         : KkfcColors.onSolid.withValues(alpha: 0.85);
 
-    final actionLabel = isChecklistComplete
-        ? 'Confirm handover'
-        : 'Finish the check to hand over';
+    final String actionLabel;
+    final IconData actionIcon;
 
-    final actionIcon = isChecklistComplete
-        ? Icons.volunteer_activism_outlined
-        : Icons.check_rounded;
+    if (effectiveCanHandover) {
+      actionLabel = 'Confirm handover';
+      actionIcon = Icons.volunteer_activism_outlined;
+    } else if (isDelivery && isChecklistComplete && !isPhotoAttached) {
+      actionLabel = 'Add the photo to hand over';
+      actionIcon = Icons.check_rounded;
+    } else {
+      actionLabel = 'Finish the check to hand over';
+      actionIcon = Icons.check_rounded;
+    }
 
     return Container(
       width: double.infinity,
@@ -56,7 +69,7 @@ class KitchenTicketHandoverFooter extends StatelessWidget {
         height: KkfcSizing.controlMd,
         child: FilledButton(
           key: const ValueKey('kitchen-ticket-handover-confirm-button'),
-          onPressed: canHandover ? onConfirmHandover : null,
+          onPressed: effectiveCanHandover ? onConfirmHandover : null,
           style: FilledButton.styleFrom(
             backgroundColor: backgroundColor,
             disabledBackgroundColor: backgroundColor,

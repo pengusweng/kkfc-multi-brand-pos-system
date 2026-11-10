@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/models/user_role.dart';
@@ -16,8 +17,11 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/seed/sample_kitchen_board_tickets.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_stepper.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_status_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
@@ -1501,6 +1505,229 @@ void main() {
         expect(find.byType(HandedOverSuccessDialog), findsNothing);
         // Handed over ticket is removed from the board
         expect(find.byKey(const ValueKey('kitchen-ticket-card-T-016')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Handover UI flow (Delivery ticket): renders 3-step stepper, photo evidence card, dynamic item count, and transitions button to "Add the photo to hand over"',
+      (tester) async {
+        final deliveryTicket = sampleKitchenBoardTickets
+            .firstWhere((t) => t.data.ticketNumber == 'T-014')
+            .copyWith(
+              lane: KitchenBoardLane.ready,
+              rawStatus: 'READY',
+            );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [deliveryTicket],
+        );
+
+        await pumpBoard(
+          tester,
+          repository: repo,
+          role: UserRole.kitchenHead,
+        );
+
+        // 1. Click "Hand over" button on ticket card in Ready lane
+        final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
+        expect(handOverButton, findsOneWidget);
+        await tester.tap(handOverButton);
+        await tester.pumpAndSettle();
+
+        // 2. Dialog is opened
+        final dialogFinder = find.byType(KitchenTicketStatusDialog);
+        expect(dialogFinder, findsOneWidget);
+        expect(
+          find.descendant(of: dialogFinder, matching: find.text('T-014')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialogFinder, matching: find.text('HANDOVER')),
+          findsOneWidget,
+        );
+
+        // 3. 3-step Stepper is rendered
+        expect(find.byType(KitchenTicketHandoverStepper), findsOneWidget);
+        expect(find.text('Check'), findsOneWidget);
+        expect(find.text('Photo'), findsOneWidget);
+        expect(find.text('Hand over'), findsWidgets);
+
+        // 4. Dynamic item count label: "All 2 items match the ticket"
+        expect(find.text('All 2 items match the ticket'), findsOneWidget);
+        expect(
+          find.text('Cutlery, napkins and condiments included'),
+          findsOneWidget,
+        );
+        expect(find.text('Packaging sealed'), findsOneWidget);
+
+        // 5. Photo evidence card is rendered
+        expect(find.byType(KitchenTicketHandoverPhotoCard), findsOneWidget);
+        expect(find.text('Photo evidence'), findsOneWidget);
+        expect(
+          find.text(
+            'Sample evidence only. Real image upload and persistence are not verified.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Attached'), findsNothing);
+        expect(
+          find.byKey(
+            const ValueKey('kitchen-ticket-handover-add-photo-button'),
+          ),
+          findsOneWidget,
+        );
+
+        // 6. Footer button initially disabled with "Finish the check to hand over"
+        final footerButton = find.byKey(
+          const ValueKey('kitchen-ticket-handover-confirm-button'),
+        );
+        expect(footerButton, findsOneWidget);
+        expect(find.text('Finish the check to hand over'), findsOneWidget);
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+
+        // 7. Tick all 3 checkboxes
+        await tester.tap(find.text('All 2 items match the ticket'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cutlery, napkins and condiments included'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Packaging sealed'));
+        await tester.pumpAndSettle();
+
+        // 8. With checklist complete but no photo attached -> button is still disabled,
+        // and label changes to "Add the photo to hand over"
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+        expect(find.text('Add the photo to hand over'), findsOneWidget);
+
+        // 9. Tapping "Attach photo" opens bottom sheet with Camera and Gallery options
+        await tester.tap(
+          find.byKey(
+            const ValueKey('kitchen-ticket-handover-add-photo-button'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Take photo'), findsOneWidget);
+        expect(find.text('Choose from gallery'), findsOneWidget);
+
+        // Close bottom sheet
+        await tester.tap(find.text('Take photo'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'KitchenTicketHandoverView for delivery ticket: uploading photo enables Confirm handover, shows Attached badge and thumbnail, supports 5-photo maximum and removal',
+      (tester) async {
+        final deliveryTicket = sampleKitchenBoardTickets
+            .firstWhere((t) => t.data.ticketNumber == 'T-014')
+            .copyWith(
+              lane: KitchenBoardLane.ready,
+              rawStatus: 'READY',
+            );
+
+        var handoverCalled = false;
+        var pickCounter = 0;
+        final validPngBytes = base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              useMaterial3: true,
+              scaffoldBackgroundColor: KkfcColors.canvas,
+            ),
+            home: Scaffold(
+              body: KitchenTicketHandoverView(
+                ticket: deliveryTicket,
+                isActionLoading: false,
+                onHandover: () => handoverCalled = true,
+                onPickImage: (source) async {
+                  pickCounter++;
+                  return XFile.fromData(
+                    validPngBytes,
+                    name: 'photo_$pickCounter.png',
+                    mimeType: 'image/png',
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final footerButton = find.byKey(
+          const ValueKey('kitchen-ticket-handover-confirm-button'),
+        );
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+
+        // 1. Tick all checkboxes
+        await tester.tap(find.text('All 2 items match the ticket'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cutlery, napkins and condiments included'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Packaging sealed'));
+        await tester.pumpAndSettle();
+
+        // Checklist complete, no photos yet -> disabled "Add the photo to hand over"
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+        expect(find.text('Add the photo to hand over'), findsOneWidget);
+
+        // 2. Add 1st photo
+        await tester.tap(
+          find.byKey(
+            const ValueKey('kitchen-ticket-handover-add-photo-button'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Photo attached!
+        expect(find.text('Attached'), findsOneWidget);
+        expect(find.text('1 of 5 photos attached'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-handover-remove-photo-0')),
+          findsOneWidget,
+        );
+
+        // Button is now enabled with "Confirm handover"
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNotNull);
+        expect(find.text('Confirm handover'), findsOneWidget);
+
+        // 3. Remove photo -> reverts to disabled "Add the photo to hand over"
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-handover-remove-photo-0')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Attached'), findsNothing);
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+        expect(find.text('Add the photo to hand over'), findsOneWidget);
+
+        // 4. Add 5 photos up to maximum limit
+        for (var i = 0; i < 5; i++) {
+          await tester.tap(
+            find.byKey(
+              const ValueKey('kitchen-ticket-handover-add-photo-button'),
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        expect(find.text('5 of 5 photos attached'), findsOneWidget);
+        // Add more button is now hidden when max (5) photos are reached
+        expect(
+          find.byKey(
+            const ValueKey('kitchen-ticket-handover-add-photo-button'),
+          ),
+          findsNothing,
+        );
+
+        // 5. Confirm handover can now be tapped
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNotNull);
+        await tester.tap(footerButton);
+        await tester.pumpAndSettle();
+
+        expect(handoverCalled, isTrue);
       },
     );
   });

@@ -43,6 +43,12 @@ class KitchenTicketData {
   final List<KitchenTicketItem> items;
   final String paymentStatus;
 
+  /// Whether this ticket is a delivery channel (e.g. GrabFood or foodpanda).
+  bool get isDelivery {
+    final clean = channel.replaceAll(RegExp(r'[\s_\-]'), '').toLowerCase();
+    return clean == 'grabfood' || clean == 'foodpanda';
+  }
+
   KitchenTicketData copyWith({
     String? ticketNumber,
     Duration? elapsed,
