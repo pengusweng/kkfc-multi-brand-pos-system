@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
-import 'package:mobile/features/new_order/presentation/widgets/catalog/category_chip.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/choose_menu_modal.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
@@ -15,7 +12,7 @@ import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart'
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
-/// The catalog view including menu selector, search/filters, category chips,
+/// The catalog view including menu selector, search/availability toggle,
 /// and virtualized menu item grid/list.
 class MenuCatalogView extends ConsumerWidget {
   const MenuCatalogView({
@@ -35,25 +32,8 @@ class MenuCatalogView extends ConsumerWidget {
     final current = ref.read(menuChannelProvider);
     if (current == newChannel) return;
 
-    final cart = ref.read(cartProvider);
-
-    // Update active channel in notifier
+    // Update active channel in notifier directly without navigating to repricing screen
     ref.read(menuChannelProvider.notifier).select(newChannel);
-
-    // If cart has items and any price differs between channels, navigate to repricing screen
-    if (cart.isNotEmpty) {
-      var hasPriceChange = false;
-      for (final line in cart) {
-        if (line.totalCentavos(current) != line.totalCentavos(newChannel)) {
-          hasPriceChange = true;
-          break;
-        }
-      }
-
-      if (hasPriceChange) {
-        context.go(AppRoutes.channelChange);
-      }
-    }
   }
 
   void _onMenuSwitched(
@@ -74,31 +54,12 @@ class MenuCatalogView extends ConsumerWidget {
     }
   }
 
-  List<String> _resolveCategories(List<MenuItem>? items) {
-    final categories = <String>{'All'};
-    if (items != null) {
-      for (final item in items) {
-        if (item.category != null && item.category!.trim().isNotEmpty) {
-          categories.add(item.category!.trim());
-        }
-      }
-    }
-    if (categories.length == 1) {
-      // Fallback categories if catalog items do not have categories explicitly populated
-      return const ['All', 'Rice bowls', 'Sets', 'Snacks'];
-    }
-    return categories.toList();
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeBrand = ref.watch(activeBrandProvider);
     final assignedBrands = ref.watch(assignedBrandsProvider);
     final selectedChannel = ref.watch(menuChannelProvider);
-    final selectedCategory = ref.watch(menuCategoryProvider);
     final visibleItems = ref.watch(visibleMenuItemsProvider);
-    final allItems = ref.watch(menuItemsProvider).asData?.value;
-    final categories = _resolveCategories(allItems);
 
     return CustomScrollView(
       slivers: [
@@ -139,31 +100,12 @@ class MenuCatalogView extends ConsumerWidget {
 
                 // 2. Search field + Unavailable button with tactile press feedback
                 const CatalogSearchBar(),
-                const SizedBox(height: KkfcSpace.s12),
-
-                // 3. Category chips filter (dynamically derived with 40dp touch target clearance)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final cat in categories) ...[
-                        CategoryChip(
-                          label: cat,
-                          selected: selectedCategory == cat,
-                          onTap: () =>
-                              ref.read(menuCategoryProvider.notifier).set(cat),
-                        ),
-                        const SizedBox(width: KkfcSpace.s8),
-                      ],
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
         ),
 
-        // 4. Menu Items Grid / List with native viewport virtualization (Zero shrinkWrap)
+        // 3. Menu Items Grid / List with native viewport virtualization (Zero shrinkWrap)
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             isWide ? KkfcSpace.s20 : KkfcSpace.s16,
@@ -188,12 +130,10 @@ class MenuCatalogView extends ConsumerWidget {
               if (items.isEmpty) {
                 final isSearching =
                     ref.watch(menuSearchProvider).trim().isNotEmpty;
-                final isCategoryFiltered =
-                    ref.watch(menuCategoryProvider) != 'All';
                 final isHidingUnavailable =
                     ref.watch(hideUnavailableProvider);
 
-                if (isSearching || isCategoryFiltered || isHidingUnavailable) {
+                if (isSearching || isHidingUnavailable) {
                   return const SliverToBoxAdapter(
                     child: Center(
                       child: Padding(

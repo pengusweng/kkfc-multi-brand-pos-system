@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../core/models/user_role.dart';
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
-import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
 import '../features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
@@ -121,10 +120,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   : 2;
           return MobileOrderFlowScreen(initialStep: initialStep);
         },
-      ),
-      GoRoute(
-        path: AppRoutes.channelChange,
-        builder: (context, state) => const ChannelRepricingScreen(),
       ),
       GoRoute(
         path: AppRoutes.orders,

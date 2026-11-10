@@ -144,22 +144,26 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
 
               // Right side: [actions] + [trailing or role badge] + [logout]
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...?actions,
-                  if (trailing != null)
-                    trailing!
-                  else if (effectiveRole != null && effectiveRole.isNotEmpty)
-                    AppHeaderRoleChip(
-                      role: effectiveRole,
-                      onTap: onRoleTap,
-                    ),
-                  if (showLogout) ...[
-                    const SizedBox(width: KkfcSpace.s8),
-                    const LogoutButton(color: Colors.white),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...?actions,
+                    if (trailing != null)
+                      trailing!
+                    else if (effectiveRole != null && effectiveRole.isNotEmpty)
+                      Flexible(
+                        child: AppHeaderRoleChip(
+                          role: effectiveRole,
+                          onTap: onRoleTap,
+                        ),
+                      ),
+                    if (showLogout) ...[
+                      const SizedBox(width: KkfcSpace.s8),
+                      const LogoutButton(color: Colors.white),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ),
@@ -203,13 +207,16 @@ class AppHeaderRoleChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                role,
-                style: const TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: KkfcTextSizes.textMd,
-                  fontWeight: KkfcFontWeights.medium,
-                  color: Colors.white,
+              Flexible(
+                child: Text(
+                  role,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: KkfcFonts.ibmPlexSans,
+                    fontSize: KkfcTextSizes.textMd,
+                    fontWeight: KkfcFontWeights.medium,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

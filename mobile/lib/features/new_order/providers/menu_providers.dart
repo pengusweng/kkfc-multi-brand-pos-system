@@ -142,7 +142,6 @@ final hideUnavailableProvider =
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
       final query = ref.watch(menuSearchProvider).trim().toLowerCase();
-      final category = ref.watch(menuCategoryProvider);
       final hideUnavailable = ref.watch(hideUnavailableProvider);
       final currentChannel = ref.watch(menuChannelProvider);
 
@@ -154,14 +153,10 @@ final visibleMenuItemsProvider =
                   query.isEmpty ||
                   i.name.toLowerCase().contains(query) ||
                   i.description.toLowerCase().contains(query);
-              final matchesCategory =
-                  category == 'All' ||
-                  (i.category != null &&
-                      i.category!.toLowerCase() == category.toLowerCase());
               final matchesAvailability =
                   !hideUnavailable ||
                   i.availabilityFor(currentChannel) == MenuAvailability.available;
-              return matchesQuery && matchesCategory && matchesAvailability;
+              return matchesQuery && matchesAvailability;
             }).toList(),
           );
     });

@@ -71,58 +71,57 @@ void main() {
   });
 
   group('Channel change navigation', () {
-    testWidgets('changing the channel opens the repricing screen', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(412, 915);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'changing the channel does not route to repricing screen and updates in place',
+      (tester) async {
+        tester.view.physicalSize = const Size(412, 915);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      final router = GoRouter(
-        initialLocation: AppRoutes.menu,
-        routes: [
-          GoRoute(
-            path: AppRoutes.menu,
-            builder: (context, state) => const MenuScreen(),
+        final router = GoRouter(
+          initialLocation: AppRoutes.menu,
+          routes: [
+            GoRoute(
+              path: AppRoutes.menu,
+              builder: (context, state) => const MenuScreen(),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        final container = ProviderContainer(
+          overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+        );
+        addTearDown(container.dispose);
+        container.read(cartProvider.notifier).add(sampleMenu[0]);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(theme: counterTheme, routerConfig: router),
           ),
-          GoRoute(
-            path: AppRoutes.channelChange,
-            builder: (context, state) => const ChannelRepricingScreen(),
-          ),
-        ],
-      );
-      addTearDown(router.dispose);
+        );
+        await tester.pumpAndSettle();
 
-      final container = ProviderContainer(
-        overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
-      );
-      addTearDown(container.dispose);
-      container.read(cartProvider.notifier).add(sampleMenu[0]);
+        expect(find.byType(ChannelRepricingScreen), findsNothing);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
-        ),
-      );
-      await tester.pumpAndSettle();
+        // Open Choose Menu modal from CurrentMenuCard
+        await tester.tap(find.byKey(const ValueKey('current-menu-selector-card')));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ChannelRepricingScreen), findsNothing);
+        // Select GrabFood and tap Switch menu
+        await tester.tap(find.text('GrabFood'));
+        await tester.pumpAndSettle();
 
-      // Open Choose Menu modal from CurrentMenuCard
-      await tester.tap(find.byKey(const ValueKey('current-menu-selector-card')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('switch-menu-button')));
+        await tester.pumpAndSettle();
 
-      // Select GrabFood and tap Switch menu
-      await tester.tap(find.text('GrabFood'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const ValueKey('switch-menu-button')));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ChannelRepricingScreen), findsOneWidget);
-      expect(find.text('GrabFood prices updated'), findsOneWidget);
-    });
+        // Unrouted repricing: stays on MenuScreen, channel updated in place
+        expect(find.byType(ChannelRepricingScreen), findsNothing);
+        expect(find.byType(MenuScreen), findsOneWidget);
+        expect(container.read(menuChannelProvider), MenuChannel.grabFood);
+      },
+    );
 
     testWidgets('switching again on the notice updates it in place', (
       tester,

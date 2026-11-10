@@ -23,7 +23,6 @@ void main() {
     AppRoutes.menu,
     AppRoutes.orders,
     AppRoutes.cancelOrder,
-    AppRoutes.channelChange,
     AppRoutes.availability,
   ];
   for (final route in routes) {
@@ -130,7 +129,6 @@ void main() {
       for (final route in [
         AppRoutes.menu,
         AppRoutes.orders,
-        AppRoutes.channelChange,
         AppRoutes.menu,
       ]) {
         container.read(routerProvider).go(route);
