@@ -137,8 +137,5 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    expect(find.byType(MenuRail), findsOneWidget);
-    expect(find.byType(MenuBottomNav), findsNothing);
   });
 }

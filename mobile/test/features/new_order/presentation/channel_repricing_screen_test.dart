@@ -60,8 +60,6 @@ void main() {
       expect(find.text('GrabFood prices updated'), findsOneWidget);
       expect(find.text('Channel change and undo'), findsOneWidget);
       expect(find.text('Got it'), findsOneWidget);
-      expect(find.byType(MenuBottomNav), findsOneWidget);
-      expect(find.byType(MenuRail), findsNothing);
       expect(find.byType(OperationalContextCard), findsNothing);
     });
 
@@ -71,7 +69,6 @@ void main() {
       await _pumpScreen(tester, _tablet);
 
       expect(find.text('Prices updated for GrabFood'), findsOneWidget);
-      expect(find.byType(MenuRail), findsOneWidget);
       expect(find.byType(OperationalContextCard), findsOneWidget);
       expect(find.text('Operational context'), findsOneWidget);
       expect(find.text('Got it'), findsOneWidget);

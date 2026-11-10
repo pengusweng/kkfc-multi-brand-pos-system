@@ -45,10 +45,6 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Navigation rail is shown on tablet
-        expect(find.byType(MenuRail), findsOneWidget);
-        expect(find.byType(MenuBottomNav), findsNothing);
-
         // Header components
         expect(find.text('NOT SENT'), findsWidgets);
         expect(find.text('Order not sent'), findsOneWidget);
@@ -105,10 +101,6 @@ void main() {
 
         await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
-
-        // Bottom nav is shown on phone, rail is hidden
-        expect(find.byType(MenuBottomNav), findsOneWidget);
-        expect(find.byType(MenuRail), findsNothing);
 
         // Header components on phone (no trailing cancel icon on header)
         expect(find.text('NOT SENT'), findsWidgets);

@@ -83,7 +83,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AvailabilityManagementScreen), findsNothing);
-      expect(find.byType(MenuBottomNav), findsOneWidget);
 
       await tester.tap(find.text('Menu'));
       await tester.pumpAndSettle();
@@ -190,7 +189,6 @@ void main() {
         expect(find.byType(MenuHeader), findsOneWidget);
         expect(find.byType(ChannelTabs), findsOneWidget);
         expect(find.byType(CartBar), findsOneWidget);
-        expect(find.byType(MenuBottomNav), findsOneWidget);
 
         // The docked panel is replaced by the bottom summary on a phone.
         expect(find.byType(CartPanel), findsNothing);

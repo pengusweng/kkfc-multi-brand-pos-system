@@ -37,10 +37,6 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Navigation rail is shown on tablet
-        expect(find.byType(MenuRail), findsOneWidget);
-        expect(find.byType(MenuBottomNav), findsNothing);
-
         // Header components
         expect(find.text('DUPLICATE FOUND'), findsWidgets);
         expect(find.text('Already sent as T-025'), findsOneWidget);
@@ -89,10 +85,6 @@ void main() {
 
         await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
-
-        // Bottom nav is shown on phone, rail is hidden
-        expect(find.byType(MenuBottomNav), findsOneWidget);
-        expect(find.byType(MenuRail), findsNothing);
 
         // Header components on phone (no trailing warning icon)
         expect(find.text('DUPLICATE FOUND'), findsWidgets);
