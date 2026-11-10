@@ -5,8 +5,11 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_qc_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
@@ -25,6 +28,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.isActionLoading = false,
     this.isActionEnabled = true,
     this.onAction,
+    this.onFail,
     this.onClose,
   });
 
@@ -36,6 +40,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onAction;
+  final VoidCallback? onFail;
   final VoidCallback? onClose;
 
   static const double _maxDialogWidth = 480.0;
@@ -51,14 +56,22 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
+    final isHandover = ticket.lane == KitchenBoardLane.ready ||
+        ticket.data.status == KkfcStatus.ready ||
+        ticket.rawStatus.toUpperCase() == 'READY';
+
     final resolvedActionLabel = actionLabel ??
         (isAcknowledged
             ? 'Start Preparing'
             : (isQcCheck
                 ? 'All items passed'
-                : ticket.lane.actionLabelFor(ticket.data.status)));
-    final resolvedStatusLabel =
-        statusLabel ?? (isAcknowledged ? 'Acknowledged' : ticket.lane.title);
+                : (isHandover
+                    ? 'Confirm handover'
+                    : ticket.lane.actionLabelFor(ticket.data.status))));
+    final resolvedStatusLabel = statusLabel ??
+        (isAcknowledged
+            ? 'Acknowledged'
+            : (isHandover ? 'Ready' : ticket.lane.title));
     final resolvedActionIcon = actionIcon ??
         switch (resolvedActionLabel) {
           'Start Preparing' => Icons.local_fire_department_rounded,
@@ -102,7 +115,15 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   isActionLoading: isActionLoading,
                   isActionEnabled: isActionEnabled,
                   onPass: onAction,
-                  onFail: () {},
+                  onFail: onFail,
+                ),
+              )
+            else if (isHandover)
+              Flexible(
+                child: KitchenTicketHandoverView(
+                  ticket: ticket,
+                  isActionLoading: isActionLoading,
+                  onHandover: onAction,
                 ),
               )
             else ...[
@@ -223,7 +244,7 @@ Future<void> showKitchenTicketStatusDialog(
     barrierColor: KkfcColors.ink.withValues(alpha: KkfcOpacity.scrim),
     builder: (dialogContext) {
       return Consumer(
-        builder: (context, ref, _) {
+        builder: (consumerContext, ref, _) {
           ref.watch(userRoleInitializerProvider);
           final boardState = ref.watch(kitchenBoardProvider);
           final userRole = ref.watch(userRoleProvider);
@@ -251,14 +272,39 @@ Future<void> showKitchenTicketStatusDialog(
             isActionLoading: isLoading,
             isActionEnabled: effectiveActionEnabled,
             onClose: () => Navigator.of(dialogContext).maybePop(),
+            onFail: effectiveActionEnabled
+                ? () async {
+                    final rejected = await showFailQcSendToReworkDialog(
+                      dialogContext,
+                      ticket: currentTicket,
+                    );
+                    if (rejected == true && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
             onAction: effectiveActionEnabled
                 ? () async {
+                    final isReady =
+                        currentTicket.lane == KitchenBoardLane.ready ||
+                        currentTicket.data.status == KkfcStatus.ready ||
+                        currentTicket.rawStatus.toUpperCase() == 'READY';
+
                     final success = await ref
                         .read(kitchenBoardProvider.notifier)
                         .performTicketAction(currentTicket);
 
                     if (success && dialogContext.mounted) {
-                      Navigator.of(dialogContext).maybePop();
+                      Navigator.of(dialogContext).pop();
+                      if (isReady && context.mounted) {
+                        final handedOverTime =
+                            KitchenBoardState.formatTimeOfDay(DateTime.now());
+                        await showHandedOverSuccessDialog(
+                          context,
+                          ticket: currentTicket,
+                          handedOverAtLabel: handedOverTime,
+                        );
+                      }
                     }
                   }
                 : null,

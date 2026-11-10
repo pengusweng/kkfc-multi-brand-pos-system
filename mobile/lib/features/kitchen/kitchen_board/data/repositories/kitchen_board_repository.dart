@@ -289,6 +289,120 @@ class KitchenBoardRepository {
     await passQcAttempt(resolvedAttemptId);
   }
 
+  /// Rejects a QC attempt via
+  /// `POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/reject`.
+  Future<void> rejectQcAttempt(
+    String attemptId, {
+    required List<Map<String, dynamic>> rejections,
+  }) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/qc-attempts/$attemptId/reject'),
+        data: {
+          'rejections': rejections,
+        },
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
+  /// Resolves the QC attempt ID for a ticket and marks it rejected,
+  /// sending it back to preparing in rework state.
+  Future<void> rejectQcForTicket({
+    required String kitchenTicketId,
+    required String reason,
+    String? attemptId,
+    String? checkerId,
+    List<String>? orderItemIds,
+  }) async {
+    var resolvedAttemptId = attemptId;
+    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
+      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
+    }
+    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
+      resolvedAttemptId = await checkTicket(
+        kitchenTicketId,
+        checkerId: checkerId,
+      );
+    }
+    resolvedAttemptId ??= kitchenTicketId;
+
+    var effectiveItemIds = orderItemIds
+        ?.where((id) => id.trim().isNotEmpty)
+        .toList();
+
+    // If no orderItemIds were provided, query the ticket directly to resolve them.
+    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+      try {
+        final res = await _dio.get<Object?>(
+          _endpoint('/kitchen-ticket/$kitchenTicketId'),
+        );
+        final data = res.data;
+        if (data is Map<String, dynamic>) {
+          final parsedTicket = KitchenBoardTicket.tryFromApiJson(data);
+          final fetchedIds = parsedTicket?.data.items
+              .map((i) => i.orderItemId)
+              .whereType<String>()
+              .where((id) => id.trim().isNotEmpty)
+              .toList();
+          if (fetchedIds != null && fetchedIds.isNotEmpty) {
+            effectiveItemIds = fetchedIds;
+          }
+        } else if (data is Map) {
+          final parsedTicket = KitchenBoardTicket.tryFromApiJson(
+            Map<String, dynamic>.from(data),
+          );
+          final fetchedIds = parsedTicket?.data.items
+              .map((i) => i.orderItemId)
+              .whereType<String>()
+              .where((id) => id.trim().isNotEmpty)
+              .toList();
+          if (fetchedIds != null && fetchedIds.isNotEmpty) {
+            effectiveItemIds = fetchedIds;
+          }
+        }
+      } catch (_) {
+        // Fall through to validation check below.
+      }
+    }
+
+    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+      throw const KitchenBoardException(
+        'Cannot fail QC: no valid order items found for this ticket.',
+      );
+    }
+
+    final List<Map<String, dynamic>> rejections = effectiveItemIds
+        .map((id) => {
+              'order_item_id': id,
+              'portion_number': 1,
+              'rejection_reason': 'INCOMPLETE',
+              'description': reason,
+            })
+        .toList();
+
+    await rejectQcAttempt(resolvedAttemptId, rejections: rejections);
+  }
+
+  /// Hands over a ready ticket via
+  /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over`.
+  Future<void> handOverTicket(String kitchenTicketId) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/$kitchenTicketId/hand-over'),
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   /// Advances a ticket's fulfillment stage on the backend.
   Future<void> advanceTicket(
     KitchenBoardTicket ticket, {

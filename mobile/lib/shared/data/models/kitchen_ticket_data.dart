@@ -10,11 +10,13 @@ class KitchenTicketItem {
     required this.quantity,
     required this.name,
     this.modifiers = const [],
+    this.orderItemId,
   });
 
   final int quantity;
   final String name;
   final List<String> modifiers; // e.g. "EXTRA rice", "NO onions"
+  final String? orderItemId;
 }
 
 @immutable

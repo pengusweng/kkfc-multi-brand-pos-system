@@ -30,6 +30,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
         KitchenTicketItem(
           quantity: 2,
           name: 'Iced Sea Salt Cream Latte',
+          orderItemId: '00000000-0000-4000-8000-000000000216',
           modifiers: [
             '50% Less Sweet',
             '22oz Large Cup',
@@ -64,6 +65,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
         KitchenTicketItem(
           quantity: 1,
           name: "Aurelia's Chicken Inasal Pecho",
+          orderItemId: '00000000-0000-4000-8000-000000000215',
           modifiers: [
             'Toasted Garlic Inasal Rice',
             'Note: Extra calamansi please',
@@ -97,6 +99,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
         KitchenTicketItem(
           quantity: 2,
           name: 'Gamcheon Samgyupsal Rice Bowl',
+          orderItemId: '00000000-0000-4000-8000-000000000214',
           modifiers: [
             'Garlic Butter Rice',
             'Spicy Fire Garlic',
@@ -106,6 +109,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
         KitchenTicketItem(
           quantity: 1,
           name: 'Korean Kimchi Pancake',
+          orderItemId: '00000000-0000-4000-8000-000000000213',
           modifiers: ['Dipping Sauce: Sweet Soy'],
         ),
       ],

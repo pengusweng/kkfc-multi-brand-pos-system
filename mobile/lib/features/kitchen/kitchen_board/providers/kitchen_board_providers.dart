@@ -28,8 +28,25 @@ class KitchenBoardState {
 
   int get activeCount => tickets.length;
 
-  List<KitchenBoardTicket> ticketsForLane(KitchenBoardLane lane) =>
-      tickets.where((t) => t.lane == lane).toList(growable: false);
+  List<KitchenBoardTicket> ticketsForLane(KitchenBoardLane lane) {
+    final laneTickets =
+        tickets.where((t) => t.lane == lane).toList(growable: false);
+    if (lane == KitchenBoardLane.preparing) {
+      final reworkTickets = <KitchenBoardTicket>[];
+      final nonReworkTickets = <KitchenBoardTicket>[];
+      for (final ticket in laneTickets) {
+        final isRework = ticket.rawStatus.toUpperCase() == 'REWORKING' ||
+            ticket.data.status == KkfcStatus.reworking;
+        if (isRework) {
+          reworkTickets.add(ticket);
+        } else {
+          nonReworkTickets.add(ticket);
+        }
+      }
+      return [...reworkTickets, ...nonReworkTickets];
+    }
+    return laneTickets;
+  }
 
   KitchenBoardState copyWith({
     List<KitchenBoardTicket>? tickets,
@@ -316,6 +333,100 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
+  Future<bool> rejectQc({
+    required String kitchenTicketId,
+    required String reason,
+    String? attemptId,
+    List<String>? orderItemIds,
+  }) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      final userId = await _resolveCurrentUserId();
+      await repo.rejectQcForTicket(
+        kitchenTicketId: kitchenTicketId,
+        reason: reason,
+        attemptId: attemptId,
+        checkerId: userId,
+        orderItemIds: orderItemIds,
+      );
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+
+      final updatedTickets = tickets.map((t) {
+        if (t.kitchenTicketId == kitchenTicketId) {
+          return t.copyWith(
+            rawStatus: 'REWORKING',
+            lane: KitchenBoardLane.preparing,
+            data: t.data.copyWith(status: KkfcStatus.reworking),
+          );
+        }
+        return t;
+      }).toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> handOverTicket(String kitchenTicketId) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      await repo.handOverTicket(kitchenTicketId);
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+
+      // Filter out the handed-over ticket so it disappears from board immediately
+      final updatedTickets = tickets
+          .where((t) => t.kitchenTicketId != kitchenTicketId)
+          .toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
   Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
     final raw = ticket.rawStatus.toUpperCase();
     final isQueued =
@@ -351,6 +462,14 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         kitchenTicketId: ticket.kitchenTicketId,
         attemptId: ticket.qcAttemptId,
       );
+    }
+
+    final isReady =
+        raw == 'READY' ||
+        ticket.data.status == KkfcStatus.ready ||
+        ticket.lane == KitchenBoardLane.ready;
+    if (isReady) {
+      return handOverTicket(ticket.kitchenTicketId);
     }
 
     final id = ticket.kitchenTicketId;

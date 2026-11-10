@@ -37,7 +37,13 @@ class KitchenTicketDialogHeader extends StatelessWidget {
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
-    final subtitle = isQc ? 'QUALITY CHECK' : 'TICKET DETAILS';
+    final isHandover = lane == KitchenBoardLane.ready ||
+        data.status == KkfcStatus.ready ||
+        ticket.rawStatus.toUpperCase() == 'READY';
+
+    final subtitle = isHandover
+        ? 'HANDOVER'
+        : (isQc ? 'QUALITY CHECK' : 'TICKET DETAILS');
 
     final badgeIcon = statusIcon ??
         (isAcknowledged ? Icons.visibility_outlined : lane.icon);

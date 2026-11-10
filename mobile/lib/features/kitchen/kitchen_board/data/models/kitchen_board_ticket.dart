@@ -389,8 +389,16 @@ class KitchenBoardTicket {
             );
           }
 
+          final orderItemId = (entry['order_item_id'] as String?) ??
+              (entry['id'] as String?);
+
           parsed.add(
-            KitchenTicketItem(quantity: qty, name: name, modifiers: mods),
+            KitchenTicketItem(
+              quantity: qty,
+              name: name,
+              modifiers: mods,
+              orderItemId: orderItemId,
+            ),
           );
         }
       }
@@ -407,6 +415,7 @@ class KitchenBoardTicket {
             quantity: first.quantity,
             name: first.name,
             modifiers: [...first.modifiers, formattedNote],
+            orderItemId: first.orderItemId,
           );
         }
       }

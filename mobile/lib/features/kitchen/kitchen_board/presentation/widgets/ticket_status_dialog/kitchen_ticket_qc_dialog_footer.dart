@@ -3,7 +3,7 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 
 /// Bottom action area for the Quality Check popup dialog, providing:
-/// 1. `✕ Fail QC and rework` (secondary outlined danger CTA, not yet wired per task requirements)
+/// 1. `✕ Fail QC and rework` (secondary outlined danger CTA, opens fail QC modal)
 /// 2. `✓ All items passed` (primary action calling the QC pass endpoint)
 class KitchenTicketQcDialogFooter extends StatelessWidget {
   const KitchenTicketQcDialogFooter({
@@ -40,7 +40,7 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Fail QC and rework button (kept non-functional per user instructions)
+          // 1. Fail QC and rework button (opens modal to collect reason and call reject endpoint)
           SizedBox(
             width: double.infinity,
             height: KkfcSizing.controlMd,
