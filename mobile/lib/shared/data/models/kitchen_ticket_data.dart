@@ -40,4 +40,28 @@ class KitchenTicketData {
   final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
   final String paymentStatus;
+
+  KitchenTicketData copyWith({
+    String? ticketNumber,
+    Duration? elapsed,
+    KitchenTicketAge? age,
+    KkfcStatus? status,
+    String? channel,
+    String? reference,
+    AssignedBrand? brand,
+    List<KitchenTicketItem>? items,
+    String? paymentStatus,
+  }) {
+    return KitchenTicketData(
+      ticketNumber: ticketNumber ?? this.ticketNumber,
+      elapsed: elapsed ?? this.elapsed,
+      age: age ?? this.age,
+      status: status ?? this.status,
+      channel: channel ?? this.channel,
+      reference: reference ?? this.reference,
+      brand: brand ?? this.brand,
+      items: items ?? this.items,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+    );
+  }
 }

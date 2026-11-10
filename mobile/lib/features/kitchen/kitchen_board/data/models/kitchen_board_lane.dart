@@ -74,7 +74,7 @@ enum KitchenBoardLane {
   String actionLabelFor(KkfcStatus status) => switch (this) {
     KitchenBoardLane.queued => 'Acknowledge',
     KitchenBoardLane.preparing =>
-      status == KkfcStatus.acknowledged ? 'Start' : 'Send to QC',
+      status == KkfcStatus.acknowledged ? 'Start Preparing' : 'Send to QC',
     KitchenBoardLane.qcCheck => 'Pass',
     KitchenBoardLane.ready => 'Hand over',
   };

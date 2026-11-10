@@ -4,6 +4,7 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_meta.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 /// Stateless top header section for [KitchenTicketStatusDialog].
 class KitchenTicketDialogHeader extends StatelessWidget {
@@ -11,11 +12,13 @@ class KitchenTicketDialogHeader extends StatelessWidget {
     super.key,
     required this.ticket,
     required this.statusLabel,
+    this.statusIcon,
     this.onClose,
   });
 
   final KitchenBoardTicket ticket;
   final String statusLabel;
+  final IconData? statusIcon;
   final VoidCallback? onClose;
 
   @override
@@ -23,6 +26,19 @@ class KitchenTicketDialogHeader extends StatelessWidget {
     final lane = ticket.lane;
     final data = ticket.data;
     final elapsedText = KitchenTicketHeader.formatElapsed(data.elapsed);
+
+    final isAcknowledged =
+        data.status == KkfcStatus.acknowledged ||
+        ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
+
+    final badgeIcon = statusIcon ??
+        (isAcknowledged ? Icons.visibility_outlined : lane.icon);
+    final badgeForeground =
+        isAcknowledged ? KkfcColors.info : lane.headerForeground;
+    final badgeBackground =
+        isAcknowledged ? KkfcColors.infoBg : lane.headerBackground;
+    final badgeBorder =
+        isAcknowledged ? KkfcColors.infoBorder : lane.headerBorder;
 
     return Container(
       width: double.infinity,
@@ -114,22 +130,23 @@ class KitchenTicketDialogHeader extends StatelessWidget {
               ),
               const SizedBox(width: KkfcSpace.s8),
               Container(
+                key: const ValueKey('kitchen-ticket-dialog-status-badge'),
                 padding: const EdgeInsets.symmetric(
                   horizontal: KkfcSpace.s12,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: lane.headerBackground,
+                  color: badgeBackground,
                   borderRadius: BorderRadius.circular(KkfcRadius.pill),
                   border: Border.all(
-                    color: lane.headerBorder,
+                    color: badgeBorder,
                     width: KkfcBorderWidth.thin,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(lane.icon, size: 16, color: lane.headerForeground),
+                    Icon(badgeIcon, size: 16, color: badgeForeground),
                     const SizedBox(width: 6),
                     Text(
                       statusLabel,
@@ -137,7 +154,7 @@ class KitchenTicketDialogHeader extends StatelessWidget {
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: KkfcTextSizes.textSm,
                         fontWeight: KkfcFontWeights.bold,
-                        color: lane.headerForeground,
+                        color: badgeForeground,
                       ),
                     ),
                   ],

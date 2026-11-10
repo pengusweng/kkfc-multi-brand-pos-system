@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 /// Stateless popup dialog used to inspect a kitchen ticket and advance its
 /// fulfillment status (e.g. `Acknowledge`, `Start`, `Send to QC`, `Pass`,
@@ -15,8 +17,9 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     super.key,
     required this.ticket,
     this.actionLabel,
-    this.actionIcon = Icons.check_rounded,
+    this.actionIcon,
     this.statusLabel,
+    this.statusIcon,
     this.isActionLoading = false,
     this.isActionEnabled = true,
     this.onAction,
@@ -27,6 +30,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final String? actionLabel;
   final IconData? actionIcon;
   final String? statusLabel;
+  final IconData? statusIcon;
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onAction;
@@ -36,9 +40,23 @@ class KitchenTicketStatusDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedActionLabel =
-        actionLabel ?? ticket.lane.actionLabelFor(ticket.data.status);
-    final resolvedStatusLabel = statusLabel ?? ticket.lane.title;
+    final isAcknowledged =
+        ticket.data.status == KkfcStatus.acknowledged ||
+        ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
+
+    final resolvedActionLabel = actionLabel ??
+        (isAcknowledged
+            ? 'Start Preparing'
+            : ticket.lane.actionLabelFor(ticket.data.status));
+    final resolvedStatusLabel =
+        statusLabel ?? (isAcknowledged ? 'Acknowledged' : ticket.lane.title);
+    final resolvedActionIcon = actionIcon ??
+        (isAcknowledged
+            ? Icons.local_fire_department_rounded
+            : (ticket.lane == KitchenBoardLane.queued ||
+                    ticket.data.status == KkfcStatus.queued
+                ? Icons.check_rounded
+                : null));
 
     return Dialog(
       backgroundColor: KkfcColors.surface,
@@ -60,12 +78,13 @@ class KitchenTicketStatusDialog extends StatelessWidget {
             KitchenTicketDialogHeader(
               ticket: ticket,
               statusLabel: resolvedStatusLabel,
+              statusIcon: statusIcon,
               onClose: onClose,
             ),
             Flexible(child: KitchenTicketDialogBody(ticket: ticket)),
             _KitchenTicketDialogFooter(
               actionLabel: resolvedActionLabel,
-              actionIcon: actionIcon,
+              actionIcon: resolvedActionIcon,
               isActionLoading: isActionLoading,
               isActionEnabled: isActionEnabled,
               onAction: onAction,
@@ -160,12 +179,13 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
 }
 
 /// Displays [KitchenTicketStatusDialog] and connects its primary action to
-/// [kitchenBoardProvider] (including `POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge`).
+/// [kitchenBoardProvider] (including `POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge`
+/// and `POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare`).
 Future<void> showKitchenTicketStatusDialog(
   BuildContext context, {
   required KitchenBoardTicket ticket,
   String? actionLabel,
-  IconData? actionIcon = Icons.check_rounded,
+  IconData? actionIcon,
   String? statusLabel,
 }) {
   return showDialog<void>(
@@ -175,23 +195,39 @@ Future<void> showKitchenTicketStatusDialog(
       return Consumer(
         builder: (context, ref, _) {
           final boardState = ref.watch(kitchenBoardProvider);
+          final currentTicket = boardState.tickets.firstWhere(
+            (t) => t.kitchenTicketId == ticket.kitchenTicketId,
+            orElse: () => ticket,
+          );
           final isLoading = boardState.loadingTicketIds.contains(
-            ticket.kitchenTicketId,
+            currentTicket.kitchenTicketId,
           );
 
           return KitchenTicketStatusDialog(
-            ticket: ticket,
+            ticket: currentTicket,
             actionLabel: actionLabel,
             actionIcon: actionIcon,
             statusLabel: statusLabel,
             isActionLoading: isLoading,
             onClose: () => Navigator.of(dialogContext).maybePop(),
             onAction: () async {
+              final raw = currentTicket.rawStatus.toUpperCase();
+              final wasQueued =
+                  raw == 'QUEUED' ||
+                  currentTicket.data.status == KkfcStatus.queued ||
+                  currentTicket.lane == KitchenBoardLane.queued;
+
               final success = await ref
                   .read(kitchenBoardProvider.notifier)
-                  .performTicketAction(ticket);
+                  .performTicketAction(currentTicket);
+
               if (success && dialogContext.mounted) {
-                Navigator.of(dialogContext).maybePop();
+                // When transitioning from QUEUED to ACKNOWLEDGED, keep the
+                // dialog open so the user sees the 'Acknowledged' status badge,
+                // the fire icon, and the 'Start Preparing' CTA.
+                if (!wasQueued) {
+                  Navigator.of(dialogContext).maybePop();
+                }
               }
             },
           );

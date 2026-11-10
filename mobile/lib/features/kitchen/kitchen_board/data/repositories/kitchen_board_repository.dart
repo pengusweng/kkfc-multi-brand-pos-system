@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 class KitchenBoardException implements Exception {
   const KitchenBoardException(this.message, {this.statusCode});
@@ -86,16 +87,35 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Begins preparation on an acknowledged ticket via
+  /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare`.
+  Future<void> prepareTicket(String kitchenTicketId) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/$kitchenTicketId/prepare'),
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   /// Advances a ticket's fulfillment stage on the backend.
   Future<void> advanceTicket(KitchenBoardTicket ticket) async {
     final id = ticket.kitchenTicketId;
-    if (ticket.rawStatus.toUpperCase() == 'QUEUED') {
+    final raw = ticket.rawStatus.toUpperCase();
+    if (raw == 'QUEUED' || ticket.data.status == KkfcStatus.queued) {
       await acknowledgeTicket(id);
       return;
     }
+    if (raw == 'ACKNOWLEDGED' || ticket.data.status == KkfcStatus.acknowledged) {
+      await prepareTicket(id);
+      return;
+    }
 
-    final actionPath = switch (ticket.rawStatus.toUpperCase()) {
-      'ACKNOWLEDGED' => '/kitchen-fulfillment/$id/prepare',
+    final actionPath = switch (raw) {
       'PREPARING' || 'REWORKING' => '/kitchen-fulfillment/$id/for-checking',
       'FOR_CHECKING' => '/kitchen-fulfillment/$id/check',
       'READY' => '/kitchen-fulfillment/$id/hand-over',

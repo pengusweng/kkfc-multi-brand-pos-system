@@ -15,9 +15,9 @@ import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_
 import 'package:mobile/features/kitchen/kitchen_board/data/seed/sample_kitchen_board_tickets.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_status_dialog.dart';
-import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 class _RecordingAdapter implements HttpClientAdapter {
   _RecordingAdapter(this.responder);
@@ -55,6 +55,7 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   final Future<List<KitchenBoardTicket>> Function() onFetch;
   int fetchCount = 0;
   final List<String> acknowledgedTicketIds = [];
+  final List<String> preparedTicketIds = [];
 
   @override
   Future<List<KitchenBoardTicket>> fetchTodaysTickets({DateTime? now}) {
@@ -65,6 +66,11 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   @override
   Future<void> acknowledgeTicket(String kitchenTicketId) async {
     acknowledgedTicketIds.add(kitchenTicketId);
+  }
+
+  @override
+  Future<void> prepareTicket(String kitchenTicketId) async {
+    preparedTicketIds.add(kitchenTicketId);
   }
 }
 
@@ -170,6 +176,32 @@ void main() {
         );
       },
     );
+
+    test(
+      'prepareTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare',
+      () async {
+        const ticketId = '00000000-0000-4000-8000-000000000016';
+        final adapter = _RecordingAdapter(
+          (_) async => _jsonResponse({
+            'kitchen_ticket_id': ticketId,
+            'status': 'PREPARING',
+          }),
+        );
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.prepareTicket(ticketId);
+
+        expect(adapter.requests, hasLength(1));
+        expect(adapter.requests.first.method, 'POST');
+        expect(
+          adapter.requests.first.uri.toString(),
+          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
+        );
+      },
+    );
   });
 
   group('KitchenBoardScreen & KitchenTicketStatusDialog UI', () {
@@ -262,7 +294,7 @@ void main() {
     );
 
     testWidgets(
-      'clicking Acknowledge on the card opens KitchenTicketStatusDialog, and the button inside the popup calls the backend API',
+      'acknowledging a ticket updates status badge to Acknowledged, button to Start Preparing with fire icon, and clicking Start Preparing calls prepare API',
       (tester) async {
         final repo = _FakeKitchenBoardRepository(
           () async => sampleKitchenBoardTickets,
@@ -270,7 +302,7 @@ void main() {
 
         await pumpBoard(tester, repository: repo);
 
-        // Tap Acknowledge on T-016 card on the board
+        // Tap Acknowledge on T-016 card on the board to open the popup
         final cardAcknowledgeButton = find.descendant(
           of: find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
           matching: find.text('Acknowledge'),
@@ -280,6 +312,7 @@ void main() {
 
         // Clicking the card button only opens the popup; API is not called yet
         expect(repo.acknowledgedTicketIds, isEmpty);
+        expect(repo.preparedTicketIds, isEmpty);
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
         expect(find.text('TICKET DETAILS'), findsOneWidget);
         expect(find.text('Close'), findsOneWidget);
@@ -288,20 +321,139 @@ void main() {
         expect(find.text('7:39 PM'), findsOneWidget);
         expect(find.text('Not started'), findsOneWidget);
 
-        // Click the Acknowledge button inside the dialog
+        // Dialog initially displays 'Queued' status badge and 'Acknowledge' button with check icon
+        final statusBadge = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
+        expect(
+          find.descendant(of: statusBadge, matching: find.text('Queued')),
+          findsOneWidget,
+        );
+
         final dialogActionButton = find.byKey(
           const ValueKey('kitchen-ticket-dialog-action-button'),
         );
-        expect(dialogActionButton, findsOneWidget);
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.text('Acknowledge'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsOneWidget,
+        );
+
+        // Tap the Acknowledge button inside the dialog
         await tester.tap(dialogActionButton);
         await tester.pumpAndSettle();
 
-        // Verify POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge was called by the popup button
+        // Verify POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge was called
         expect(repo.acknowledgedTicketIds, [
           '00000000-0000-4000-8000-000000000016',
         ]);
-        // Dialog closes after successful status change
+
+        // Dialog stays open and reflects the acknowledged ticket state:
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+
+        // 1. The status badge of the ticket should be acknowledged
+        expect(
+          find.descendant(of: statusBadge, matching: find.text('Acknowledged')),
+          findsOneWidget,
+        );
+
+        // 2. The button should say 'Start Preparing' instead of just 'Start'
+        expect(find.text('Start'), findsNothing);
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.text('Start Preparing'),
+          ),
+          findsOneWidget,
+        );
+
+        // 3. Icon changed from check to fire
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.byIcon(Icons.check_rounded),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: dialogActionButton,
+            matching: find.byIcon(Icons.local_fire_department_rounded),
+          ),
+          findsOneWidget,
+        );
+
+        // 4. Verify clicking the start preparing button calls the api: POST/api/kitchen-fulfillment/{kitchenTicketId}/prepare
+        await tester.tap(dialogActionButton);
+        await tester.pumpAndSettle();
+
+        expect(repo.preparedTicketIds, [
+          '00000000-0000-4000-8000-000000000016',
+        ]);
+
+        // After starting preparation, dialog closes
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'KitchenTicketStatusDialog renders Acknowledged badge, Start Preparing label, and fire icon for acknowledged ticket',
+      (tester) async {
+        final acknowledgedTicket = sampleKitchenBoardTickets.first.copyWith(
+          rawStatus: 'ACKNOWLEDGED',
+          lane: KitchenBoardLane.preparing,
+          data: sampleKitchenBoardTickets.first.data.copyWith(
+            status: KkfcStatus.acknowledged,
+          ),
+        );
+
+        var actionTapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: counterTheme,
+            home: Scaffold(
+              body: KitchenTicketStatusDialog(
+                ticket: acknowledgedTicket,
+                onAction: () => actionTapped = true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Status badge displays Acknowledged
+        final statusBadge = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
+        expect(statusBadge, findsOneWidget);
+        expect(
+          find.descendant(of: statusBadge, matching: find.text('Acknowledged')),
+          findsOneWidget,
+        );
+
+        // 2. Primary button displays 'Start Preparing' and fire icon
+        expect(find.text('Start Preparing'), findsOneWidget);
+        expect(find.text('Start'), findsNothing);
+        expect(
+          find.byIcon(Icons.local_fire_department_rounded),
+          findsOneWidget,
+        );
+
+        // 3. Tapping the action button triggers onAction
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-action-button')),
+        );
+        await tester.pumpAndSettle();
+        expect(actionTapped, isTrue);
       },
     );
 

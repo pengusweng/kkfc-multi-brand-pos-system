@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 @immutable
 class KitchenBoardState {
@@ -114,8 +115,71 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
+
+      // Ensure the ticket is in ACKNOWLEDGED state even if the repository
+      // response is static or offline mock data.
+      final updatedTickets = tickets.map((t) {
+        if (t.kitchenTicketId == kitchenTicketId &&
+            t.rawStatus.toUpperCase() == 'QUEUED') {
+          return t.copyWith(
+            rawStatus: 'ACKNOWLEDGED',
+            lane: KitchenBoardLane.preparing,
+            data: t.data.copyWith(status: KkfcStatus.acknowledged),
+          );
+        }
+        return t;
+      }).toList();
+
       state = state.copyWith(
-        tickets: tickets,
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> prepareTicket(String kitchenTicketId) async {
+    if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, kitchenTicketId},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      await repo.prepareTicket(kitchenTicketId);
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(kitchenTicketId);
+
+      // Ensure the ticket is in PREPARING state even if the repository
+      // response is static or offline mock data.
+      final updatedTickets = tickets.map((t) {
+        if (t.kitchenTicketId == kitchenTicketId &&
+            (t.rawStatus.toUpperCase() == 'ACKNOWLEDGED' ||
+                t.data.status == KkfcStatus.acknowledged)) {
+          return t.copyWith(
+            rawStatus: 'PREPARING',
+            lane: KitchenBoardLane.preparing,
+            data: t.data.copyWith(status: KkfcStatus.preparing),
+          );
+        }
+        return t;
+      }).toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
         updatedAt: DateTime.now(),
         loadingTicketIds: nextLoading,
         clearError: true,
@@ -133,9 +197,19 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
-    if (ticket.rawStatus.toUpperCase() == 'QUEUED' ||
-        ticket.lane == KitchenBoardLane.queued) {
+    final raw = ticket.rawStatus.toUpperCase();
+    final isQueued =
+        raw == 'QUEUED' ||
+        ticket.data.status == KkfcStatus.queued ||
+        ticket.lane == KitchenBoardLane.queued;
+    if (isQueued) {
       return acknowledgeTicket(ticket.kitchenTicketId);
+    }
+
+    final isAcknowledged =
+        raw == 'ACKNOWLEDGED' || ticket.data.status == KkfcStatus.acknowledged;
+    if (isAcknowledged) {
+      return prepareTicket(ticket.kitchenTicketId);
     }
 
     final id = ticket.kitchenTicketId;
