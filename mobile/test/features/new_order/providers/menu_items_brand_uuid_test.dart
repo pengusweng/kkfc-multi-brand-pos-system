@@ -72,7 +72,7 @@ void main() {
       expect(container.read(activeBrandProvider).id, 'gamcheon');
 
       // Keep autoDispose provider alive during async execution
-      final sub = container.listen(menuItemsProvider, (_, __) {});
+      final sub = container.listen(menuItemsProvider, (previous, next) {});
       addTearDown(sub.close);
 
       // Fetch menu items
@@ -101,7 +101,7 @@ void main() {
           .read(activeBrandProvider.notifier)
           .select(backendBrands[1]); // aureliaUuid
 
-      final sub = container.listen(menuItemsProvider, (_, __) {});
+      final sub = container.listen(menuItemsProvider, (previous, next) {});
       addTearDown(sub.close);
 
       final items = await container.read(menuItemsProvider.future);

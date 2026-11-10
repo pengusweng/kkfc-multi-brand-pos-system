@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Floating bottom order bar for phone layout matching the design.
 class CartBar extends ConsumerStatefulWidget {
-  const CartBar({super.key});
+  const CartBar({super.key, this.onViewOrder});
+
+  final VoidCallback? onViewOrder;
 
   @override
   ConsumerState<CartBar> createState() => _CartBarState();
@@ -51,7 +52,11 @@ class _CartBarState extends ConsumerState<CartBar> {
                   onTapUp: (_) => setState(() => _pressed = false),
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    context.push(AppRoutes.mobileOrderFlow);
+                    if (widget.onViewOrder != null) {
+                      widget.onViewOrder!();
+                    } else {
+                      showCartPanelSheet(context);
+                    }
                   },
                   child: Container(
                     height: 52.0,

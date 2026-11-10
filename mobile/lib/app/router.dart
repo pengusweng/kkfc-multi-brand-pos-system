@@ -113,7 +113,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.mobileOrderFlow,
-        builder: (context, state) => const MobileOrderFlowScreen(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final initialStep =
+              extra is Map<String, dynamic> && extra['initialStep'] is int
+                  ? extra['initialStep'] as int
+                  : 2;
+          return MobileOrderFlowScreen(initialStep: initialStep);
+        },
       ),
       GoRoute(
         path: AppRoutes.channelChange,

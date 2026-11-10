@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/features/new_order/data/models/order_draft_models.dart';
 import 'package:mobile/features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';

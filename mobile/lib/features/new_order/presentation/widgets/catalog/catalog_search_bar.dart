@@ -192,7 +192,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
                     Icon(
                       hideUnavailable
                           ? Icons.visibility_off_outlined
-                          : Icons.block_outlined,
+                          : Icons.visibility_outlined,
                       size: 18,
                       color: hideUnavailable
                           ? Colors.white
