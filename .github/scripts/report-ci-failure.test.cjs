@@ -168,6 +168,8 @@ function fixture() {
   };
   const state = {
     issues: [],
+    runs: [],
+    branchSha: "abc123",
     artifacts: [{ id: 7, name: "unit-test-results", expired: false }],
     jobs: [
       {
@@ -199,11 +201,13 @@ function fixture() {
   const github = {
     rest: {
       actions: {
+        listWorkflowRuns: api(async () => state.runs),
         getWorkflowRun: async () => ({ data: state.current }),
         listJobsForWorkflowRunAttempt: api(async () => state.jobs),
         listWorkflowRunArtifacts: api(async () => state.artifacts),
       },
       repos: {
+        getBranch: async () => ({ data: { commit: { sha: state.branchSha } } }),
         listPullRequestsAssociatedWithCommit: api(async () => [state.pr]),
       },
       pulls: { get: async () => ({ data: state.pr }) },
@@ -219,6 +223,7 @@ function fixture() {
           const issue = {
             ...input,
             number: 9,
+            state: "open",
             user: { login: "github-actions[bot]" },
             assignees: input.assignees.map((login) => ({ login })),
             html_url: "https://github.com/org/pos/issues/9",
@@ -231,7 +236,16 @@ function fixture() {
         },
         update: async (input) => {
           calls.updated.push(input);
-          Object.assign(state.issues[0], input);
+          const issue = state.issues.find(
+            (issue) => issue.number === input.issue_number,
+          );
+          Object.assign(
+            issue,
+            input,
+            input.assignees
+              ? { assignees: input.assignees.map((login) => ({ login })) }
+              : {},
+          );
         },
       },
     },
@@ -506,4 +520,241 @@ test("escapes untrusted job text and suppresses accidental mentions", async () =
     f.calls.created[0].body,
     /&lt;script&gt; \\\| @\u200bsomeone next/,
   );
+});
+
+function passChecks(f) {
+  f.recover = true;
+  f.context.runAttempt += 1;
+  f.state.current.run_attempt = f.context.runAttempt;
+  f.dependencyResults = {
+    ci: { result: "success" },
+    "automation-tests": { result: "success" },
+    "detect-changes": { result: "success" },
+    backend: { result: "success" },
+    frontend: { result: "skipped" },
+    web: { result: "skipped" },
+  };
+  f.state.jobs = f.state.jobs.map((job) => ({ ...job, conclusion: "success" }));
+}
+
+test("closes after successful CI with a recovery link, and repeated calls do nothing", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  await report(f);
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.equal(f.calls.updated.length, 1);
+  assert.equal(f.state.issues[0].state, "closed");
+  assert.equal(f.calls.updated[0].state_reason, "completed");
+  assert.equal(f.calls.comments.length, 1);
+  assert.match(f.calls.comments[0].body, /Successful run, attempt 2/);
+  assert.match(f.calls.comments[0].body, /abc123/);
+});
+
+test("later failure reopens the same recovered issue and preserves assignees", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  await report(f);
+  f.recover = false;
+  f.context.runAttempt = f.state.current.run_attempt = 3;
+  f.dependencyResults.backend.result = "failure";
+  f.state.jobs[0].conclusion = "failure";
+  await report(f);
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.equal(f.calls.updated.length, 2);
+  assert.equal(f.state.issues[0].state, "open");
+  assert.deepEqual(f.calls.updated[1].assignees, ["author", "backend-owner"]);
+});
+
+test("a new push can close the issue only for the PR's latest head", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  f.state.pr.head.sha = "new-commit";
+  f.context.payload.pull_request.head.sha = "new-commit";
+  await report(f);
+  assert.equal(f.state.issues[0].state, "closed");
+  assert.match(f.calls.comments[0].body, /new-commit/);
+});
+
+test("keeps issues open for skipped, missing, failing, cancelled, or stale checks", async () => {
+  const changes = [
+    (f) => {
+      f.dependencyResults.backend.result = "skipped";
+    },
+    (f) => {
+      f.dependencyResults.ci.result = "failure";
+    },
+    (f) => {
+      f.dependencyResults.web.result = "cancelled";
+    },
+    (f) => {
+      f.dependencyResults["detect-changes"].result = "failure";
+    },
+    (f) => {
+      f.state.jobs = [];
+    },
+    (f) => {
+      f.state.jobs[0].conclusion = "skipped";
+    },
+    (f) => {
+      f.state.jobs[0].conclusion = "failure";
+    },
+    (f) => {
+      f.state.pr.head.sha = "newer-commit";
+    },
+    (f) => {
+      f.state.current.run_attempt += 1;
+    },
+    (f) => {
+      f.state.current.status = "queued";
+    },
+    (f) => {
+      f.state.current.status = "completed";
+      f.state.current.conclusion = "cancelled";
+    },
+    (f) => {
+      f.state.runs = [{ run_number: 21 }];
+    },
+    (f) => {
+      delete f.dependencyResults.ci;
+    },
+  ];
+  for (const change of changes) {
+    const f = runningFixture();
+    await report(f);
+    passChecks(f);
+    change(f);
+    await report(f);
+    assert.equal(f.state.issues[0].state, "open", change.toString());
+    assert.equal(f.calls.updated.length, 0, change.toString());
+    assert.equal(f.calls.comments.length, 0, change.toString());
+  }
+});
+
+test("tracks unresolved checks across failures in different areas", async () => {
+  const f = runningFixture();
+  await report(f);
+  f.context.runAttempt = f.state.current.run_attempt = 2;
+  f.dependencyResults = { web: { result: "failure" } };
+  f.state.jobs = [{ name: "Web / Browser smoke", conclusion: "failure" }];
+  await report(f);
+  passChecks(f);
+  f.dependencyResults.backend.result = "skipped";
+  f.dependencyResults.web.result = "success";
+  await report(f);
+  assert.equal(f.state.issues[0].state, "open");
+  f.dependencyResults.backend.result = "success";
+  f.state.jobs.push({
+    name: "Backend / Stage 1 - Unit Tests (UT) & Build",
+    conclusion: "success",
+  });
+  await report(f);
+  assert.equal(f.state.issues[0].state, "closed");
+});
+
+test("recovery requires the exact failing job, not just another passing job in the area", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  f.state.jobs[0].name = "Backend / A different job";
+  await report(f);
+  assert.equal(f.calls.updated.length, 0);
+});
+
+test("legacy reports can recover when their previously failing area actually passes", async () => {
+  const f = runningFixture();
+  await report(f);
+  f.state.issues[0].body = f.state.issues[0].body.replace(
+    /<!-- ci-tracking:.*? -->\n/,
+    "",
+  );
+  passChecks(f);
+  await report(f);
+  assert.equal(f.state.issues[0].state, "closed");
+});
+
+test("successful runs without a matching bot-owned issue create no issues or comments", async () => {
+  const f = runningFixture();
+  passChecks(f);
+  f.state.issues.push({
+    user: { login: "author" },
+    state: "open",
+    body: "<!-- ci-failure:pr-42:all -->",
+  });
+  await report(f);
+  assert.equal(f.calls.created.length, 0);
+  assert.equal(f.calls.updated.length, 0);
+  assert.equal(f.calls.comments.length, 0);
+});
+
+test("branch recovery checks the current branch head and leaves PR issues untouched", async () => {
+  for (const stale of [false, true]) {
+    const f = runningFixture();
+    f.context.eventName = "push";
+    f.context.payload = {};
+    Object.assign(f.state.current, {
+      head_branch: "development",
+      head_sha: "abc123",
+    });
+    await report(f);
+    passChecks(f);
+    if (stale) f.state.branchSha = "newer-commit";
+    await report(f);
+    assert.equal(f.state.issues[0].state, stale ? "open" : "closed");
+    assert.match(f.state.issues[0].body, /ci-failure:branch-development:all/);
+  }
+});
+
+test("an older failed run cannot reopen an issue after a newer run", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  await report(f);
+  f.recover = false;
+  f.dependencyResults.backend.result = "failure";
+  f.state.runs = [{ run_number: 21 }];
+  await report(f);
+  assert.equal(f.state.issues[0].state, "closed");
+  assert.equal(f.calls.updated.length, 1);
+});
+
+test("legacy reports stay open if the recorded job is missing or renamed", async () => {
+  const f = runningFixture();
+  await report(f);
+  f.state.issues[0].body = f.state.issues[0].body.replace(
+    /<!-- ci-tracking:.*? -->\n/,
+    "",
+  );
+  passChecks(f);
+  f.state.jobs[0].name = "Backend / Replacement job";
+  await report(f);
+  assert.equal(f.calls.updated.length, 0);
+});
+
+test("recovery respects fork and Dependabot exclusions", async () => {
+  for (const fork of [true, false]) {
+    const f = runningFixture();
+    await report(f);
+    passChecks(f);
+    if (fork)
+      f.context.payload.pull_request.head.repo.full_name = "outside/pos";
+    else f.context.actor = "dependabot[bot]";
+    await report(f);
+    assert.equal(f.calls.updated.length, 0);
+  }
+});
+
+test("recovery exposes API permission failures instead of claiming closure", async () => {
+  const f = runningFixture();
+  await report(f);
+  passChecks(f);
+  f.github.rest.issues.update = async () => {
+    throw Object.assign(new Error("Forbidden"), { status: 403 });
+  };
+  await assert.rejects(report(f), /Forbidden/);
+  assert.equal(f.state.issues[0].state, "open");
 });
