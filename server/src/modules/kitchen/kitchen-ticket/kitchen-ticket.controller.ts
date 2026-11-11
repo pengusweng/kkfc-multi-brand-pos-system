@@ -89,7 +89,7 @@ export class KitchenTicketController {
   @Get(':id')
   @FindOneKitchenTicketDocs()
   async findOne(@Param('id', ParseUUIDPipe) kitchenTicketId: string) {
-    return this.kitchenTicketService.findOne(kitchenTicketId);
+    return this.kitchenTicketService.findOneWithItems(kitchenTicketId);
   }
 
   @Patch(':id/preparer')

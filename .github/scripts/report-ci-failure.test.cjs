@@ -38,7 +38,7 @@ test("reports failures inside an unfinished PR CI run using the PR head SHA", as
   delete f.context.runAttempt;
   await report(f);
   assert.equal(f.calls.created.length, 1);
-  assert.deepEqual(f.calls.created[0].assignees, ["backend-owner"]);
+  assert.deepEqual(f.calls.created[0].assignees, ["author", "backend-owner"]);
   assert.match(f.calls.created[0].body, /commit\/abc123/);
   assert.doesNotMatch(f.calls.created[0].body, /synthetic-merge-commit/);
 });
@@ -53,7 +53,7 @@ test("uses dependency results when failed jobs have not appeared in the API yet"
   await report(f);
   assert.deepEqual(
     f.calls.created.map((issue) => issue.title),
-    ["[CI] Backend failure — PR #42", "[CI] Flutter failure — PR #42"],
+    ["[CI] Failure — PR #42"],
   );
 });
 
@@ -67,15 +67,23 @@ test("does not report a dependency run with only passing, skipped, or cancelled 
 });
 
 test("groups web failures with web owners, including when the jobs API lags", async () => {
-  for (const jobs of [[], [{ name: "Web / Lint, tests, build and browser smoke", conclusion: "failure" }]]) {
+  for (const jobs of [
+    [],
+    [
+      {
+        name: "Web / Lint, tests, build and browser smoke",
+        conclusion: "failure",
+      },
+    ],
+  ]) {
     const f = runningFixture();
     f.state.jobs = jobs;
     f.dependencyResults = { web: { result: "failure" } };
     f.env.CI_WEB_ASSIGNEES = "qa-owner";
     await report(f);
     assert.equal(f.calls.created.length, 1);
-    assert.match(f.calls.created[0].title, /Web failure/);
-    assert.deepEqual(f.calls.created[0].assignees, ["qa-owner"]);
+    assert.match(f.calls.created[0].body, /Web CI failure/);
+    assert.deepEqual(f.calls.created[0].assignees, ["author", "qa-owner"]);
   }
 });
 
@@ -134,7 +142,7 @@ test("reports a current development push using default ownership for CI failures
   f.state.jobs = [{ name: "CI automation tests", conclusion: "failure" }];
   f.dependencyResults = { "automation-tests": { result: "failure" } };
   await report(f);
-  assert.equal(f.calls.created[0].title, "[CI] CI failure — development");
+  assert.equal(f.calls.created[0].title, "[CI] Failure — development");
   assert.deepEqual(f.calls.created[0].assignees, ["qa-owner"]);
 });
 
@@ -271,8 +279,8 @@ test("creates one backend issue with owner, evidence, and failed steps; ignores 
   await report(f);
   assert.equal(f.calls.created.length, 1);
   const issue = f.calls.created[0];
-  assert.deepEqual(issue.assignees, ["backend-owner"]);
-  assert.equal(issue.title, "[CI] Backend failure — PR #42");
+  assert.deepEqual(issue.assignees, ["author", "backend-owner"]);
+  assert.equal(issue.title, "[CI] Failure — PR #42");
   assert.match(issue.body, /Run Jest Unit Tests/);
   assert.match(issue.body, /actions\/runs\/10\/artifacts\/7/);
   assert.match(issue.body, /not yet a confirmed application bug/);
@@ -287,23 +295,106 @@ test("routes simultaneous backend, Flutter, and setup failures to their owners",
   await report(f);
   assert.deepEqual(
     f.calls.created.map((issue) => issue.assignees),
-    [["backend-owner"], ["mobile-owner"], ["qa-owner"]],
+    [["author", "backend-owner", "mobile-owner", "qa-owner"]],
   );
 });
 
-test("falls back from invalid area owners to default owners, then PR author", async () => {
+test("keeps the PR author when configured owners are invalid", async () => {
   const f = fixture();
   f.env.CI_BACKEND_ASSIGNEES = "unknown";
   f.env.CI_DEFAULT_ASSIGNEES = "also-unknown";
   await report(f);
   assert.deepEqual(f.calls.created[0].assignees, ["author"]);
-  assert.equal(f.calls.warnings.length, 2);
+  assert.equal(f.calls.warnings.length, 1);
+});
+
+test("combines Web and backend evidence with the PR author and distinct owners", async () => {
+  const f = fixture();
+  f.env.CI_WEB_ASSIGNEES = "@qa-owner author backend-owner";
+  f.state.jobs.push({
+    name: "Web / Browser smoke",
+    conclusion: "failure",
+    html_url: "https://github.com/org/pos/actions/runs/10/job/2",
+    steps: [{ name: "Install Chromium", conclusion: "failure" }],
+  });
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.deepEqual(f.calls.created[0].assignees, [
+    "author",
+    "backend-owner",
+    "qa-owner",
+  ]);
+  assert.match(f.calls.created[0].body, /Run Jest Unit Tests/);
+  assert.match(f.calls.created[0].body, /Install Chromium/);
+});
+
+test("updates the same issue when a different CI area fails on a later attempt", async () => {
+  const f = fixture();
+  await report(f);
+  f.state.jobs = [{ name: "Web / Browser smoke", conclusion: "failure" }];
+  f.env.CI_WEB_ASSIGNEES = "qa-owner";
+  f.context.payload.workflow_run.run_attempt = 2;
+  f.state.current.run_attempt = 2;
+  await report(f);
+  await report(f);
+  assert.equal(f.calls.created.length, 1);
+  assert.equal(f.calls.updated.length, 1);
+  assert.deepEqual(f.calls.updated[0].assignees, [
+    "author",
+    "backend-owner",
+    "qa-owner",
+  ]);
+  assert.equal(f.calls.comments.length, 1);
+});
+
+test("reuses a legacy area issue even when another area now fails", async () => {
+  const f = fixture();
+  f.state.issues.push({
+    number: 8,
+    user: { login: "github-actions[bot]" },
+    body: "<!-- ci-failure:pr-42:Flutter -->",
+    assignees: [],
+    html_url: "https://github.com/org/pos/issues/8",
+  });
+  await report(f);
+  assert.equal(f.calls.created.length, 0);
+  assert.equal(f.calls.updated[0].issue_number, 8);
+  assert.match(f.calls.updated[0].body, /ci-failure:pr-42:all/);
+});
+
+test("falls back to area owners when the PR author cannot be assigned", async () => {
+  const f = fixture();
+  f.state.eligible.delete("author");
+  await report(f);
+  assert.deepEqual(f.calls.created[0].assignees, ["backend-owner"]);
+  assert.equal(f.calls.checked[0], "author");
+});
+
+test("uses default owners when author and area owners cannot be assigned", async () => {
+  const f = fixture();
+  f.state.eligible.delete("author");
+  f.state.eligible.delete("backend-owner");
+  await report(f);
+  assert.deepEqual(f.calls.created[0].assignees, ["qa-owner"]);
+});
+
+test("keeps the PR author within GitHub's ten-assignee limit", async () => {
+  const f = fixture();
+  const owners = Array.from({ length: 12 }, (_, index) => `owner-${index}`);
+  owners.forEach((owner) => f.state.eligible.add(owner));
+  f.env.CI_BACKEND_ASSIGNEES = owners.join(",");
+  await report(f);
+  assert.deepEqual(f.calls.created[0].assignees, [
+    "author",
+    ...owners.slice(0, 9),
+  ]);
 });
 
 test("updates repeated failures, preserves previous evidence and human assignment, and is idempotent", async () => {
   const f = fixture();
   await report(f);
   f.state.issues[0].assignees = [{ login: "human-owner" }];
+  f.state.eligible.add("human-owner");
   f.context.payload.workflow_run.run_attempt = 2;
   f.state.current.run_attempt = 2;
   await report(f);
@@ -312,8 +403,15 @@ test("updates repeated failures, preserves previous evidence and human assignmen
   assert.equal(f.calls.updated.length, 1);
   assert.equal(f.calls.comments.length, 1);
   assert.match(f.calls.comments[0].body, /ci-run:10:1/);
-  assert.equal(f.calls.updated[0].assignees, undefined);
-  assert.match(f.calls.updated[0].body, /Responsibility:\*\* @human-owner/);
+  assert.deepEqual(f.calls.updated[0].assignees, [
+    "author",
+    "human-owner",
+    "backend-owner",
+  ]);
+  assert.match(
+    f.calls.updated[0].body,
+    /Responsibility:\*\* @author, @human-owner, @backend-owner/,
+  );
 });
 
 test("does not trust issue markers created by other users", async () => {
@@ -374,7 +472,7 @@ test("reports branch push failures and startup errors even without tests or arti
   f.state.jobs = [];
   f.state.artifacts = [];
   await report(f);
-  assert.equal(f.calls.created[0].title, "[CI] CI failure — main");
+  assert.equal(f.calls.created[0].title, "[CI] Failure — main");
   assert.match(f.calls.created[0].body, /No test report artifacts/);
   assert.match(f.calls.created[0].body, /startup or infrastructure/);
 });

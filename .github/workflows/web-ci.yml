@@ -10,7 +10,12 @@ permissions:
 jobs:
   web-tests:
     name: Lint, tests, build and browser smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      # Keep this version aligned with @playwright/test in web/package-lock.json.
+      # Browsers and OS dependencies are bundled, avoiding Ubuntu mirror setup.
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --init --ipc=host
     timeout-minutes: 15
     defaults:
       run:
@@ -29,6 +34,9 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Verify bundled Chromium matches Playwright
+        run: |
+          node -e 'const fs = require("node:fs"); const { chromium } = require("playwright"); const executable = chromium.executablePath(); if (!fs.existsSync(executable)) { console.error("Bundled Chromium is missing. Align the Playwright container image version with web/package-lock.json."); process.exit(1); }'
       - name: Lint
         run: npm run lint
       - name: Unit and component integration tests with coverage
@@ -37,8 +45,6 @@ jobs:
         run: npm run build
       - name: Type check app and test files
         run: npm run typecheck
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run test:e2e
       - name: Upload web test reports

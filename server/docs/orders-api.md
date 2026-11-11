@@ -10,14 +10,68 @@ Creation rejects unavailable brands with 400.
 Interactive schemas are available under **Orders** at `/api/docs` (OpenAPI JSON:
 `/api/docs-json`). Send `Authorization: Bearer <session-token>` and
 `Content-Type: application/json`. No PIN is required. Path parameters `brandId`
-and `orderId` must be UUIDs. Unknown body properties are rejected.
+and `orderId` must be UUIDs. Unknown body and query properties are rejected.
 
 | Endpoint (relative to `/api/brands/:brandId/orders`) | Required input                                                          | Success                                         |
 | ---------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| `GET /`                                              | Optional `page`, `limit`, `status`, `order_channel`, `order_date` query | `200`, `{ orders, total }`                      |
+| `GET /:orderId`                                      | None                                                                    | `200`, saved order                              |
 | `POST /`                                             | `order_id`, `order_channel`, `lines`; channel-specific references below | `201`, saved order, including identical replays |
 | `POST /:orderId/verify`                              | Payment body below; existing draft order                                | `200`, validation result with current lines     |
 | `POST /:orderId/confirm`                             | Payment body below; existing order                                      | `200`, saved order with kitchen ticket          |
 | `POST /:orderId/cancel`                              | `cancellation_reason`; draft without a kitchen ticket                    | `200`, saved cancelled draft                    |
+
+### List and get orders
+
+`GET /api/brands/:brandId/orders` returns a page of the brand's orders in every
+status (drafts, confirmed, cancelled and completed). It never returns another
+brand's orders. Results are sorted by `created_at` descending, then `order_id`
+ascending, so pages are stable.
+
+| Query parameter | Required | Type and constraints                                                                   |
+| --------------- | -------- | -------------------------------------------------------------------------------------- |
+| `page`          | No       | Integer, 1 or more; default `1`. The calculated offset must fit a signed 32-bit integer |
+| `limit`         | No       | Integer, 1-100; default `10`                                                           |
+| `status`        | No       | `DRAFT`, `CONFIRMED`, `PREPARING`, `COMPLETED`, or `CANCELLED`                         |
+| `order_channel` | No       | `DINE_IN`, `TAKEAWAY`, `GRABFOOD`, `FOODPANDA`                                         |
+| `order_date`    | No       | `YYYY-MM-DD` Asia/Manila business date, the same date used for daily order numbers     |
+
+Filters are combined with AND. Example request:
+
+```http
+GET /api/brands/44444444-4444-4444-8444-444444444444/orders?status=CONFIRMED&order_date=2026-10-29&page=1&limit=20
+Authorization: Bearer <session-token>
+```
+
+Example `200` response, with the saved order object abbreviated here:
+
+```json
+{
+  "orders": [
+    {
+      "order_id": "11111111-1111-4111-8111-111111111111",
+      "order_code": "GC-00001",
+      "status": "CONFIRMED",
+      "order_items_order": [],
+      "kitchen_tickets_order": { "ticket_number": "T-001", "status": "QUEUED" }
+    }
+  ],
+  "total": 1
+}
+```
+
+Each element of `orders` is the full saved order response described below. `total`
+is the number of orders matching the filters across all pages. When nothing
+matches, the response is `{ "orders": [], "total": 0 }`; an unknown brand also
+returns an empty page rather than 404. A page beyond the supported offset range
+returns `400 PAGINATION_UNSUPPORTED_RANGE`.
+
+`GET /api/brands/:brandId/orders/:orderId` returns one saved order in any status.
+A missing order, or one belonging to a different brand, returns `404`.
+
+Both retrieval endpoints are read-only. They use the same redaction as the other
+order responses: `create_request_hash` and item `recipe_snapshot` are never
+returned.
 
 ### Create body
 
@@ -204,7 +258,7 @@ Example `409 Conflict` body from the draft orders endpoint:
 }
 ```
 
-### Saved order response (`201` create / `200` confirm or cancel)
+### Saved order response (`201` create / `200` get, list, confirm or cancel)
 
 Responses are direct objects, without a `data` wrapper. Decimal prices are JSON
 strings; timestamps are ISO 8601 strings. Nullable fields are present as null.
@@ -237,11 +291,26 @@ The ticket contains `kitchen_ticket_id`, `order_id`, `ticket_number`, `status`,
 A new confirmation sets order status to `CONFIRMED` and ticket status to `QUEUED`.
 Neither `create_request_hash` nor `recipe_snapshot` is returned.
 
+#### Order items on kitchen tickets
+
+The kitchen ticket read endpoints (`GET /api/kitchen-ticket`, `/today`,
+`/preparer/:preparerId`, `/checker/:checkerId` and `/:id`) include an
+`order_items` array on each ticket so kitchen clients can identify items without
+the Order API. Each element contains `order_item_id`, `menu_item_id`,
+`item_name`, `quantity`, `notes`, and `modifiers` (each with
+`order_item_modifier_id`, `modifier_id`, and `modifier_name`). Prices and recipe
+snapshots are not included.
+
+Use `order_items[].order_item_id` as `rejections[].order_item_id` in
+`POST /api/kitchen-fulfillment/qc-attempts/:attemptId/reject`, with
+`portion_number` between 1 and that item's `quantity`. Ticket state-change and
+assignment responses still return the ticket without `order_items`.
+
 ### Errors
 
 | Status | Cause                                                                                                                                                             |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  | Invalid UUID/body, unknown fields, URL/order brand mismatch, missing channel references or payment inputs, unavailable menu/recipe/modifier, invalid catalog data |
+| `400`  | Invalid UUID/body/query, unknown fields, URL/order brand mismatch, missing channel references or payment inputs, unavailable menu/recipe/modifier, invalid catalog data, unsupported page range |
 | `401`  | Missing, invalid or expired session                                                                                                                               |
 | `403`  | Role access denied                                                                                                                                                |
 | `404`  | Brand or order not found                                                                                                                                          |
@@ -267,6 +336,10 @@ Orders supplies its transaction when calling the item service. Draft creation
 continues to insert the order and its nested items together through the orders
 repository.
 
+- `GET /`: list the brand's orders with pagination and optional status, channel
+  and Manila order-date filters. The page and total are read together under
+  repeatable-read isolation.
+- `GET /:orderId`: fetch one order scoped to the URL brand.
 - `POST /`: create a draft. Required body: client-generated `order_id` UUID,
   `order_channel`, and nonempty `lines` (`menu_item_id`, positive integer `quantity`,
   optional unique `modifier_ids` and `notes`). Optional order `notes`.

@@ -57,6 +57,8 @@ describe('OrdersService', () => {
       order: {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn().mockResolvedValue(draft),
+        findMany: jest.fn().mockResolvedValue([draft]),
+        count: jest.fn().mockResolvedValue(1),
         create: jest.fn(({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({
             ...draft,
@@ -1227,6 +1229,88 @@ describe('OrdersService', () => {
       expect(tx.order.update).toHaveBeenCalled();
       expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('retrieval', () => {
+    let reads: OrdersService;
+    beforeEach(() => {
+      // Reads use the repository's root client rather than a transaction.
+      reads = new OrdersService(
+        new OrdersRepository(tx as unknown as PrismaService),
+        new OrderItemsService(new OrderItemsRepository()),
+      );
+    });
+
+    it('UT-ORD-051: lists brand orders with filters, pagination and redaction', async () => {
+      tx.order.findMany.mockResolvedValue([
+        { ...draft, create_request_hash: 'secret' },
+      ]);
+
+      const result = await reads.findAll('brand', {
+        page: 3,
+        limit: 5,
+        status: OrderStatus.CONFIRMED,
+        order_channel: 'DINE_IN',
+        order_date: '2026-10-29',
+      });
+
+      const where = {
+        brand_id: 'brand',
+        status: OrderStatus.CONFIRMED,
+        order_channel: 'DINE_IN',
+        order_date: new Date('2026-10-29T00:00:00.000Z'),
+      };
+      expect(tx.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where,
+          skip: 10,
+          take: 5,
+          orderBy: [{ created_at: 'desc' }, { order_id: 'asc' }],
+        }),
+      );
+      expect(tx.order.count).toHaveBeenCalledWith({ where });
+      expect(result.total).toBe(1);
+      expect(result.orders[0]).not.toHaveProperty('create_request_hash');
+      expect(result.orders[0].order_items_order[0]).not.toHaveProperty(
+        'recipe_snapshot',
+      );
+    });
+
+    it('UT-ORD-052: lists only the brand when no filters are supplied', async () => {
+      await reads.findAll('brand', { page: 1, limit: 10 });
+      expect(tx.order.count).toHaveBeenCalledWith({
+        where: { brand_id: 'brand' },
+      });
+    });
+
+    it('UT-ORD-053: rejects a page whose offset exceeds the supported range', async () => {
+      await expect(
+        reads.findAll('brand', { page: 2_147_483_647, limit: 100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(tx.order.findMany).not.toHaveBeenCalled();
+    });
+
+    it('UT-ORD-054: returns one redacted order scoped to the brand', async () => {
+      tx.order.findFirst.mockResolvedValue({
+        ...draft,
+        create_request_hash: 'secret',
+      });
+      const order = await reads.findOne('brand', 'order');
+      expect(tx.order.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { order_id: 'order', brand_id: 'brand' },
+        }),
+      );
+      expect(order).not.toHaveProperty('create_request_hash');
+      expect(order.order_items_order[0]).not.toHaveProperty('recipe_snapshot');
+    });
+
+    it('UT-ORD-055: returns 404 for a missing or other-brand order', async () => {
+      tx.order.findFirst.mockResolvedValue(null);
+      await expect(reads.findOne('brand', 'order')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 });

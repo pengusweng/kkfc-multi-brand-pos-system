@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import {
   OrderResponseDTO,
+  OrderListResponseDTO,
   VerifyOrderResponseDTO,
   CreateOrderConflictResponseDTO,
 } from '../dto/order-response.dto';
@@ -40,6 +41,38 @@ export function OrdersDocs() {
       description:
         'Duplicate identity, conflicting replay, invalid lifecycle state or concurrent request; retry concurrency conflicts with the same order ID.',
     }),
+  );
+}
+
+export function FindOrdersDocs() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'List orders for a brand',
+      description:
+        'Paginated with page (default 1) and limit (default 10, maximum 100). Optional status, order_channel and order_date (Asia/Manila YYYY-MM-DD) filters. Sorted by created_at descending, then order_id ascending. Includes every status, items and the kitchen ticket. Request hashes and recipe snapshots are omitted.',
+    }),
+    ApiResponse({
+      status: 200,
+      type: OrderListResponseDTO,
+      description:
+        'A page of orders and the total number of matching orders, without a data/meta wrapper. Returns an empty array when nothing matches.',
+    }),
+  );
+}
+
+export function FindOneOrderDocs() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Get an order by UUID',
+      description:
+        'Returns the saved order with items and kitchen ticket in any status. Orders belonging to another brand return 404.',
+    }),
+    ApiParam({
+      name: 'orderId',
+      format: 'uuid',
+      description: 'Order UUID belonging to brandId.',
+    }),
+    ApiResponse({ status: 200, type: OrderResponseDTO }),
   );
 }
 

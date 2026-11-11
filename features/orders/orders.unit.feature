@@ -122,3 +122,34 @@ Feature: Order catalog and payment rules
     Given an order and an existing transaction
     When the order cancellation service receives that transaction
     Then its queries use that transaction without opening another or writing a ticket
+
+  @UT-ORD-051
+  Scenario: List brand orders with filters and pagination
+    Given saved orders in the requested brand
+    When orders are listed with status, channel, Manila date, page and limit
+    Then the brand-scoped filters, offset, limit and stable ordering are applied
+    And the total uses the same filters and private fields are redacted
+
+  @UT-ORD-052
+  Scenario: List only by brand when no filters are supplied
+    Given no optional list filters
+    When orders are listed
+    Then only the brand restriction is applied
+
+  @UT-ORD-053
+  Scenario: Reject an unsupported order page range
+    Given a page whose offset exceeds a signed 32-bit integer
+    When orders are listed
+    Then PAGINATION_UNSUPPORTED_RANGE is returned before querying
+
+  @UT-ORD-054
+  Scenario: Get one brand-scoped order
+    Given an order in the requested brand
+    When the order is requested by UUID
+    Then the lookup is scoped to the brand and private fields are redacted
+
+  @UT-ORD-055
+  Scenario: Reject a missing or other-brand order lookup
+    Given no order with that UUID exists in the requested brand
+    When the order is requested by UUID
+    Then 404 is returned

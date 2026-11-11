@@ -4,14 +4,18 @@ import {
   VerifyOrderDocs,
   ConfirmOrderDocs,
   CancelOrderDocs,
+  FindOrdersDocs,
+  FindOneOrderDocs,
 } from './docs/orders.docs';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -27,6 +31,7 @@ import {
   ConfirmOrderDTO,
   CancelOrderDTO,
 } from './dto/order.dto';
+import { FindOrdersDTO } from './dto/find-orders.dto';
 import { OrdersService } from './orders.service';
 
 @Controller('brands/:brandId/orders')
@@ -35,6 +40,24 @@ import { OrdersService } from './orders.service';
 @Roles(UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
+
+  @FindOrdersDocs()
+  @Get()
+  findAll(
+    @Param('brandId', ParseUUIDPipe) brandId: string,
+    @Query() query: FindOrdersDTO,
+  ) {
+    return this.orders.findAll(brandId, query);
+  }
+
+  @FindOneOrderDocs()
+  @Get(':orderId')
+  findOne(
+    @Param('brandId', ParseUUIDPipe) brandId: string,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+  ) {
+    return this.orders.findOne(brandId, orderId);
+  }
 
   @CreateOrderDocs()
   @Post()

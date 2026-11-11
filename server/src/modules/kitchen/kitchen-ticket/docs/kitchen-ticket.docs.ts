@@ -13,6 +13,7 @@ import { KitchenTicketStatus } from '@prisma/client';
 import { OrderTicketResponseDTO } from '../../../orders/orders/dto/order-response.dto';
 import { CreateKitchenTicketDTO } from '../dto/create-kitchen-ticket.dto';
 import { FindKitchenTicketsDTO } from '../dto/find-kitchen-tickets.dto';
+import { KitchenTicketWithItemsDTO } from '../dto/kitchen-ticket-response.dto';
 
 const ticketExample: OrderTicketResponseDTO = {
   kitchen_ticket_id: '00000000-0000-4000-8000-000000000001',
@@ -32,10 +33,35 @@ const ticketExample: OrderTicketResponseDTO = {
   created_at: '2026-10-30T02:00:00.000Z',
   modified_at: '2026-10-30T02:00:00.000Z',
 };
+const ticketWithItemsExample: KitchenTicketWithItemsDTO = {
+  ...ticketExample,
+  order_items: [
+    {
+      order_item_id: '00000000-0000-4000-8000-000000000006',
+      menu_item_id: '00000000-0000-4000-8000-000000000007',
+      item_name: 'Chicken meal',
+      quantity: 2,
+      notes: null,
+      modifiers: [
+        {
+          order_item_modifier_id: '00000000-0000-4000-8000-000000000008',
+          modifier_id: '00000000-0000-4000-8000-000000000009',
+          modifier_name: 'Extra gravy',
+        },
+      ],
+    },
+  ],
+};
 const preparerId = '00000000-0000-4000-8000-000000000004';
 const checkerId = '00000000-0000-4000-8000-000000000005';
 const ticketSchema = { $ref: getSchemaPath(OrderTicketResponseDTO) };
-const ticketArraySchema = { type: 'array' as const, items: ticketSchema };
+const ticketWithItemsSchema = {
+  $ref: getSchemaPath(KitchenTicketWithItemsDTO),
+};
+const ticketArraySchema = {
+  type: 'array' as const,
+  items: ticketWithItemsSchema,
+};
 const missingTicketExample = {
   code: 'KITCHEN_TICKET_NOT_FOUND',
   message: 'KitchenTicket not found.',
@@ -47,6 +73,7 @@ export function KitchenTicketDocs() {
     ApiBearerAuth(),
     ApiExtraModels(
       OrderTicketResponseDTO,
+      KitchenTicketWithItemsDTO,
       CreateKitchenTicketDTO,
       FindKitchenTicketsDTO,
     ),
@@ -140,7 +167,7 @@ export function FindAllKitchenTicketsDocs() {
           kitchenTickets: ticketArraySchema,
           total: { type: 'integer', minimum: 0 },
         },
-        example: { kitchenTickets: [ticketExample], total: 1 },
+        example: { kitchenTickets: [ticketWithItemsExample], total: 1 },
       },
     }),
   );
@@ -156,7 +183,7 @@ export function FindTodaysKitchenTicketsDocs() {
     ApiResponse({
       status: 200,
       description: 'Tickets created today in Asia/Manila.',
-      schema: { ...ticketArraySchema, example: [ticketExample] },
+      schema: { ...ticketArraySchema, example: [ticketWithItemsExample] },
     }),
   );
 }
@@ -181,7 +208,7 @@ export function FindKitchenTicketsByPreparerDocs() {
         ...ticketArraySchema,
         example: [
           {
-            ...ticketExample,
+            ...ticketWithItemsExample,
             status: KitchenTicketStatus.PREPARING,
             preparer_id: preparerId,
             acknowledged_at: '2026-10-30T02:01:00.000Z',
@@ -214,7 +241,7 @@ export function FindKitchenTicketsByCheckerDocs() {
         ...ticketArraySchema,
         example: [
           {
-            ...ticketExample,
+            ...ticketWithItemsExample,
             status: KitchenTicketStatus.CHECKING,
             preparer_id: preparerId,
             checker_id: checkerId,
@@ -232,7 +259,8 @@ export function FindOneKitchenTicketDocs() {
   return applyDecorators(
     ApiOperation({
       summary: 'Get a kitchen ticket by UUID.',
-      description: 'Returns the stored ticket, including any terminal status.',
+      description:
+        'Returns the stored ticket, including any terminal status, with its order_items (order_item_id, name, quantity, notes, modifiers) for QC rejection.',
     }),
     ApiParam({
       name: 'id',
@@ -241,8 +269,11 @@ export function FindOneKitchenTicketDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Kitchen ticket.',
-      schema: { allOf: [ticketSchema], example: ticketExample },
+      description: 'Kitchen ticket with its order items.',
+      schema: {
+        allOf: [ticketWithItemsSchema],
+        example: ticketWithItemsExample,
+      },
     }),
     ApiResponse({
       status: 404,

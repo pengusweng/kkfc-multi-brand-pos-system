@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Geist_Mono } from "next/font/google";
+import { Schibsted_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Providers from "./providers";
+import { THEME_SCRIPT } from "@/src/lib/theme-script";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-ibm-plex-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// A news grotesk: compact enough for dense tables, with real tabular figures.
+// Monospace (the account ID) uses the system stack, set in globals.css.
+const schibstedGrotesk = Schibsted_Grotesk({
+  variable: "--font-schibsted-grotesk",
   subsets: ["latin"],
 });
 
@@ -23,8 +21,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", ibmPlexSans.variable, geistMono.variable, "font-sans")}
+      className={cn("h-full", "antialiased", schibstedGrotesk.variable, "font-sans")}
+      // The theme script below adds `dark` to this element before React hydrates.
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>

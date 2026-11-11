@@ -53,19 +53,31 @@ export class UsersService {
     return user;
   }
 
-  async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
+  async findAllUsers({
+    page,
+    limit,
+    status,
+    search,
+    role,
+    sortBy,
+    sortOrder,
+  }: FindUsersDTO) {
+    // The search text can contain names, so only log whether one was given.
     this.logger.log(
-      `Listing users: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+      `Listing users: page=${page}, limit=${limit}, status=${status}, role=${role ?? 'any'}, search=${search ? 'yes' : 'no'}, sort=${sortBy ? `${sortBy} ${sortOrder ?? 'asc'}` : 'default'}`,
     );
 
     const skip = (page - 1) * limit;
     assertValidPagination(skip, this.logger);
 
-    const { users, total } = await this.usersRepository.findAll(
-      skip,
-      limit,
-      activeOnly,
-    );
+    const { users, counts } = await this.usersRepository.findAll(skip, limit, {
+      status,
+      search,
+      role,
+      sortBy,
+      sortOrder,
+    });
+    const total = counts[status];
 
     this.logger.log(
       `Listed users: page=${page}, returned=${users.length}, total=${total}`,
@@ -78,6 +90,7 @@ export class UsersService {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+        counts,
       },
     };
   }
