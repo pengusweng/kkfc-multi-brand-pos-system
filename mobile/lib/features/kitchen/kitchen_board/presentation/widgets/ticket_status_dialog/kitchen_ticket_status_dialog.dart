@@ -90,61 +90,72 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   : null),
         };
 
-    return Dialog(
-      backgroundColor: KkfcColors.surface,
-      surfaceTintColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: KkfcSpace.s24,
-        vertical: KkfcSpace.s24,
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: reduceMotion ? 1.0 : 0.96, end: 1.0),
+      duration: reduceMotion ? Duration.zero : KkfcMotion.durOverlay,
+      curve: KkfcMotion.easeSpring,
+      builder: (context, scale, child) => Transform.scale(
+        scale: scale,
+        child: child,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(KkfcRadius.lg),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: _maxDialogWidth),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            KitchenTicketDialogHeader(
-              ticket: ticket,
-              statusLabel: resolvedStatusLabel,
-              statusIcon: statusIcon,
-              onClose: onClose,
-            ),
-            if (isQcCheck)
-              Flexible(
-                child: KitchenTicketQcView(
-                  ticket: ticket,
-                  isActionLoading: isActionLoading,
-                  isActionEnabled: isActionEnabled,
-                  onPass: onAction,
-                  onFail: onFail,
-                ),
-              )
-            else if (isHandover)
-              Flexible(
-                child: KitchenTicketHandoverView(
-                  ticket: ticket,
-                  isActionLoading: isActionLoading,
-                  isActionEnabled: isActionEnabled,
-                  onHandover: onAction,
-                  imagePicker: imagePicker,
-                  onPickImage: onPickImage,
-                ),
-              )
-            else ...[
-              Flexible(child: KitchenTicketDialogBody(ticket: ticket)),
-              _KitchenTicketDialogFooter(
-                actionLabel: resolvedActionLabel,
-                actionIcon: resolvedActionIcon,
-                isActionLoading: isActionLoading,
-                isActionEnabled: isActionEnabled,
-                onAction: onAction,
+      child: Dialog(
+        backgroundColor: KkfcColors.surface,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: KkfcSpace.s24,
+          vertical: KkfcSpace.s24,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(KkfcRadius.lg),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxDialogWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KitchenTicketDialogHeader(
+                ticket: ticket,
+                statusLabel: resolvedStatusLabel,
+                statusIcon: statusIcon,
+                onClose: onClose,
               ),
+              if (isQcCheck)
+                Flexible(
+                  child: KitchenTicketQcView(
+                    ticket: ticket,
+                    isActionLoading: isActionLoading,
+                    isActionEnabled: isActionEnabled,
+                    onPass: onAction,
+                    onFail: onFail,
+                  ),
+                )
+              else if (isHandover)
+                Flexible(
+                  child: KitchenTicketHandoverView(
+                    ticket: ticket,
+                    isActionLoading: isActionLoading,
+                    isActionEnabled: isActionEnabled,
+                    onHandover: onAction,
+                    imagePicker: imagePicker,
+                    onPickImage: onPickImage,
+                  ),
+                )
+              else ...[
+                Flexible(child: KitchenTicketDialogBody(ticket: ticket)),
+                _KitchenTicketDialogFooter(
+                  actionLabel: resolvedActionLabel,
+                  actionIcon: resolvedActionIcon,
+                  isActionLoading: isActionLoading,
+                  isActionEnabled: isActionEnabled,
+                  onAction: onAction,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

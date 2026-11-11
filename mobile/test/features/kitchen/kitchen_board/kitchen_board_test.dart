@@ -2009,5 +2009,81 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'choreographs kitchen board entrance, ticket stagger, lane badge spring, and physical card press compression',
+      (tester) async {
+        var currentTickets = [sampleKitchenBoardTickets[0]]; // T-016 in Queued
+        final repo = _FakeKitchenBoardRepository(() async => currentTickets);
+
+        await pumpBoard(tester, repository: repo);
+
+        // 1. Verify choreographed screen entrance FadeTransition & SlideTransition
+        expect(find.byType(FadeTransition), findsWidgets);
+        expect(find.byType(SlideTransition), findsWidgets);
+
+        // 2. Verify KitchenTicketCard tactile physical compression (0.97 scale on pointer down)
+        final cardFinder = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-016'),
+        );
+        expect(cardFinder, findsOneWidget);
+
+        final scaleFinder = find.descendant(
+          of: cardFinder,
+          matching: find.byType(AnimatedScale),
+        );
+        expect(scaleFinder, findsOneWidget);
+        expect(tester.widget<AnimatedScale>(scaleFinder).scale, 1.0);
+
+        final gesture = await tester.startGesture(tester.getCenter(cardFinder));
+        await tester.pump();
+        expect(
+          tester.widget<AnimatedScale>(scaleFinder).scale,
+          KkfcMotion.pressScale,
+        );
+        expect(
+          tester.widget<AnimatedScale>(scaleFinder).duration,
+          KkfcMotion.durPress,
+        );
+
+        await gesture.up();
+        await tester.pump();
+        expect(tester.widget<AnimatedScale>(scaleFinder).scale, 1.0);
+        expect(
+          tester.widget<AnimatedScale>(scaleFinder).duration,
+          KkfcMotion.durRelease,
+        );
+        await tester.pumpAndSettle();
+
+        // 3. Verify Refresh button tactile physical compression
+        final refreshFinder = find.byKey(
+          const ValueKey('kitchen-board-refresh-button'),
+        );
+        final refreshGesture = await tester.startGesture(
+          tester.getCenter(refreshFinder),
+        );
+        await tester.pump();
+        await refreshGesture.up();
+        await tester.pumpAndSettle();
+
+        // 4. Verify lane header count badge spring transition when new tickets arrive
+        expect(
+          find.byKey(const ValueKey('lane-count-zero-preparing')),
+          findsOneWidget,
+        );
+        currentTickets = sampleKitchenBoardTickets; // Adds T-015 in Preparing & T-014 in Ready
+        await tester.tap(refreshFinder);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('lane-count-pill-preparing-1')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('lane-count-pill-ready-1')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

@@ -21,8 +21,11 @@ class KitchenBoardLaneHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasTickets = count > 0;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Container(
+    return AnimatedContainer(
+      duration: reduceMotion ? Duration.zero : KkfcMotion.durLayout,
+      curve: KkfcMotion.easeOut,
       padding: const EdgeInsets.symmetric(
         horizontal: KkfcSpace.s12,
         vertical: 10.0,
@@ -38,7 +41,16 @@ class KitchenBoardLaneHeader extends StatelessWidget {
                 width: KkfcBorderWidth.thin,
               ),
             )
-          : null,
+          : BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(KkfcRadius.lg),
+              ),
+              border: Border.all(
+                color: Colors.transparent,
+                width: KkfcBorderWidth.thin,
+              ),
+            ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -65,42 +77,56 @@ class KitchenBoardLaneHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: KkfcSpace.s8),
-          if (hasTickets)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(
-                color: KkfcColors.surface,
-                borderRadius: BorderRadius.circular(KkfcRadius.pill),
-                border: Border.all(
-                  color: lane.headerBorder,
-                  width: KkfcBorderWidth.thin,
-                ),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: KkfcTextSizes.textSm,
-                  fontWeight: KkfcFontWeights.bold,
-                  color: lane.badgeTextColor,
-                  fontFeatures: tabularNumberFeatures,
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                '0',
-                style: const TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: KkfcTextSizes.textMd,
-                  fontWeight: KkfcFontWeights.bold,
-                  color: KkfcColors.neutral,
-                  fontFeatures: tabularNumberFeatures,
-                ),
-              ),
+          AnimatedSwitcher(
+            duration: reduceMotion ? Duration.zero : KkfcMotion.durRelease,
+            reverseDuration: reduceMotion ? Duration.zero : KkfcMotion.durExit,
+            switchInCurve: KkfcMotion.easeSpring,
+            switchOutCurve: KkfcMotion.easeIn,
+            transitionBuilder: (child, animation) => ScaleTransition(
+              scale: animation,
+              child: FadeTransition(opacity: animation, child: child),
             ),
+            child: hasTickets
+                ? Container(
+                    key: ValueKey('lane-count-pill-${lane.name}-$count'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.surface,
+                      borderRadius: BorderRadius.circular(KkfcRadius.pill),
+                      border: Border.all(
+                        color: lane.headerBorder,
+                        width: KkfcBorderWidth.thin,
+                      ),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textSm,
+                        fontWeight: KkfcFontWeights.bold,
+                        color: lane.badgeTextColor,
+                        fontFeatures: tabularNumberFeatures,
+                      ),
+                    ),
+                  )
+                : Padding(
+                    key: ValueKey('lane-count-zero-${lane.name}'),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: const Text(
+                      '0',
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textMd,
+                        fontWeight: KkfcFontWeights.bold,
+                        color: KkfcColors.neutral,
+                        fontFeatures: tabularNumberFeatures,
+                      ),
+                    ),
+                  ),
+          ),
         ],
       ),
     );

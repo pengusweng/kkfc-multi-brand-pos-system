@@ -14,7 +14,7 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// Main Kitchen Display System (KDS) four-lane board screen.
-class KitchenBoardScreen extends ConsumerWidget {
+class KitchenBoardScreen extends ConsumerStatefulWidget {
   const KitchenBoardScreen({
     super.key,
     this.showLogout = true,
@@ -34,7 +34,87 @@ class KitchenBoardScreen extends ConsumerWidget {
   };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KitchenBoardScreen> createState() => _KitchenBoardScreenState();
+}
+
+class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
+  late final Animation<double> _headerFade;
+  late final Animation<Offset> _headerSlide;
+  late final Animation<double> _toolbarFade;
+  late final Animation<Offset> _toolbarSlide;
+  late final Animation<double> _boardFade;
+  late final Animation<Offset> _boardSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _headerFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+    );
+    _headerSlide = Tween<Offset>(
+      begin: const Offset(0, -0.06),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+      ),
+    );
+    _toolbarFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.08, 0.65, curve: Curves.easeOutCubic),
+    );
+    _toolbarSlide = Tween<Offset>(
+      begin: const Offset(0, -0.04),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.08, 0.65, curve: Curves.easeOutCubic),
+      ),
+    );
+    _boardFade = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.14, 1.0, curve: Curves.easeOutCubic),
+    );
+    _boardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.03),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.14, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_entranceController.isAnimating && !_entranceController.isCompleted) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _entranceController.value = 1.0;
+      } else {
+        _entranceController.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen<String?>(sessionTokenProvider, (previous, next) {
       if (next != null && next != previous) {
         ref.read(kitchenBoardProvider.notifier).refresh(force: true);
@@ -44,7 +124,8 @@ class KitchenBoardScreen extends ConsumerWidget {
     ref.watch(userRoleInitializerProvider);
     final boardState = ref.watch(kitchenBoardProvider);
     final userRole = ref.watch(userRoleProvider);
-    final roleLabel = _roleLabelFor(userRole);
+    final roleLabel = KitchenBoardScreen._roleLabelFor(userRole);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return KkfcScaffold(
       body: ColoredBox(
@@ -52,25 +133,51 @@ class KitchenBoardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AppHeader(
-              title: 'Kitchen',
-              role: roleLabel,
-              showLogout: showLogout,
-            ),
-            KitchenBoardToolbar(
-              activeCount: boardState.activeCount,
-              updatedAt: boardState.updatedAt,
-              isRefreshing: boardState.isRefreshing || boardState.isLoading,
-              isReadOnly: userRole?.isKitchenReadOnlyExceptQc ?? false,
-              onRefresh: () =>
-                  ref.read(kitchenBoardProvider.notifier).refresh(),
-            ),
-            if (boardState.errorMessage != null)
-              _KitchenBoardErrorBanner(
-                message: boardState.errorMessage!,
-                onRetry: () =>
-                    ref.read(kitchenBoardProvider.notifier).refresh(),
+            SlideTransition(
+              position: _headerSlide,
+              child: FadeTransition(
+                opacity: _headerFade,
+                child: AppHeader(
+                  title: 'Kitchen',
+                  role: roleLabel,
+                  showLogout: widget.showLogout,
+                ),
               ),
+            ),
+            SlideTransition(
+              position: _toolbarSlide,
+              child: FadeTransition(
+                opacity: _toolbarFade,
+                child: KitchenBoardToolbar(
+                  activeCount: boardState.activeCount,
+                  updatedAt: boardState.updatedAt,
+                  isRefreshing: boardState.isRefreshing || boardState.isLoading,
+                  isReadOnly: userRole?.isKitchenReadOnlyExceptQc ?? false,
+                  onRefresh: () =>
+                      ref.read(kitchenBoardProvider.notifier).refresh(),
+                ),
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: reduceMotion ? Duration.zero : KkfcMotion.durOverlay,
+              reverseDuration:
+                  reduceMotion ? Duration.zero : KkfcMotion.durExit,
+              switchInCurve: KkfcMotion.easeOut,
+              switchOutCurve: KkfcMotion.easeIn,
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                alignment: Alignment.topCenter,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: boardState.errorMessage != null
+                  ? _KitchenBoardErrorBanner(
+                      key: ValueKey('error-banner-${boardState.errorMessage}'),
+                      message: boardState.errorMessage!,
+                      onRetry: () =>
+                          ref.read(kitchenBoardProvider.notifier).refresh(),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -82,20 +189,27 @@ class KitchenBoardScreen extends ConsumerWidget {
 
                   // Responsive KDS 4-lane board
                   Positioned.fill(
-                    child: KitchenBoardLanesView(
-                      state: boardState,
-                      userRole: userRole,
-                      canPassQc: userRole?.canPassQc ?? false,
-                      onTicketAction: (ticket) => showKitchenTicketStatusDialog(
-                        context,
-                        ticket: ticket,
+                    child: SlideTransition(
+                      position: _boardSlide,
+                      child: FadeTransition(
+                        opacity: _boardFade,
+                        child: KitchenBoardLanesView(
+                          state: boardState,
+                          userRole: userRole,
+                          canPassQc: userRole?.canPassQc ?? false,
+                          onTicketAction: (ticket) =>
+                              showKitchenTicketStatusDialog(
+                                context,
+                                ticket: ticket,
+                              ),
+                          onTicketDetails:
+                              widget.onTicketDetails ??
+                              (ticket) => showKitchenTicketStatusDialog(
+                                context,
+                                ticket: ticket,
+                              ),
+                        ),
                       ),
-                      onTicketDetails:
-                          onTicketDetails ??
-                          (ticket) => showKitchenTicketStatusDialog(
-                            context,
-                            ticket: ticket,
-                          ),
                     ),
                   ),
                 ],
@@ -110,6 +224,7 @@ class KitchenBoardScreen extends ConsumerWidget {
 
 class _KitchenBoardErrorBanner extends StatelessWidget {
   const _KitchenBoardErrorBanner({
+    super.key,
     required this.message,
     required this.onRetry,
   });
