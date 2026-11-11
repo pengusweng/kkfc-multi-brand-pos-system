@@ -413,6 +413,56 @@ void main() {
       );
     });
 
+    test(
+      'passQcForTicket starts a new check attempt when latest attempt is FAILED',
+      () async {
+        const ticketId = '00000000-0000-4000-8000-000000000015';
+        const newAttemptId = '00000000-0000-4000-8000-000000000022';
+        final adapter = _RecordingAdapter((options) async {
+          if (options.path.endsWith('/latest')) {
+            return _jsonResponse({
+              'qc_attempt_id': 'old-failed-attempt',
+              'status': 'FAILED',
+            });
+          }
+          if (options.path.endsWith('/check')) {
+            return _jsonResponse({
+              'attempt': {
+                'qc_attempt_id': newAttemptId,
+                'status': 'IN_PROGRESS',
+              },
+            });
+          }
+          if (options.path.endsWith('/pass')) {
+            return _jsonResponse({
+              'qc_attempt_id': newAttemptId,
+              'status': 'PASSED',
+            });
+          }
+          return _jsonResponse({});
+        });
+
+        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+          ..httpClientAdapter = adapter;
+        final repo = KitchenBoardRepository(dio);
+
+        await repo.passQcForTicket(kitchenTicketId: ticketId);
+
+        final checkRequest = adapter.requests.firstWhere(
+          (r) => r.uri.path.endsWith('/check'),
+        );
+        expect(checkRequest.method, 'POST');
+
+        final passRequest = adapter.requests.firstWhere(
+          (r) => r.uri.path.endsWith('/pass'),
+        );
+        expect(
+          passRequest.uri.path,
+          endsWith('/qc-attempts/$newAttemptId/pass'),
+        );
+      },
+    );
+
     test('handOverTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over', () async {
       const ticketId = '00000000-0000-4000-8000-000000000014';
       final adapter = _RecordingAdapter(

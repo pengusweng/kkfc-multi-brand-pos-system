@@ -227,16 +227,24 @@ class KitchenBoardRepository {
     return null;
   }
 
-  /// Fetches the latest QC attempt ID for a ticket via
+  /// Fetches the latest in-progress QC attempt ID for a ticket via
   /// `GET /api/kitchen-qc/ticket/{kitchenTicketId}/latest`.
+  /// Returns `null` if no attempt exists or if the latest attempt has already
+  /// ended (`FAILED` or `PASSED`).
   Future<String?> fetchLatestQcAttemptId(String kitchenTicketId) async {
     try {
       final response = await _dio.get<dynamic>(
         _endpoint('/kitchen-qc/ticket/$kitchenTicketId/latest'),
       );
       final data = response.data;
-      if (data is Map && data['qc_attempt_id'] is String) {
-        return data['qc_attempt_id'] as String;
+      if (data is Map) {
+        final status = (data['status'] as String?)?.toUpperCase();
+        if (status != null && status != 'IN_PROGRESS') {
+          return null;
+        }
+        if (data['qc_attempt_id'] is String) {
+          return data['qc_attempt_id'] as String;
+        }
       }
     } catch (_) {
       // Ignore lookup failure; caller can fall back to checking or ticket ID.
@@ -265,17 +273,17 @@ class KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
   }) async {
-    var resolvedAttemptId = attemptId;
-    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
-      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
-    }
+    final inProgressAttemptId =
+        await fetchLatestQcAttemptId(kitchenTicketId);
+
+    var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
       resolvedAttemptId = await checkTicket(
         kitchenTicketId,
         checkerId: checkerId,
       );
     }
-    resolvedAttemptId ??= kitchenTicketId;
+    resolvedAttemptId ??= attemptId ?? kitchenTicketId;
 
     await passQcAttempt(resolvedAttemptId);
   }
@@ -309,17 +317,17 @@ class KitchenBoardRepository {
     List<String>? orderItemIds,
     List<Map<String, dynamic>>? rejections,
   }) async {
-    var resolvedAttemptId = attemptId;
-    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
-      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
-    }
+    final inProgressAttemptId =
+        await fetchLatestQcAttemptId(kitchenTicketId);
+
+    var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
       resolvedAttemptId = await checkTicket(
         kitchenTicketId,
         checkerId: checkerId,
       );
     }
-    resolvedAttemptId ??= kitchenTicketId;
+    resolvedAttemptId ??= attemptId ?? kitchenTicketId;
 
     var effectiveItemIds = orderItemIds
         ?.where((id) => id.trim().isNotEmpty)

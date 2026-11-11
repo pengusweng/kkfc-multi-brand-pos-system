@@ -57,6 +57,7 @@ class KitchenBoardTicket {
     String? preparerId,
     String? checkerId,
     String? qcAttemptId,
+    bool clearQcAttemptId = false,
     String? qcReturnedReason,
     String? reworkNotes,
   }) {
@@ -79,7 +80,7 @@ class KitchenBoardTicket {
           preparationStartedLabel ?? this.preparationStartedLabel,
       preparerId: preparerId ?? this.preparerId,
       checkerId: checkerId ?? this.checkerId,
-      qcAttemptId: qcAttemptId ?? this.qcAttemptId,
+      qcAttemptId: clearQcAttemptId ? null : (qcAttemptId ?? this.qcAttemptId),
     );
   }
 
@@ -125,16 +126,26 @@ class KitchenBoardTicket {
     );
 
     final checkerId = (json['checker_id'] as String?)?.trim();
-    final qcAttemptId =
-        (json['qc_attempt_id'] as String?)?.trim() ??
-        (json['attempt_id'] as String?)?.trim() ??
-        (json['qc_attempts'] is List && (json['qc_attempts'] as List).isNotEmpty
-            ? ((json['qc_attempts'] as List).first is Map
-                  ? ((json['qc_attempts'] as List).first['qc_attempt_id']
-                            as String?)
-                        ?.trim()
-                  : null)
-            : null);
+    final rawAttempts = json['qc_attempts'];
+    final latestAttemptMap = (rawAttempts is List &&
+            rawAttempts.isNotEmpty &&
+            rawAttempts.first is Map)
+        ? rawAttempts.first as Map
+        : null;
+    final latestStatus =
+        (latestAttemptMap?['status'] as String?)?.toUpperCase();
+    final isAttemptInProgress =
+        latestStatus == null || latestStatus == 'IN_PROGRESS';
+
+    // A ticket waiting for QC in FOR_CHECKING state has no active attempt yet.
+    // Also, finished attempts (FAILED or PASSED) are not active.
+    final qcAttemptId = rawStatus == 'FOR_CHECKING'
+        ? null
+        : ((json['qc_attempt_id'] as String?)?.trim() ??
+            (json['attempt_id'] as String?)?.trim() ??
+            (isAttemptInProgress
+                ? (latestAttemptMap?['qc_attempt_id'] as String?)?.trim()
+                : null));
 
     final qcReturnedReason =
         (json['qc_returned_reason'] as String?)?.trim() ??

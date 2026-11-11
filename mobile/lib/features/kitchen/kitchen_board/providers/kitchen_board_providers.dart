@@ -310,6 +310,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
           return t.copyWith(
             rawStatus: 'FOR_CHECKING',
             lane: KitchenBoardLane.qcCheck,
+            clearQcAttemptId: true,
             qcReturnedReason: effectiveQcReturnedReason,
             reworkNotes: effectiveReworkNotes,
             data: t.data.copyWith(
@@ -442,6 +443,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
           return t.copyWith(
             rawStatus: 'REWORKING',
             lane: KitchenBoardLane.preparing,
+            clearQcAttemptId: true,
             qcReturnedReason: effectiveReason,
             data: t.data.copyWith(
               status: KkfcStatus.reworking,
