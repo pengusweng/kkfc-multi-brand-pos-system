@@ -69,6 +69,8 @@ flutter:
     - assets/images/gamcheon.png
     - assets/images/king_kungs.png
     - assets/images/aurelia.png
+    - assets/images/logo_light.png
+    - assets/images/logo_dark.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

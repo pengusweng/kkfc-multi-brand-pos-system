@@ -65,6 +65,16 @@ void main() {
         await _pumpMenu(tester, _desktop);
 
         expect(find.byType(AppHeader), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Image &&
+                widget.image is AssetImage &&
+                (widget.image as AssetImage).assetName ==
+                    'assets/images/logo_light.png',
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Orders'), findsOneWidget);
         expect(find.byType(LogoutButton), findsOneWidget);
         expect(find.byType(CurrentMenuCard), findsOneWidget);

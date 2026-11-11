@@ -9,7 +9,7 @@ import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
-/// Kept purely stateless: only the `'KKFC POS'` wordmark is constant,
+/// Kept purely stateless: the logo asset wordmark is constant,
 /// while the section title, role badge, and actions vary depending
 /// on the logged-in user's role.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -123,14 +123,20 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: KkfcSpace.s12),
                 ],
                 if (!isCompact) ...[
-                  const Text(
-                    'KKFC POS',
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: KkfcTextSizes.textXs,
-                      fontWeight: KkfcFontWeights.bold,
-                      letterSpacing: 1.0,
-                      color: KkfcColors.shellMutedText,
+                  Image.asset(
+                    'assets/images/logo_light.png',
+                    height: 26.0,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'KKFC POS',
+                    errorBuilder: (context, error, stackTrace) => const Text(
+                      'KKFC POS',
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textXs,
+                        fontWeight: KkfcFontWeights.bold,
+                        letterSpacing: 1.0,
+                        color: KkfcColors.shellMutedText,
+                      ),
                     ),
                   ),
                   const SizedBox(width: KkfcSpace.s16),
