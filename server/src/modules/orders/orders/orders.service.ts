@@ -11,6 +11,8 @@ import {
 import { Order, OrderChannel, OrderStatus, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { assertExists } from '../../../shared/assertions/assert-exists';
+import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
+import { FindOrdersDTO } from './dto/find-orders.dto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
 import {
   ConfirmOrderDTO,
@@ -82,6 +84,39 @@ export class OrdersService {
       );
       return this.response(order);
     });
+  }
+
+  async findAll(brandId: string, query: FindOrdersDTO) {
+    const skip = (query.page - 1) * query.limit;
+    this.logger.debug(
+      `Listing orders: brand=${brandId}, skip=${skip}, take=${query.limit}`,
+    );
+    assertValidPagination(skip, this.logger);
+
+    const { orders, total } = await this.repository.findManyByBrand(
+      brandId,
+      {
+        status: query.status,
+        order_channel: query.order_channel,
+        // Order dates are stored as Manila calendar dates (midnight UTC).
+        order_date: query.order_date
+          ? new Date(`${query.order_date}T00:00:00.000Z`)
+          : undefined,
+      },
+      skip,
+      query.limit,
+    );
+
+    this.logger.log(
+      `Listed orders: brand=${brandId}, returned=${orders.length}, total=${total}`,
+    );
+    return { orders: orders.map((order) => this.response(order)), total };
+  }
+
+  async findOne(brandId: string, orderId: string) {
+    const order = await this.repository.findByBrand(brandId, orderId);
+    if (!order) throw new NotFoundException('Order not found.');
+    return this.response(order);
   }
 
   async verify(brandId: string, orderId: string, dto: ConfirmOrderDTO) {

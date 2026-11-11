@@ -185,6 +185,14 @@ export class OrderResponseDTO {
   kitchen_tickets_order: OrderTicketResponseDTO | null;
 }
 
+export class OrderListResponseDTO {
+  @ApiProperty({ type: [OrderResponseDTO] })
+  orders: OrderResponseDTO[];
+
+  @ApiProperty({ type: 'integer', minimum: 0 })
+  total: number;
+}
+
 export class CreateOrderConflictResponseDTO {
   @ApiProperty({ example: 409, enum: [409] })
   statusCode: number;
