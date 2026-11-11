@@ -4,11 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/core/models/brand_models.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
 import 'package:mobile/features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_selector/choose_menu_modal.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
@@ -259,6 +262,123 @@ void main() {
               widget is CustomPaint && widget.painter is HeaderWavesPainter,
         );
         expect(headerWaves, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping current menu card on a compact screen opens choose menu modal without pixel overflow and scrolls smoothly',
+      (tester) async {
+        const compactSize = Size(360, 560);
+        await _pumpMenu(tester, compactSize);
+
+        await tester.tap(find.byType(CurrentMenuCard));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ChooseMenuModal), findsOneWidget);
+        expect(find.text('Choose menu'), findsOneWidget);
+
+        // Verify primary & secondary action buttons are displayed and pinned
+        expect(
+          find.byKey(const ValueKey('switch-menu-button')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('cancel-switch-menu-button')),
+          findsOneWidget,
+        );
+
+        // Scroll the brand list
+        final scrollable = find.descendant(
+          of: find.byType(ChooseMenuModal),
+          matching: find.byType(SingleChildScrollView),
+        );
+        expect(scrollable, findsOneWidget);
+
+        await tester.drag(scrollable, const Offset(0, -300));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+
+        // Cancel closes the modal
+        await tester.tap(
+          find.byKey(const ValueKey('cancel-switch-menu-button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ChooseMenuModal), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'ChooseMenuModal does not overflow on small height with high text scaling and multiple brands',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 480);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        const testBrands = [
+          AssignedBrand(
+            id: 'b1',
+            code: 'GC',
+            name: 'Gamcheon Korean BBQ & Fried Chicken',
+            channels: [MenuChannel.dineIn, MenuChannel.takeaway],
+          ),
+          AssignedBrand(
+            id: 'b2',
+            code: 'AI',
+            name: "Aurelia's Authentic Inasal Specialties",
+            channels: [MenuChannel.dineIn, MenuChannel.takeaway],
+          ),
+          AssignedBrand(
+            id: 'b3',
+            code: 'KK',
+            name: 'King Kungs Artisan Coffee & Dessert Bar',
+            channels: [MenuChannel.dineIn, MenuChannel.takeaway],
+          ),
+        ];
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: counterTheme,
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(360, 480),
+                  textScaler: TextScaler.linear(1.4),
+                ),
+                child: Scaffold(
+                  body: ChooseMenuModal(
+                    brands: testBrands,
+                    initialBrand: testBrands[0],
+                    initialChannel: MenuChannel.dineIn,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Choose menu'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('switch-menu-button')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('cancel-switch-menu-button')),
+          findsOneWidget,
+        );
+
+        // Can scroll and select another channel
+        final takeawayFinder = find.text('Takeaway').first;
+        await tester.ensureVisible(takeawayFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(takeawayFinder);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
       },
     );
   });
