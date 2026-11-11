@@ -9,7 +9,7 @@ import { useLogout } from "@/src/features/auth/hooks/useLogout";
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
 import NavUser, { NavUserProps } from "../molecules/nav-user";
 import { railFade } from "../../utils/railFade";
-import { NAV_GROUPS } from "../../utils/navItems";
+import { navGroupsFor } from "../../utils/navItems";
 import NavSection from "../molecules/nav-section";
 import NavHighlight from "../molecules/nav-highlight";
 import NavThemeToggle from "../molecules/nav-theme-toggle";
@@ -18,6 +18,7 @@ const DESKTOP_QUERY = "(min-width: 64rem)";
 
 export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "role" | "username"> }) {
   const pathname = usePathname();
+  const groups = navGroupsFor(user.role);
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const close = () => setOpen(false);
@@ -138,7 +139,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
           ref={navRef}
           className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 pb-4"
         >
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <NavSection
               key={group.label ?? "main"}
               {...group}
@@ -147,7 +148,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
               onNavigate={navigate}
             />
           ))}
-          <NavHighlight ref={highlightRef} collapsed={collapsed} />
+          <NavHighlight ref={highlightRef} groups={groups} collapsed={collapsed} />
         </nav>
         <div className="border-t border-rail-line">
           <NavThemeToggle collapsed={collapsed} />

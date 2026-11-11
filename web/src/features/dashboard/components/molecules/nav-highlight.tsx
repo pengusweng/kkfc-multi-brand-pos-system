@@ -1,7 +1,7 @@
 import type { Ref } from "react";
 import { cn } from "cn";
 import NavSection from "./nav-section";
-import { NAV_GROUPS } from "../../utils/navItems";
+import type { NavGroup } from "../../utils/navItems";
 
 // The "you are here" pill. Rather than a plain shape behind the links (which
 // forces each link to switch its own text color as the pill arrives or leaves),
@@ -14,7 +14,14 @@ import { NAV_GROUPS } from "../../utils/navItems";
 // The clip is set by the navbar. On load the pill draws itself across the
 // active link rather than popping in; after that, it slides. The copy is inert and hidden from assistive
 // tech; the real links underneath stay the interactive ones.
-export default function NavHighlight({ ref, collapsed }: { ref: Ref<HTMLDivElement>; collapsed: boolean }) {
+type NavHighlightProps = {
+  ref: Ref<HTMLDivElement>;
+  /** Must be the same groups the real menu renders, so the copy lines up. */
+  groups: NavGroup[];
+  collapsed: boolean;
+};
+
+export default function NavHighlight({ ref, groups, collapsed }: NavHighlightProps) {
   return (
     <div
       ref={ref}
@@ -31,7 +38,7 @@ export default function NavHighlight({ ref, collapsed }: { ref: Ref<HTMLDivEleme
         "motion-reduce:transition-none motion-reduce:data-entering:animate-[vt-fade-in_200ms_ease-out_both]",
       )}
     >
-      {NAV_GROUPS.map((group) => (
+      {groups.map((group) => (
         <NavSection key={group.label ?? "main"} {...group} collapsed={collapsed} face />
       ))}
     </div>
