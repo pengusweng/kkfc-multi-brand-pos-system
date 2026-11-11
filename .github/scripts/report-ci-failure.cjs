@@ -184,144 +184,155 @@ module.exports = async function report({
   });
   const scope = pr ? `pr-${pr.number}` : `branch-${run.head_branch}`;
   const links = [];
-  for (const [category, failedJobs] of groups) {
-    const marker = `<!-- ci-failure:${scope}:${category} -->`;
-    const existing = openIssues.find(
+  const category = [...groups.keys()].join(", ");
+  const failedJobs = [...groups.values()].flat();
+  const marker = `<!-- ci-failure:${scope}:all -->`;
+  const isReport = (issue) => !issue.pull_request && issue.user?.login === bot;
+  // Reuse a previous area report when upgrading to consolidated reporting.
+  const existing =
+    openIssues.find(
+      (issue) => isReport(issue) && issue.body?.includes(marker),
+    ) ??
+    openIssues.find(
       (issue) =>
-        !issue.pull_request &&
-        issue.user?.login === bot &&
-        issue.body?.includes(marker),
+        isReport(issue) &&
+        ["Backend", "Flutter", "Web", "CI"].some((area) =>
+          issue.body?.includes(`<!-- ci-failure:${scope}:${area} -->`),
+        ),
     );
-    const attemptMarker = `<!-- ci-run:${run.id}:${run.run_attempt} -->`;
-    if (existing?.body?.includes(attemptMarker)) {
-      links.push(existing.html_url);
-      continue;
-    }
+  const attemptMarker = `<!-- ci-run:${run.id}:${run.run_attempt} -->`;
+  if (existing?.body?.includes(attemptMarker)) {
+    links.push(existing.html_url);
+    await core.summary.addHeading("CI failure issues").addList(links).write();
+    return;
+  }
 
-    const configured = usernames(
-      category === "Backend"
+  const configured = [...groups.keys()].flatMap((area) =>
+    usernames(
+      area === "Backend"
         ? env.CI_BACKEND_ASSIGNEES
-        : category === "Flutter"
+        : area === "Flutter"
           ? env.CI_FLUTTER_ASSIGNEES
-          : category === "Web"
+          : area === "Web"
             ? env.CI_WEB_ASSIGNEES
             : env.CI_DEFAULT_ASSIGNEES,
-    );
-    const defaults = usernames(env.CI_DEFAULT_ASSIGNEES);
-    const fallback = [pr?.user?.login, run.actor?.login, repo.owner].filter(
-      Boolean,
-    );
-    let assignees = [];
-    // Prefer area owners, then default owners, then the first eligible fallback.
-    for (const tier of [
-      configured,
-      defaults,
-      ...fallback.map((name) => [name]),
-    ]) {
-      for (const assignee of tier) {
-        try {
-          await github.rest.issues.checkUserCanBeAssigned({
-            ...repo,
-            assignee,
-          });
-          assignees.push(assignee);
-        } catch (error) {
-          if (![404, 422].includes(error.status)) throw error;
-          core.warning(
-            `Cannot assign ${category} failure to ${assignee}; trying fallback.`,
-          );
-        }
+    ),
+  );
+  const defaults = usernames(env.CI_DEFAULT_ASSIGNEES);
+  const fallback = [pr?.user?.login, run.actor?.login, repo.owner].filter(
+    Boolean,
+  );
+  let assignees = [];
+  // Assign the PR author and all failed-area owners together, author first.
+  // Existing assignees are retained when later failures add another CI area.
+  for (const tier of [
+    [
+      pr?.user?.login,
+      ...(existing?.assignees ?? []).map((user) => user.login),
+      ...configured,
+    ].filter(Boolean),
+    defaults,
+    ...fallback.map((name) => [name]),
+  ]) {
+    for (const assignee of new Set(tier)) {
+      try {
+        await github.rest.issues.checkUserCanBeAssigned({
+          ...repo,
+          assignee,
+        });
+        assignees.push(assignee);
+      } catch (error) {
+        if (![404, 422].includes(error.status)) throw error;
+        core.warning(
+          `Cannot assign ${category} failure to ${assignee}; trying fallback.`,
+        );
       }
-      if (assignees.length) break;
     }
-    assignees = [...new Set(assignees)].slice(0, 10);
-    // Keep a maintainer's explicit reassignment and show the actual issue owners.
-    if (existing?.assignees?.length) {
-      assignees = existing.assignees.map((user) => user.login);
-    }
-    if (!assignees.length)
-      core.warning(
-        `No eligible assignee for ${category}. Configure CI_DEFAULT_ASSIGNEES.`,
-      );
-
-    const rows = failedJobs.map((job) => {
-      const steps = (job.steps ?? []).filter((step) =>
-        failures.has(step.conclusion),
-      );
-      return `| [${safe(job.name)}](${job.html_url}) | ${safe(job.conclusion)} | ${steps.map((step) => safe(step.name)).join(", ") || "See job log"} |`;
-    });
-    const reportArtifacts = artifacts.filter(
-      (artifact) =>
-        !artifact.expired && /test|coverage|golden|robot/i.test(artifact.name),
+    if (assignees.length) break;
+  }
+  assignees = [...new Set(assignees)].slice(0, 10);
+  if (!assignees.length)
+    core.warning(
+      `No eligible assignee for ${category}. Configure CI_DEFAULT_ASSIGNEES.`,
     );
-    const subject = pr ? `PR #${pr.number}` : `branch ${safe(run.head_branch)}`;
-    const body = [
-      marker,
-      attemptMarker,
-      `## ${category} CI failure`,
-      "",
-      "A CI check failed and needs investigation. This is not yet a confirmed application bug.",
-      "",
-      "### Execution",
-      "",
-      `- **Source:** ${pr ? `[${subject}](${pr.html_url})` : subject}`,
-      `- **Commit:** [${run.head_sha.slice(0, 12)}](${context.serverUrl}/${repo.owner}/${repo.repo}/commit/${run.head_sha})`,
-      `- **Run:** [${safe(run.name)} #${run.run_number}, attempt ${run.run_attempt}](${run.html_url})`,
-      `- **Responsibility:** ${assignees.length ? assignees.map((name) => `@${name}`).join(", ") : "Unassigned — configure CI_DEFAULT_ASSIGNEES in repository Actions variables."}`,
-      "",
-      "### Failed checks",
-      "",
-      ...(rows.length
-        ? ["| Job | Result | Failed step |", "| --- | --- | --- |", ...rows]
-        : [
-            "No failed job details were available. Inspect the workflow run for startup or infrastructure errors.",
-          ]),
-      "",
-      "### Test reports",
-      "",
-      ...(reportArtifacts.length
-        ? reportArtifacts.map(
-            (artifact) =>
-              `- [${safe(artifact.name)}](${run.html_url}/artifacts/${artifact.id})`,
-          )
-        : [
-            `No test report artifacts are available. Check the [run logs](${run.html_url}); the failure may have occurred before tests started.`,
-          ]),
-      "",
-      "### Investigation checklist",
-      "",
-      "- [ ] Reproduce the failure at the linked commit.",
-      "- [ ] Compare the observed behavior with the requirement and test expectations.",
-      "- [ ] Identify whether the cause is application code, a test, or the environment.",
-      "- [ ] Link the fix and verify the relevant checks pass before closing this issue.",
-      "",
-      "This issue is updated for repeated failures in the same area and PR or branch. Earlier run links are retained in comments.",
-    ].join("\n");
-    const title = `[CI] ${category} failure — ${pr ? `PR #${pr.number}` : run.head_branch}`;
-    if (existing) {
-      // Save the previous evidence before replacing the current report.
-      await github.rest.issues.createComment({
-        ...repo,
-        issue_number: existing.number,
-        body: `Previous failure report:\n\n${existing.body}`,
-      });
-      await github.rest.issues.update({
-        ...repo,
-        issue_number: existing.number,
-        title,
-        body,
-        ...(existing.assignees?.length ? {} : { assignees }),
-      });
-      links.push(existing.html_url);
-    } else {
-      const { data } = await github.rest.issues.create({
-        ...repo,
-        title,
-        body,
-        assignees,
-      });
-      links.push(data.html_url);
-    }
+
+  const rows = failedJobs.map((job) => {
+    const steps = (job.steps ?? []).filter((step) =>
+      failures.has(step.conclusion),
+    );
+    return `| [${safe(job.name)}](${job.html_url}) | ${safe(job.conclusion)} | ${steps.map((step) => safe(step.name)).join(", ") || "See job log"} |`;
+  });
+  const reportArtifacts = artifacts.filter(
+    (artifact) =>
+      !artifact.expired && /test|coverage|golden|robot/i.test(artifact.name),
+  );
+  const subject = pr ? `PR #${pr.number}` : `branch ${safe(run.head_branch)}`;
+  const body = [
+    marker,
+    attemptMarker,
+    `## ${category} CI failure`,
+    "",
+    "A CI check failed and needs investigation. This is not yet a confirmed application bug.",
+    "",
+    "### Execution",
+    "",
+    `- **Source:** ${pr ? `[${subject}](${pr.html_url})` : subject}`,
+    `- **Commit:** [${run.head_sha.slice(0, 12)}](${context.serverUrl}/${repo.owner}/${repo.repo}/commit/${run.head_sha})`,
+    `- **Run:** [${safe(run.name)} #${run.run_number}, attempt ${run.run_attempt}](${run.html_url})`,
+    `- **Responsibility:** ${assignees.length ? assignees.map((name) => `@${name}`).join(", ") : "Unassigned — configure CI_DEFAULT_ASSIGNEES in repository Actions variables."}`,
+    "",
+    "### Failed checks",
+    "",
+    ...(rows.length
+      ? ["| Job | Result | Failed step |", "| --- | --- | --- |", ...rows]
+      : [
+          "No failed job details were available. Inspect the workflow run for startup or infrastructure errors.",
+        ]),
+    "",
+    "### Test reports",
+    "",
+    ...(reportArtifacts.length
+      ? reportArtifacts.map(
+          (artifact) =>
+            `- [${safe(artifact.name)}](${run.html_url}/artifacts/${artifact.id})`,
+        )
+      : [
+          `No test report artifacts are available. Check the [run logs](${run.html_url}); the failure may have occurred before tests started.`,
+        ]),
+    "",
+    "### Investigation checklist",
+    "",
+    "- [ ] Reproduce the failure at the linked commit.",
+    "- [ ] Compare the observed behavior with the requirement and test expectations.",
+    "- [ ] Identify whether the cause is application code, a test, or the environment.",
+    "- [ ] Link the fix and verify the relevant checks pass before closing this issue.",
+    "",
+    "This issue combines CI failures for the same PR or branch. Earlier run links are retained in comments.",
+  ].join("\n");
+  const title = `[CI] Failure — ${pr ? `PR #${pr.number}` : run.head_branch}`;
+  if (existing) {
+    // Save the previous evidence before replacing the current report.
+    await github.rest.issues.createComment({
+      ...repo,
+      issue_number: existing.number,
+      body: `Previous failure report:\n\n${existing.body}`,
+    });
+    await github.rest.issues.update({
+      ...repo,
+      issue_number: existing.number,
+      title,
+      body,
+      assignees,
+    });
+    links.push(existing.html_url);
+  } else {
+    const { data } = await github.rest.issues.create({
+      ...repo,
+      title,
+      body,
+      assignees,
+    });
+    links.push(data.html_url);
   }
   await core.summary.addHeading("CI failure issues").addList(links).write();
 };
