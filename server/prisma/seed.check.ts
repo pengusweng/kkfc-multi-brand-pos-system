@@ -7,10 +7,56 @@ import {
   TEST_UNASSIGNED_OWNER,
   TEST_PIN,
   TEST_PIN_ROLES,
+  seedUsers,
 } from './seed-test';
 import * as argon2 from 'argon2';
 
+async function checkHostedCredentials() {
+  const keys = ['NODE_ENV', 'DEMO_SEED_PASSWORD', 'DEMO_SEED_PIN'] as const;
+  const previous = keys.map((key) => process.env[key]);
+  try {
+    process.env.NODE_ENV = 'production';
+    delete process.env.DEMO_SEED_PASSWORD;
+    delete process.env.DEMO_SEED_PIN;
+    const unusedDatabase = {} as Prisma.TransactionClient;
+    await assert.rejects(seedUsers(unusedDatabase), /requires DEMO_SEED/);
+
+    const password = randomUUID();
+    process.env.DEMO_SEED_PASSWORD = password;
+    await assert.rejects(seedUsers(unusedDatabase), /requires DEMO_SEED/);
+    process.env.DEMO_SEED_PIN = 'invalid';
+    await assert.rejects(seedUsers(unusedDatabase), /exactly four digits/);
+
+    process.env.DEMO_SEED_PIN = '9876';
+    const stop = new Error('Stop after checking the first seeded credential');
+    const database = {
+      user: {
+        upsert: async (args: Prisma.UserUpsertArgs) => {
+          assert(await argon2.verify(args.create.password_hash, password));
+          assert.deepEqual(args.update, {});
+          return { user_id: randomUUID(), role: UserRole.SUPERADMIN };
+        },
+      },
+      userPinCredential: {
+        upsert: async (args: Prisma.UserPinCredentialUpsertArgs) => {
+          assert(await argon2.verify(args.create.pin_hash, '9876'));
+          assert.deepEqual(args.update, {});
+          throw stop;
+        },
+      },
+    } as unknown as Prisma.TransactionClient;
+    await assert.rejects(seedUsers(database), (error) => error === stop);
+    console.log('Hosted seed credential checks passed.');
+  } finally {
+    keys.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  }
+}
+
 async function check() {
+  await checkHostedCredentials();
   assert.match(
     TEST_PIN,
     /^[0-9]{4}$/,
