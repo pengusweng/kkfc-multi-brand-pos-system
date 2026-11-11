@@ -13,6 +13,7 @@ import 'package:mobile/features/new_order/presentation/widgets/menu_selector/cur
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 const _phone = Size(412, 1400);
 const _narrowPhone = Size(320, 900);
@@ -210,6 +211,44 @@ void main() {
         expect(find.byType(MobileOrderFlowScreen), findsOneWidget);
         expect(find.text('Order details'), findsOneWidget);
         expect(find.text('Review order'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders background canvas wave accents and header wave arcs',
+      (tester) async {
+        await _pumpMenu(tester, _desktop);
+
+        // Verifies the fluid background canvas waves from the login page are present
+        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+
+        // Verifies custom paint with CanvasWavesPainter is in the widget tree
+        final canvasWaves = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is CanvasWavesPainter,
+        );
+        expect(canvasWaves, findsOneWidget);
+
+        // Verifies the navy header copper wave arcs from the login page are present
+        final headerWaves = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is HeaderWavesPainter,
+        );
+        expect(headerWaves, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders background canvas wave accents on phone layout',
+      (tester) async {
+        await _pumpMenu(tester, _phone);
+
+        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+        final headerWaves = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is HeaderWavesPainter,
+        );
+        expect(headerWaves, findsOneWidget);
       },
     );
   });

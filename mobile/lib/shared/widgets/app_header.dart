@@ -5,6 +5,7 @@ import 'package:mobile/features/availability/data/models/availability_model.dart
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/shared/menu_channel_mapping.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
@@ -25,6 +26,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.padding,
     this.backgroundColor,
     this.showLogout = true,
+    this.showWaveAccents = true,
     // Legacy MenuHeader compatibility properties
     this.compact,
     this.channel,
@@ -66,6 +68,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   /// Whether to display the logout button on the right side of the header.
   final bool showLogout;
+
+  /// Whether to display the subtle copper wave/arc accents on the navy shell header.
+  final bool showWaveAccents;
 
   /// Legacy compatibility property from MenuHeader.
   final bool? compact;
@@ -202,7 +207,29 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       content = SizedBox(height: height, child: headerRow);
     }
 
-    return Material(color: backgroundColor ?? KkfcColors.shell, child: content);
+    final background = backgroundColor ?? KkfcColors.shell;
+    final isNavy = background == KkfcColors.shell;
+
+    Widget headerBody = content;
+    if (showWaveAccents && isNavy) {
+      headerBody = Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: isCompact ? 180.0 : 260.0,
+            child: const IgnorePointer(
+              child: CustomPaint(painter: HeaderWavesPainter()),
+            ),
+          ),
+          content,
+        ],
+      );
+    }
+
+    return Material(color: background, child: headerBody);
   }
 }
 

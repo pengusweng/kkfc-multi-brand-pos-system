@@ -6,6 +6,7 @@ import 'package:mobile/features/new_order/presentation/widgets/catalog/menu_cata
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// Screen breakpoint for wide tablet/desktop layout vs single-column phone layout.
 const double _kWideBreakpoint = 850.0;
@@ -134,13 +135,15 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
                     opacity: _catalogFade,
                     child: Stack(
                       children: [
+                        // Fluid organic wave landscape & hand-crafted contours from the KKFC design system
+                        const Positioned.fill(
+                          child: KkfcCanvasWaves(),
+                        ),
+
                         Positioned.fill(
-                          child: Container(
-                            color: const Color(0xFFF7F3EC), // Canvas ground
-                            child: MenuCatalogView(
-                              isWide: isWide,
-                              bottomPadding: bottomPadding,
-                            ),
+                          child: MenuCatalogView(
+                            isWide: isWide,
+                            bottomPadding: bottomPadding,
                           ),
                         ),
 
