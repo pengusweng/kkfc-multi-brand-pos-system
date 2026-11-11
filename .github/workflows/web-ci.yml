@@ -38,7 +38,22 @@ jobs:
       - name: Type check app and test files
         run: npm run typecheck
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 7
+        shell: bash
+        run: |
+          # Ubuntu mirrors can have transient DNS/download failures during apt setup.
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Chromium installation failed after 3 attempts."
+              exit 1
+            fi
+            delay=$((attempt * 15))
+            echo "::warning::Chromium installation attempt $attempt failed; retrying in ${delay}s."
+            sleep "$delay"
+          done
       - name: Browser smoke tests
         run: npm run test:e2e
       - name: Upload web test reports
