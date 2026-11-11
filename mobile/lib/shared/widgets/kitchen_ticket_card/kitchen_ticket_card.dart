@@ -56,7 +56,9 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
 
   bool get _hasInteractiveTarget =>
       widget.onDetails != null ||
-      (widget.isActionEnabled && !widget.isActionLoading && widget.onAction != null);
+      (widget.isActionEnabled &&
+          !widget.isActionLoading &&
+          widget.onAction != null);
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +70,9 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
     final resolvedLabel = widget.actionLabel ?? defaultLabel ?? 'Acknowledge';
     final showAction = widget.onAction != null || widget.actionLabel != null;
     final hideDetailsForFullWidthAction =
-        isBoard && widget.ticket.status == KkfcStatus.ready && widget.isActionEnabled;
+        isBoard &&
+        widget.ticket.status == KkfcStatus.ready &&
+        widget.isActionEnabled;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -209,8 +213,9 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
 
   Widget _buildPrimaryActionButton(String resolvedLabel) {
     return FilledButton(
-      onPressed:
-          widget.isActionEnabled && !widget.isActionLoading ? widget.onAction : null,
+      onPressed: widget.isActionEnabled && !widget.isActionLoading
+          ? widget.onAction
+          : null,
       style: FilledButton.styleFrom(
         backgroundColor: KkfcColors.action, // #A8562A
         disabledBackgroundColor: KkfcColors.ticketDisabledBg,

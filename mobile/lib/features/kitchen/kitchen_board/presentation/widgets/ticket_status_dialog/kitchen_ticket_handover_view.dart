@@ -51,8 +51,9 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
   @override
   void initState() {
     super.initState();
-    _photos =
-        List<HandoverPhotoEvidence>.from(widget.initialPhotos ?? const []);
+    _photos = List<HandoverPhotoEvidence>.from(
+      widget.initialPhotos ?? const [],
+    );
     _imagePicker = widget.imagePicker ?? ImagePicker();
   }
 

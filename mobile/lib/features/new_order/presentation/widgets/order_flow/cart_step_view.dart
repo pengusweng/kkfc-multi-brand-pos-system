@@ -72,9 +72,7 @@ class CartStepView extends ConsumerWidget {
                           OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF19293E),
-                              side: const BorderSide(
-                                color: Color(0xFF76849A),
-                              ),
+                              side: const BorderSide(color: Color(0xFF76849A)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
@@ -119,9 +117,8 @@ class CartStepView extends ConsumerWidget {
                           brandName: brand.name,
                           editing: line,
                         ),
-                        onRemove: () => ref
-                            .read(cartProvider.notifier)
-                            .removeLine(line.id),
+                        onRemove: () =>
+                            ref.read(cartProvider.notifier).removeLine(line.id),
                       ),
                       const SizedBox(height: 12),
                     ],

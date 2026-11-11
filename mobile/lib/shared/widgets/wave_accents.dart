@@ -318,9 +318,7 @@ class KkfcCanvasWaves extends StatelessWidget {
   Widget build(BuildContext context) {
     return const DecoratedBox(
       decoration: BoxDecoration(color: KkfcColors.canvas),
-      child: CustomPaint(
-        painter: CanvasWavesPainter(),
-      ),
+      child: CustomPaint(painter: CanvasWavesPainter()),
     );
   }
 }
@@ -328,10 +326,7 @@ class KkfcCanvasWaves extends StatelessWidget {
 /// A ready-to-use widget that displays subtle decorative copper wave/arc lines
 /// for the navy shell header ([KkfcColors.shell]).
 class KkfcHeaderWaves extends StatelessWidget {
-  const KkfcHeaderWaves({
-    super.key,
-    this.width = 260.0,
-  });
+  const KkfcHeaderWaves({super.key, this.width = 260.0});
 
   final double width;
 
@@ -339,9 +334,7 @@ class KkfcHeaderWaves extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: width,
-      child: const CustomPaint(
-        painter: HeaderWavesPainter(),
-      ),
+      child: const CustomPaint(painter: HeaderWavesPainter()),
     );
   }
 }

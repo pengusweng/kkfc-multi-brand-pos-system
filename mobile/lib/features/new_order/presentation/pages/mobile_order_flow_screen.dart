@@ -151,9 +151,7 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
               fit: StackFit.expand,
               children: [
                 // Fluid organic wave landscape & precision contours from the KKFC design system
-                const Positioned.fill(
-                  child: KkfcCanvasWaves(),
-                ),
+                const Positioned.fill(child: KkfcCanvasWaves()),
 
                 Positioned.fill(
                   child: AnimatedSwitcher(

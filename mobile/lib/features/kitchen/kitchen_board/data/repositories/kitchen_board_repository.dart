@@ -77,10 +77,7 @@ class KitchenBoardRepository {
   /// `PATCH /api/kitchen-ticket/{kitchenTicketId}/preparer`.
   ///
   /// Silently succeeds if the ticket is already assigned (409 Conflict).
-  Future<void> assignPreparer(
-    String kitchenTicketId,
-    String preparerId,
-  ) async {
+  Future<void> assignPreparer(String kitchenTicketId, String preparerId) async {
     try {
       await _dio.patch<Object?>(
         _endpoint('/kitchen-ticket/$kitchenTicketId/preparer'),
@@ -158,10 +155,7 @@ class KitchenBoardRepository {
   ///
   /// If [preparerId] is supplied, ensures the caller is assigned as preparer
   /// so backend authorization (`preparer_id === callerId`) succeeds.
-  Future<void> sendToQc(
-    String kitchenTicketId, {
-    String? preparerId,
-  }) async {
+  Future<void> sendToQc(String kitchenTicketId, {String? preparerId}) async {
     if (preparerId != null && preparerId.isNotEmpty) {
       try {
         await assignPreparer(kitchenTicketId, preparerId);
@@ -184,10 +178,7 @@ class KitchenBoardRepository {
 
   /// Claims checker assignment for a ticket via
   /// `PATCH /api/kitchen-ticket/{kitchenTicketId}/checker`.
-  Future<void> assignChecker(
-    String kitchenTicketId,
-    String checkerId,
-  ) async {
+  Future<void> assignChecker(String kitchenTicketId, String checkerId) async {
     try {
       await _dio.patch<Object?>(
         _endpoint('/kitchen-ticket/$kitchenTicketId/checker'),
@@ -298,9 +289,7 @@ class KitchenBoardRepository {
     try {
       await _dio.post<Object?>(
         _endpoint('/kitchen-fulfillment/qc-attempts/$attemptId/reject'),
-        data: {
-          'rejections': rejections,
-        },
+        data: {'rejections': rejections},
       );
     } on DioException catch (error) {
       throw KitchenBoardException(
@@ -377,12 +366,14 @@ class KitchenBoardRepository {
     }
 
     final List<Map<String, dynamic>> rejections = effectiveItemIds
-        .map((id) => {
-              'order_item_id': id,
-              'portion_number': 1,
-              'rejection_reason': 'INCOMPLETE',
-              'description': reason,
-            })
+        .map(
+          (id) => {
+            'order_item_id': id,
+            'portion_number': 1,
+            'rejection_reason': 'INCOMPLETE',
+            'description': reason,
+          },
+        )
         .toList();
 
     await rejectQcAttempt(resolvedAttemptId, rejections: rejections);
@@ -414,7 +405,8 @@ class KitchenBoardRepository {
       await acknowledgeTicket(id, preparerId: preparerId);
       return;
     }
-    if (raw == 'ACKNOWLEDGED' || ticket.data.status == KkfcStatus.acknowledged) {
+    if (raw == 'ACKNOWLEDGED' ||
+        ticket.data.status == KkfcStatus.acknowledged) {
       await prepareTicket(id, preparerId: preparerId);
       return;
     }

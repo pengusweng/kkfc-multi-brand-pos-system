@@ -60,11 +60,15 @@ class _KitchenBoardToolbarState extends State<KitchenBoardToolbar> {
               children: [
                 Flexible(
                   child: AnimatedSwitcher(
-                    duration: reduceMotion ? Duration.zero : KkfcMotion.durMicro,
+                    duration: reduceMotion
+                        ? Duration.zero
+                        : KkfcMotion.durMicro,
                     switchInCurve: KkfcMotion.easeOut,
                     switchOutCurve: KkfcMotion.easeIn,
                     child: RichText(
-                      key: ValueKey('toolbar-meta-${widget.activeCount}-$timeLabel'),
+                      key: ValueKey(
+                        'toolbar-meta-${widget.activeCount}-$timeLabel',
+                      ),
                       overflow: TextOverflow.ellipsis,
                       text: TextSpan(
                         style: const TextStyle(

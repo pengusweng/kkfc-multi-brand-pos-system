@@ -61,9 +61,7 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.only(
-            bottom: mediaQuery.viewInsets.bottom,
-          ),
+          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

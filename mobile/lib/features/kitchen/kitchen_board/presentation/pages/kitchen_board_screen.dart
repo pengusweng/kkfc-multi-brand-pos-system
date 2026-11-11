@@ -58,41 +58,35 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
       parent: _entranceController,
       curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
     );
-    _headerSlide = Tween<Offset>(
-      begin: const Offset(0, -0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
-      ),
-    );
+    _headerSlide =
+        Tween<Offset>(begin: const Offset(0, -0.06), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+          ),
+        );
     _toolbarFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.08, 0.65, curve: Curves.easeOutCubic),
     );
-    _toolbarSlide = Tween<Offset>(
-      begin: const Offset(0, -0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.08, 0.65, curve: Curves.easeOutCubic),
-      ),
-    );
+    _toolbarSlide =
+        Tween<Offset>(begin: const Offset(0, -0.04), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.08, 0.65, curve: Curves.easeOutCubic),
+          ),
+        );
     _boardFade = CurvedAnimation(
       parent: _entranceController,
       curve: const Interval(0.14, 1.0, curve: Curves.easeOutCubic),
     );
-    _boardSlide = Tween<Offset>(
-      begin: const Offset(0, 0.03),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.14, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
+    _boardSlide = Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.14, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   @override
@@ -160,8 +154,9 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
             ),
             AnimatedSwitcher(
               duration: reduceMotion ? Duration.zero : KkfcMotion.durOverlay,
-              reverseDuration:
-                  reduceMotion ? Duration.zero : KkfcMotion.durExit,
+              reverseDuration: reduceMotion
+                  ? Duration.zero
+                  : KkfcMotion.durExit,
               switchInCurve: KkfcMotion.easeOut,
               switchOutCurve: KkfcMotion.easeIn,
               transitionBuilder: (child, animation) => SizeTransition(
@@ -183,9 +178,7 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
                 fit: StackFit.expand,
                 children: [
                   // Fluid organic wave landscape & precision contours from the KKFC design system
-                  const Positioned.fill(
-                    child: KkfcCanvasWaves(),
-                  ),
+                  const Positioned.fill(child: KkfcCanvasWaves()),
 
                   // Responsive KDS 4-lane board
                   Positioned.fill(

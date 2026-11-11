@@ -95,223 +95,223 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
             padding: const EdgeInsets.all(16.0),
             children: [
               // Confirmed Card with Mint Border and subtle entrance animation
-                SlideTransition(
-                  position: _cardSlideAnimation,
-                  child: FadeTransition(
-                    opacity: _cardFadeAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20.0,
-                        vertical: 24.0,
+              SlideTransition(
+                position: _cardSlideAnimation,
+                child: FadeTransition(
+                  opacity: _cardFadeAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 24.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16.0),
+                      border: Border.all(
+                        color: const Color(0xFFA3D9B5),
+                        width: 1.5,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16.0),
-                        border: Border.all(
-                          color: const Color(0xFFA3D9B5),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Large Green Checkmark Circle with spring pop
-                          ScaleTransition(
-                            scale: _checkScaleAnimation,
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF166B3A),
-                                  width: 3.5,
-                                ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.check,
-                                  size: 32,
-                                  color: Color(0xFF166B3A),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          // Title
-                          const Text(
-                            'Kitchen ticket confirmed',
-                            style: TextStyle(
-                              fontFamily: KkfcFonts.ibmPlexSans,
-                              fontSize: 22.0,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF19293E),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          // Kitchen ticket callout box
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18.0,
-                              vertical: 14.0,
-                            ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Large Green Checkmark Circle with spring pop
+                        ScaleTransition(
+                          scale: _checkScaleAnimation,
+                          child: Container(
+                            width: 56,
+                            height: 56,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF2ECE1),
-                              borderRadius: BorderRadius.circular(12.0),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF166B3A),
+                                width: 3.5,
+                              ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Flexible(
-                                  child: Text(
-                                    'Kitchen ticket',
-                                    style: TextStyle(
-                                      fontFamily: KkfcFonts.ibmPlexSans,
-                                      fontSize: 15.0,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF586579),
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  displayTicketNumber,
-                                  style: const TextStyle(
-                                    fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 26.0,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF19293E),
-                                  ),
-                                ),
-                              ],
+                            child: const Center(
+                              child: Icon(
+                                Icons.check,
+                                size: 32,
+                                color: Color(0xFF166B3A),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 22),
+                        ),
+                        const SizedBox(height: 18),
 
-                          // Order Details Table
-                          // Row 1: Order
-                          Row(
+                        // Title
+                        const Text(
+                          'Kitchen ticket confirmed',
+                          style: TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 22.0,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF19293E),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Kitchen ticket callout box
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18.0,
+                            vertical: 14.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2ECE1),
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const Text(
-                                'Order',
-                                style: TextStyle(
-                                  fontFamily: KkfcFonts.text,
-                                  fontSize: 14.5,
-                                  color: Color(0xFF586579),
-                                ),
-                              ),
-                              Flexible(
+                              const Flexible(
                                 child: Text(
-                                  displayOrderCode,
-                                  style: const TextStyle(
+                                  'Kitchen ticket',
+                                  style: TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF19293E),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Row 2: Channel
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Channel',
-                                style: TextStyle(
-                                  fontFamily: KkfcFonts.text,
-                                  fontSize: 14.5,
-                                  color: Color(0xFF586579),
-                                ),
-                              ),
-                              Text(
-                                channel.label,
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF19293E),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Row 3: Table / Reference
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                channel == MenuChannel.dineIn
-                                    ? 'Table'
-                                    : 'Reference',
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.text,
-                                  fontSize: 14.5,
-                                  color: Color(0xFF586579),
-                                ),
-                              ),
-                              Text(
-                                displayTable,
-                                style: const TextStyle(
-                                  fontFamily: KkfcFonts.ibmPlexSans,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF19293E),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Row 4: Payment status
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Payment status',
-                                style: TextStyle(
-                                  fontFamily: KkfcFonts.text,
-                                  fontSize: 14.5,
-                                  color: Color(0xFF586579),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10.0,
-                                  vertical: 3.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEDF1F5),
-                                  borderRadius: BorderRadius.circular(12.0),
-                                ),
-                                child: Text(
-                                  paymentLabel,
-                                  style: const TextStyle(
-                                    fontFamily: KkfcFonts.ibmPlexSans,
-                                    fontSize: 12.0,
+                                    fontSize: 15.0,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xFF586579),
                                   ),
                                 ),
                               ),
+                              Text(
+                                displayTicketNumber,
+                                style: const TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 26.0,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF19293E),
+                                ),
+                              ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 22),
+
+                        // Order Details Table
+                        // Row 1: Order
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Order',
+                              style: TextStyle(
+                                fontFamily: KkfcFonts.text,
+                                fontSize: 14.5,
+                                color: Color(0xFF586579),
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                displayOrderCode,
+                                style: const TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF19293E),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Row 2: Channel
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Channel',
+                              style: TextStyle(
+                                fontFamily: KkfcFonts.text,
+                                fontSize: 14.5,
+                                color: Color(0xFF586579),
+                              ),
+                            ),
+                            Text(
+                              channel.label,
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF19293E),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Row 3: Table / Reference
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              channel == MenuChannel.dineIn
+                                  ? 'Table'
+                                  : 'Reference',
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.text,
+                                fontSize: 14.5,
+                                color: Color(0xFF586579),
+                              ),
+                            ),
+                            Text(
+                              displayTable,
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF19293E),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Row 4: Payment status
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Payment status',
+                              style: TextStyle(
+                                fontFamily: KkfcFonts.text,
+                                fontSize: 14.5,
+                                color: Color(0xFF586579),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10.0,
+                                vertical: 3.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDF1F5),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              child: Text(
+                                paymentLabel,
+                                style: const TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 12.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF586579),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
 
         // Bottom Actions
         Padding(

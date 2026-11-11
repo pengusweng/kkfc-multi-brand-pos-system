@@ -31,13 +31,15 @@ class KitchenBoardState {
   int get activeCount => tickets.length;
 
   List<KitchenBoardTicket> ticketsForLane(KitchenBoardLane lane) {
-    final laneTickets =
-        tickets.where((t) => t.lane == lane).toList(growable: false);
+    final laneTickets = tickets
+        .where((t) => t.lane == lane)
+        .toList(growable: false);
     if (lane == KitchenBoardLane.preparing) {
       final reworkTickets = <KitchenBoardTicket>[];
       final nonReworkTickets = <KitchenBoardTicket>[];
       for (final ticket in laneTickets) {
-        final isRework = ticket.rawStatus.toUpperCase() == 'REWORKING' ||
+        final isRework =
+            ticket.rawStatus.toUpperCase() == 'REWORKING' ||
             ticket.data.status == KkfcStatus.reworking;
         if (isRework) {
           reworkTickets.add(ticket);

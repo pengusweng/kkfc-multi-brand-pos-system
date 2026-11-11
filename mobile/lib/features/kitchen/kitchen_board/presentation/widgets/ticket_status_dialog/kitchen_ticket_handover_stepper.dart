@@ -120,11 +120,7 @@ class _StepperLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 1.5,
-      color: KkfcColors.borderStrong,
-    );
+    return Container(width: 18, height: 1.5, color: KkfcColors.borderStrong);
   }
 }
 
@@ -224,10 +220,7 @@ class _StepperPill extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.transparent,
-            border: Border.all(
-              color: KkfcColors.ticketMuted,
-              width: 1.5,
-            ),
+            border: Border.all(color: KkfcColors.ticketMuted, width: 1.5),
           ),
           alignment: Alignment.center,
           child: Text(

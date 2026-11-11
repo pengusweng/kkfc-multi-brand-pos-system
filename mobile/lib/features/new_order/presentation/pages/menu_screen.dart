@@ -136,9 +136,7 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
                     child: Stack(
                       children: [
                         // Fluid organic wave landscape & hand-crafted contours from the KKFC design system
-                        const Positioned.fill(
-                          child: KkfcCanvasWaves(),
-                        ),
+                        const Positioned.fill(child: KkfcCanvasWaves()),
 
                         Positioned.fill(
                           child: MenuCatalogView(

@@ -21,8 +21,9 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground =
-        isActionEnabled ? KkfcColors.onSolid : KkfcColors.ticketMuted;
+    final foreground = isActionEnabled
+        ? KkfcColors.onSolid
+        : KkfcColors.ticketMuted;
 
     return Container(
       width: double.infinity,
@@ -50,7 +51,9 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 backgroundColor: KkfcColors.surface,
                 foregroundColor: KkfcColors.danger,
-                disabledForegroundColor: KkfcColors.danger.withValues(alpha: 0.5),
+                disabledForegroundColor: KkfcColors.danger.withValues(
+                  alpha: 0.5,
+                ),
                 side: const BorderSide(
                   color: KkfcColors.qcFailBorder,
                   width: KkfcBorderWidth.thick,

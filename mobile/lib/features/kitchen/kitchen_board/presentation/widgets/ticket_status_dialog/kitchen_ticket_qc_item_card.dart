@@ -158,21 +158,15 @@ class _QcDecisionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor =
-        isSelected ? activeColor : KkfcColors.canvasSunken;
-    final foregroundColor =
-        isSelected ? KkfcColors.onSolid : KkfcColors.ink;
-    final borderColor =
-        isSelected ? activeColor : KkfcColors.borderStrong;
+    final backgroundColor = isSelected ? activeColor : KkfcColors.canvasSunken;
+    final foregroundColor = isSelected ? KkfcColors.onSolid : KkfcColors.ink;
+    final borderColor = isSelected ? activeColor : KkfcColors.borderStrong;
 
     return Material(
       color: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(KkfcRadius.sm),
-        side: BorderSide(
-          color: borderColor,
-          width: KkfcBorderWidth.thin,
-        ),
+        side: BorderSide(color: borderColor, width: KkfcBorderWidth.thin),
       ),
       child: InkWell(
         onTap: onPressed,

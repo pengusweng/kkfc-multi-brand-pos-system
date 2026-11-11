@@ -105,10 +105,8 @@ class _CancelKitchenTicketDialogState
       tween: Tween<double>(begin: reduceMotion ? 1.0 : 0.96, end: 1.0),
       duration: reduceMotion ? Duration.zero : KkfcMotion.durOverlay,
       curve: KkfcMotion.easeSpring,
-      builder: (context, scale, child) => Transform.scale(
-        scale: scale,
-        child: child,
-      ),
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
       child: Dialog(
         backgroundColor: KkfcColors.surface,
         surfaceTintColor: Colors.transparent,
@@ -150,7 +148,7 @@ class _CancelKitchenTicketDialogState
                       onPressed: _isSubmitting
                           ? null
                           : (widget.onCancel ??
-                              () => Navigator.of(context).pop(false)),
+                                () => Navigator.of(context).pop(false)),
                       icon: const Icon(
                         Icons.close_rounded,
                         size: 20,
@@ -259,8 +257,7 @@ class _CancelKitchenTicketDialogState
                     required currentLength,
                     required isFocused,
                     maxLength,
-                  }) =>
-                      null,
+                  }) => null,
                   style: const TextStyle(
                     fontFamily: KkfcFonts.ibmPlexSans,
                     fontSize: KkfcTextSizes.textBase,
@@ -309,7 +306,7 @@ class _CancelKitchenTicketDialogState
                           onPressed: _isSubmitting
                               ? null
                               : (widget.onCancel ??
-                                  () => Navigator.of(context).pop(false)),
+                                    () => Navigator.of(context).pop(false)),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: KkfcColors.surface,
                             foregroundColor: KkfcColors.ink,
@@ -318,7 +315,9 @@ class _CancelKitchenTicketDialogState
                               width: KkfcBorderWidth.thin,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.sm,
+                              ),
                             ),
                           ),
                           child: const Text(
@@ -345,7 +344,9 @@ class _CancelKitchenTicketDialogState
                             foregroundColor: KkfcColors.onSolid,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.sm,
+                              ),
                             ),
                           ),
                           child: _isSubmitting

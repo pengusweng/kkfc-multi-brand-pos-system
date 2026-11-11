@@ -8,17 +8,20 @@ import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
 
 void main() {
-  test('UserRole.isKitchen includes supervisor, kitchenHead, and kitchenStaff', () {
-    expect(UserRole.supervisor.isKitchen, isTrue);
-    expect(UserRole.kitchenHead.isKitchen, isTrue);
-    expect(UserRole.kitchenStaff.isKitchen, isTrue);
+  test(
+    'UserRole.isKitchen includes supervisor, kitchenHead, and kitchenStaff',
+    () {
+      expect(UserRole.supervisor.isKitchen, isTrue);
+      expect(UserRole.kitchenHead.isKitchen, isTrue);
+      expect(UserRole.kitchenStaff.isKitchen, isTrue);
 
-    expect(UserRole.cashierStaff.isKitchen, isFalse);
-    expect(UserRole.manager.isKitchen, isFalse);
-    expect(UserRole.superadmin.isKitchen, isFalse);
-    expect(UserRole.recipeManager.isKitchen, isFalse);
-    expect(UserRole.inventoryStaff.isKitchen, isFalse);
-  });
+      expect(UserRole.cashierStaff.isKitchen, isFalse);
+      expect(UserRole.manager.isKitchen, isFalse);
+      expect(UserRole.superadmin.isKitchen, isFalse);
+      expect(UserRole.recipeManager.isKitchen, isFalse);
+      expect(UserRole.inventoryStaff.isKitchen, isFalse);
+    },
+  );
 
   testWidgets('logged-out users start on the login screen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: App()));
@@ -26,25 +29,26 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
-  testWidgets('supervisor login reroutes from login to the kitchen tickets page', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          initialTokenProvider.overrideWithValue('mock-supervisor-token'),
-          initialRoleProvider.overrideWithValue(UserRole.supervisor),
-        ],
-        child: const App(),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'supervisor login reroutes from login to the kitchen tickets page',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            initialTokenProvider.overrideWithValue('mock-supervisor-token'),
+            initialRoleProvider.overrideWithValue(UserRole.supervisor),
+          ],
+          child: const App(),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // Supervisor must be routed to the kitchen board, NOT the menu screen
-    expect(find.byType(KitchenBoardScreen), findsOneWidget);
-    expect(find.byType(MenuScreen), findsNothing);
-    expect(find.text('Supervisor'), findsOneWidget);
-  });
+      // Supervisor must be routed to the kitchen board, NOT the menu screen
+      expect(find.byType(KitchenBoardScreen), findsOneWidget);
+      expect(find.byType(MenuScreen), findsNothing);
+      expect(find.text('Supervisor'), findsOneWidget);
+    },
+  );
 
   testWidgets('cashier staff login routes to the menu page', (tester) async {
     await tester.pumpWidget(

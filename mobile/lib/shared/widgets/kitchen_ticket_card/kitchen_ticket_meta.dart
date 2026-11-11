@@ -38,11 +38,7 @@ class KitchenTicketChannelLine extends StatelessWidget {
     final label = reference.isNotEmpty ? '$channel · $reference' : channel;
     return Row(
       children: [
-        Icon(
-          _resolveIcon(),
-          size: 16,
-          color: KkfcColors.ticketInk,
-        ),
+        Icon(_resolveIcon(), size: 16, color: KkfcColors.ticketInk),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

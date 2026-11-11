@@ -58,10 +58,7 @@ class HandedOverSuccessDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: KkfcColors.surface,
-                  border: Border.all(
-                    color: KkfcColors.success,
-                    width: 3.0,
-                  ),
+                  border: Border.all(color: KkfcColors.success, width: 3.0),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(

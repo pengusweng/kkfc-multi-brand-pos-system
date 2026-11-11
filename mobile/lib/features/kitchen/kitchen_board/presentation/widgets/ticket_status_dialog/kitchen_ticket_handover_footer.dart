@@ -93,11 +93,7 @@ class KitchenTicketHandoverFooter extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      actionIcon,
-                      size: 20,
-                      color: foregroundColor,
-                    ),
+                    Icon(actionIcon, size: 20, color: foregroundColor),
                     const SizedBox(width: KkfcSpace.s8),
                     Flexible(
                       child: Text(

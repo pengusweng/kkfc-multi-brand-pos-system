@@ -14,9 +14,10 @@ enum HandoverCheckItem {
 
   String resolveLabel({int itemCount = 1}) {
     return switch (this) {
-      HandoverCheckItem.matchesTicket => itemCount > 1
-          ? 'All $itemCount items match the ticket'
-          : 'The item matches the ticket',
+      HandoverCheckItem.matchesTicket =>
+        itemCount > 1
+            ? 'All $itemCount items match the ticket'
+            : 'The item matches the ticket',
       HandoverCheckItem.cutleryIncluded =>
         'Cutlery, napkins and condiments included',
       HandoverCheckItem.packagingSealed => 'Packaging sealed',
@@ -55,8 +56,9 @@ class KitchenTicketHandoverBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = ticket.data;
-    final displayOrderCode =
-        ticket.orderCode.isNotEmpty ? ticket.orderCode : data.ticketNumber;
+    final displayOrderCode = ticket.orderCode.isNotEmpty
+        ? ticket.orderCode
+        : data.ticketNumber;
     final isDelivery = ticket.isDelivery;
     final itemCount = data.items.length;
 
@@ -109,11 +111,11 @@ class KitchenTicketHandoverBody extends StatelessWidget {
                         thickness: KkfcBorderWidth.thin,
                       ),
                     _ChecklistRow(
-                      label: HandoverCheckItem.values[i]
-                          .resolveLabel(itemCount: itemCount),
+                      label: HandoverCheckItem.values[i].resolveLabel(
+                        itemCount: itemCount,
+                      ),
                       isChecked: checklist[HandoverCheckItem.values[i]] == true,
-                      onToggle: () =>
-                          onToggleItem(HandoverCheckItem.values[i]),
+                      onToggle: () => onToggleItem(HandoverCheckItem.values[i]),
                     ),
                   ],
                 ],
@@ -277,9 +279,7 @@ class _ChecklistRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 color: isChecked ? KkfcColors.ink : Colors.transparent,
                 border: Border.all(
-                  color: isChecked
-                      ? KkfcColors.ink
-                      : KkfcColors.borderStrong,
+                  color: isChecked ? KkfcColors.ink : KkfcColors.borderStrong,
                   width: 2.0,
                 ),
               ),

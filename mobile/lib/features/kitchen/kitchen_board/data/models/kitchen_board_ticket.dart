@@ -84,9 +84,7 @@ class KitchenBoardTicket {
     if (lane == null) return null;
 
     final ticketId =
-        (json['kitchen_ticket_id'] as String?) ??
-        (json['id'] as String?) ??
-        '';
+        (json['kitchen_ticket_id'] as String?) ?? (json['id'] as String?) ?? '';
     final orderId = (json['order_id'] as String?) ?? '';
     final orderCode = (json['order_code'] as String?)?.trim() ?? '';
     final ticketNumber = (json['ticket_number'] as String?)?.trim() ?? 'T-000';
@@ -112,12 +110,15 @@ class KitchenBoardTicket {
     );
 
     final checkerId = (json['checker_id'] as String?)?.trim();
-    final qcAttemptId = (json['qc_attempt_id'] as String?)?.trim() ??
+    final qcAttemptId =
+        (json['qc_attempt_id'] as String?)?.trim() ??
         (json['attempt_id'] as String?)?.trim() ??
         (json['qc_attempts'] is List && (json['qc_attempts'] as List).isNotEmpty
             ? ((json['qc_attempts'] as List).first is Map
-                ? ((json['qc_attempts'] as List).first['qc_attempt_id'] as String?)?.trim()
-                : null)
+                  ? ((json['qc_attempts'] as List).first['qc_attempt_id']
+                            as String?)
+                        ?.trim()
+                  : null)
             : null);
 
     return KitchenBoardTicket(
@@ -223,7 +224,8 @@ class KitchenBoardTicket {
     if (brandObj is Map<String, dynamic>) {
       final code = (brandObj['code'] as String?)?.trim();
       final name = (brandObj['name'] as String?)?.trim();
-      final id = (brandObj['brand_id'] as String?) ?? (brandObj['id'] as String?);
+      final id =
+          (brandObj['brand_id'] as String?) ?? (brandObj['id'] as String?);
       if (code != null && code.isNotEmpty && name != null && name.isNotEmpty) {
         return AssignedBrand(id: id ?? 'brand-$code', code: code, name: name);
       }
@@ -244,11 +246,7 @@ class KitchenBoardTicket {
         code: 'AI',
         name: "Aurelia's Inasal",
       ),
-      'GC' => const AssignedBrand(
-        id: 'brand-gc',
-        code: 'GC',
-        name: 'Gamcheon',
-      ),
+      'GC' => const AssignedBrand(id: 'brand-gc', code: 'GC', name: 'Gamcheon'),
       _ => AssignedBrand(
         id: 'brand-${prefix.isEmpty ? 'gc' : prefix.toLowerCase()}',
         code: prefix.isEmpty ? 'GC' : prefix,
@@ -299,12 +297,10 @@ class KitchenBoardTicket {
         (orderMap?['table_reference'] as String?);
     if (tableRef != null && tableRef.trim().isNotEmpty) {
       final trimmed = tableRef.trim();
-      if (channel == 'Dine-in' &&
-          !trimmed.toLowerCase().startsWith('table')) {
+      if (channel == 'Dine-in' && !trimmed.toLowerCase().startsWith('table')) {
         return 'Table $trimmed';
       }
-      if (channel == 'Takeaway' &&
-          !trimmed.toLowerCase().startsWith('call')) {
+      if (channel == 'Takeaway' && !trimmed.toLowerCase().startsWith('call')) {
         return 'Call: $trimmed';
       }
       return trimmed;
@@ -393,8 +389,8 @@ class KitchenBoardTicket {
             );
           }
 
-          final orderItemId = (entry['order_item_id'] as String?) ??
-              (entry['id'] as String?);
+          final orderItemId =
+              (entry['order_item_id'] as String?) ?? (entry['id'] as String?);
 
           parsed.add(
             KitchenTicketItem(

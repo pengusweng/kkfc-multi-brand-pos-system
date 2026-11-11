@@ -6,11 +6,7 @@ import 'package:mobile/app/theme/typography.dart';
 
 /// Data representation for an attached photo evidence item.
 class HandoverPhotoEvidence {
-  const HandoverPhotoEvidence({
-    required this.name,
-    this.path,
-    this.bytes,
-  });
+  const HandoverPhotoEvidence({required this.name, this.path, this.bytes});
 
   final String name;
   final String? path;
@@ -57,11 +53,7 @@ class KitchenTicketHandoverPhotoCard extends StatelessWidget {
           // Header row
           Row(
             children: [
-              const Icon(
-                Icons.image_outlined,
-                size: 20,
-                color: KkfcColors.ink,
-              ),
+              const Icon(Icons.image_outlined, size: 20, color: KkfcColors.ink),
               const SizedBox(width: KkfcSpace.s8),
               const Text(
                 'Photo evidence',

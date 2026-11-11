@@ -21,11 +21,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
       status: KkfcStatus.queued,
       channel: 'Takeaway',
       reference: 'Call: Ana',
-      brand: AssignedBrand(
-        id: 'brand-kk',
-        code: 'KK',
-        name: 'King Kungs Kafé',
-      ),
+      brand: AssignedBrand(id: 'brand-kk', code: 'KK', name: 'King Kungs Kafé'),
       items: [
         KitchenTicketItem(
           quantity: 2,
@@ -90,11 +86,7 @@ const List<KitchenBoardTicket> sampleKitchenBoardTickets = [
       status: KkfcStatus.ready,
       channel: 'GrabFood',
       reference: 'Ref GF-993821',
-      brand: AssignedBrand(
-        id: 'brand-gc',
-        code: 'GC',
-        name: 'Gamcheon',
-      ),
+      brand: AssignedBrand(id: 'brand-gc', code: 'GC', name: 'Gamcheon'),
       items: [
         KitchenTicketItem(
           quantity: 2,

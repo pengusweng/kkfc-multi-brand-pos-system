@@ -74,7 +74,10 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   final List<String> passedQcAttemptIds = [];
   final List<String> rejectedQcAttemptIds = [];
   final List<String> handedOverTicketIds = [];
-  final List<({String attemptId, String reason, List<Map<String, dynamic>> rejections})> rejectedQcAttempts = [];
+  final List<
+    ({String attemptId, String reason, List<Map<String, dynamic>> rejections})
+  >
+  rejectedQcAttempts = [];
   final List<({String ticketId, String preparerId})> assignedPreparers = [];
 
   @override
@@ -90,7 +93,10 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   }) async {
     acknowledgedTicketIds.add(kitchenTicketId);
     if (preparerId != null) {
-      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+      assignedPreparers.add((
+        ticketId: kitchenTicketId,
+        preparerId: preparerId,
+      ));
     }
   }
 
@@ -101,26 +107,26 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   }) async {
     preparedTicketIds.add(kitchenTicketId);
     if (preparerId != null) {
-      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+      assignedPreparers.add((
+        ticketId: kitchenTicketId,
+        preparerId: preparerId,
+      ));
     }
   }
 
   @override
-  Future<void> sendToQc(
-    String kitchenTicketId, {
-    String? preparerId,
-  }) async {
+  Future<void> sendToQc(String kitchenTicketId, {String? preparerId}) async {
     sentToQcTicketIds.add(kitchenTicketId);
     if (preparerId != null) {
-      assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
+      assignedPreparers.add((
+        ticketId: kitchenTicketId,
+        preparerId: preparerId,
+      ));
     }
   }
 
   @override
-  Future<void> assignPreparer(
-    String kitchenTicketId,
-    String preparerId,
-  ) async {
+  Future<void> assignPreparer(String kitchenTicketId, String preparerId) async {
     assignedPreparers.add((ticketId: kitchenTicketId, preparerId: preparerId));
   }
 
@@ -164,20 +170,22 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     final targetAttempt = attemptId ?? kitchenTicketId;
     final rejections = (orderItemIds != null && orderItemIds.isNotEmpty)
         ? orderItemIds
-            .map((id) => {
+              .map(
+                (id) => {
                   'order_item_id': id,
                   'portion_number': 1,
                   'rejection_reason': 'INCOMPLETE',
                   'description': reason,
-                })
-            .toList()
+                },
+              )
+              .toList()
         : [
             {
               'order_item_id': kitchenTicketId,
               'portion_number': 1,
               'rejection_reason': 'INCOMPLETE',
               'description': reason,
-            }
+            },
           ];
     await rejectQcAttempt(targetAttempt, rejections: rejections);
   }
@@ -280,169 +288,149 @@ void main() {
       },
     );
 
-    test(
-      'acknowledgeTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000016';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'kitchen_ticket_id': ticketId,
-            'status': 'ACKNOWLEDGED',
-          }),
-        );
+    test('acknowledgeTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000016';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'ACKNOWLEDGED',
+        }),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.acknowledgeTicket(ticketId);
+      await repo.acknowledgeTicket(ticketId);
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'POST');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/acknowledge',
-        );
-      },
-    );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'POST');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/acknowledge',
+      );
+    });
 
-    test(
-      'prepareTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000016';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'kitchen_ticket_id': ticketId,
-            'status': 'PREPARING',
-          }),
-        );
+    test('prepareTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/prepare', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000016';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'PREPARING',
+        }),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.prepareTicket(ticketId);
+      await repo.prepareTicket(ticketId);
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'POST');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
-        );
-      },
-    );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'POST');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
+      );
+    });
 
-    test(
-      'prepareTicket assigns preparer before calling prepare if preparerId is provided',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000016';
-        const preparerId = '00000000-0000-4000-8000-000000000001';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'kitchen_ticket_id': ticketId,
-            'status': 'PREPARING',
-          }),
-        );
+    test('prepareTicket assigns preparer before calling prepare if preparerId is provided', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000016';
+      const preparerId = '00000000-0000-4000-8000-000000000001';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'PREPARING',
+        }),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.prepareTicket(ticketId, preparerId: preparerId);
+      await repo.prepareTicket(ticketId, preparerId: preparerId);
 
-        expect(adapter.requests, hasLength(2));
-        expect(adapter.requests[0].method, 'PATCH');
-        expect(
-          adapter.requests[0].uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/$ticketId/preparer',
-        );
-        expect(adapter.requests[0].data, {'preparer_id': preparerId});
+      expect(adapter.requests, hasLength(2));
+      expect(adapter.requests[0].method, 'PATCH');
+      expect(
+        adapter.requests[0].uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/$ticketId/preparer',
+      );
+      expect(adapter.requests[0].data, {'preparer_id': preparerId});
 
-        expect(adapter.requests[1].method, 'POST');
-        expect(
-          adapter.requests[1].uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
-        );
-      },
-    );
+      expect(adapter.requests[1].method, 'POST');
+      expect(
+        adapter.requests[1].uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/prepare',
+      );
+    });
 
-    test(
-      'sendToQc sends POST /api/kitchen-fulfillment/{kitchenTicketId}/for-checking',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000015';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'kitchen_ticket_id': ticketId,
-            'status': 'FOR_CHECKING',
-          }),
-        );
+    test('sendToQc sends POST /api/kitchen-fulfillment/{kitchenTicketId}/for-checking', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000015';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'FOR_CHECKING',
+        }),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.sendToQc(ticketId);
+      await repo.sendToQc(ticketId);
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'POST');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/for-checking',
-        );
-      },
-    );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'POST');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/for-checking',
+      );
+    });
 
-    test(
-      'passQcAttempt sends POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/pass',
-      () async {
-        const attemptId = '00000000-0000-4000-8000-000000000099';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'qc_attempt_id': attemptId,
-            'status': 'PASSED',
-          }),
-        );
+    test('passQcAttempt sends POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/pass', () async {
+      const attemptId = '00000000-0000-4000-8000-000000000099';
+      final adapter = _RecordingAdapter(
+        (_) async =>
+            _jsonResponse({'qc_attempt_id': attemptId, 'status': 'PASSED'}),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.passQcAttempt(attemptId);
+      await repo.passQcAttempt(attemptId);
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'POST');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/qc-attempts/$attemptId/pass',
-        );
-      },
-    );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'POST');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/qc-attempts/$attemptId/pass',
+      );
+    });
 
-    test(
-      'handOverTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000014';
-        final adapter = _RecordingAdapter(
-          (_) async => _jsonResponse({
-            'kitchen_ticket_id': ticketId,
-            'status': 'HANDED_OVER',
-          }),
-        );
+    test('handOverTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000014';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'HANDED_OVER',
+        }),
+      );
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.handOverTicket(ticketId);
+      await repo.handOverTicket(ticketId);
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'POST');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-fulfillment/$ticketId/hand-over',
-        );
-      },
-    );
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'POST');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/hand-over',
+      );
+    });
   });
 
   group('KitchenBoardScreen & KitchenTicketStatusDialog UI', () {
@@ -472,9 +460,8 @@ void main() {
           child: MaterialApp(
             theme: counterTheme,
             builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
               child: child!,
             ),
             home: const KitchenBoardScreen(),
@@ -867,34 +854,59 @@ void main() {
       expect(UserRole.inventoryStaff.canPassQc, isFalse);
     });
 
-    test('UserRole supervisor read-only and ticket transition authorization rules', () {
-      // Supervisor is explicitly read-only on the kitchen board except for QC
-      expect(UserRole.supervisor.isKitchenReadOnlyExceptQc, isTrue);
-      expect(UserRole.kitchenHead.isKitchenReadOnlyExceptQc, isFalse);
-      expect(UserRole.kitchenStaff.isKitchenReadOnlyExceptQc, isFalse);
-      expect(UserRole.manager.isKitchenReadOnlyExceptQc, isFalse);
-      expect(UserRole.superadmin.isKitchenReadOnlyExceptQc, isFalse);
+    test(
+      'UserRole supervisor read-only and ticket transition authorization rules',
+      () {
+        // Supervisor is explicitly read-only on the kitchen board except for QC
+        expect(UserRole.supervisor.isKitchenReadOnlyExceptQc, isTrue);
+        expect(UserRole.kitchenHead.isKitchenReadOnlyExceptQc, isFalse);
+        expect(UserRole.kitchenStaff.isKitchenReadOnlyExceptQc, isFalse);
+        expect(UserRole.manager.isKitchenReadOnlyExceptQc, isFalse);
+        expect(UserRole.superadmin.isKitchenReadOnlyExceptQc, isFalse);
 
-      // Supervisor can ONLY change ticket status for QC check
-      expect(UserRole.supervisor.canChangeTicketStatus(isQcCheck: true), isTrue);
-      expect(UserRole.supervisor.canChangeTicketStatus(isQcCheck: false), isFalse);
+        // Supervisor can ONLY change ticket status for QC check
+        expect(
+          UserRole.supervisor.canChangeTicketStatus(isQcCheck: true),
+          isTrue,
+        );
+        expect(
+          UserRole.supervisor.canChangeTicketStatus(isQcCheck: false),
+          isFalse,
+        );
 
-      // Kitchen Head and Manager can change status across all lanes
-      expect(UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: true), isTrue);
-      expect(UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: false), isTrue);
-      expect(UserRole.manager.canChangeTicketStatus(isQcCheck: true), isTrue);
-      expect(UserRole.manager.canChangeTicketStatus(isQcCheck: false), isTrue);
+        // Kitchen Head and Manager can change status across all lanes
+        expect(
+          UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: true),
+          isTrue,
+        );
+        expect(
+          UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: false),
+          isTrue,
+        );
+        expect(UserRole.manager.canChangeTicketStatus(isQcCheck: true), isTrue);
+        expect(
+          UserRole.manager.canChangeTicketStatus(isQcCheck: false),
+          isTrue,
+        );
 
-      // Kitchen Staff can change non-QC lanes but cannot pass QC
-      expect(UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: false), isTrue);
-      expect(UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: true), isFalse);
-    });
+        // Kitchen Staff can change non-QC lanes but cannot pass QC
+        expect(
+          UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: false),
+          isTrue,
+        );
+        expect(
+          UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: true),
+          isFalse,
+        );
+      },
+    );
 
     testWidgets(
       'Supervisor is in read-only mode for Queued, Preparing, and Ready tickets, but can execute QC check',
       (tester) async {
         final queuedTicket = sampleKitchenBoardTickets[0]; // T-016 (Queued)
-        final preparingTicket = sampleKitchenBoardTickets[1]; // T-017 (Preparing)
+        final preparingTicket =
+            sampleKitchenBoardTickets[1]; // T-017 (Preparing)
         final readyTicket = sampleKitchenBoardTickets[2]; // T-018 (Ready)
         final qcTicket = sampleKitchenBoardTickets[1].copyWith(
           kitchenTicketId: '00000000-0000-4000-8000-000000000099',
@@ -917,54 +929,97 @@ void main() {
         expect(find.text('Supervisor'), findsOneWidget);
 
         // Toolbar displays read-only mode indicator badge
-        expect(find.byKey(const ValueKey('kitchen-board-readonly-badge')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-board-readonly-badge')),
+          findsOneWidget,
+        );
         expect(find.text('Read-only (QC Check only)'), findsOneWidget);
 
         // 1. Queued Ticket (T-016): Action button is disabled
-        final queuedCard = find.byKey(const ValueKey('kitchen-ticket-card-T-016'));
-        final queuedAction = find.descendant(of: queuedCard, matching: find.byType(FilledButton));
+        final queuedCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-016'),
+        );
+        final queuedAction = find.descendant(
+          of: queuedCard,
+          matching: find.byType(FilledButton),
+        );
         expect(tester.widget<FilledButton>(queuedAction).onPressed, isNull);
 
         // Tapping Details on queued ticket opens dialog in read-only mode
-        final queuedDetails = find.descendant(of: queuedCard, matching: find.text('Details'));
+        final queuedDetails = find.descendant(
+          of: queuedCard,
+          matching: find.text('Details'),
+        );
         await tester.tap(queuedDetails);
         await tester.pumpAndSettle();
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
-        final queuedDialogAction = find.byKey(const ValueKey('kitchen-ticket-dialog-action-button'));
-        expect(tester.widget<FilledButton>(queuedDialogAction).onPressed, isNull);
-        final queuedDialogCancel = find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'));
-        expect(tester.widget<OutlinedButton>(queuedDialogCancel).onPressed, isNull);
+        final queuedDialogAction = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        expect(
+          tester.widget<FilledButton>(queuedDialogAction).onPressed,
+          isNull,
+        );
+        final queuedDialogCancel = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+        );
+        expect(
+          tester.widget<OutlinedButton>(queuedDialogCancel).onPressed,
+          isNull,
+        );
 
         // Close dialog
-        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')),
+        );
         await tester.pumpAndSettle();
 
         // 2. Preparing Ticket (T-015): Action button is disabled
-        final preparingCard = find.byKey(const ValueKey('kitchen-ticket-card-T-015'));
-        final preparingAction = find.descendant(of: preparingCard, matching: find.byType(FilledButton));
+        final preparingCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-015'),
+        );
+        final preparingAction = find.descendant(
+          of: preparingCard,
+          matching: find.byType(FilledButton),
+        );
         expect(tester.widget<FilledButton>(preparingAction).onPressed, isNull);
 
         // 3. Ready Ticket (T-014): Action button is disabled, Details button is available
-        final readyCard = find.byKey(const ValueKey('kitchen-ticket-card-T-014'));
-        final readyAction = find.descendant(of: readyCard, matching: find.byType(FilledButton));
+        final readyCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-014'),
+        );
+        final readyAction = find.descendant(
+          of: readyCard,
+          matching: find.byType(FilledButton),
+        );
         expect(tester.widget<FilledButton>(readyAction).onPressed, isNull);
 
-        final readyDetails = find.descendant(of: readyCard, matching: find.text('Details'));
+        final readyDetails = find.descendant(
+          of: readyCard,
+          matching: find.text('Details'),
+        );
         expect(readyDetails, findsOneWidget);
         await tester.tap(readyDetails);
         await tester.pumpAndSettle();
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
-        final handoverConfirm = find.byKey(const ValueKey('kitchen-ticket-handover-confirm-button'));
+        final handoverConfirm = find.byKey(
+          const ValueKey('kitchen-ticket-handover-confirm-button'),
+        );
         expect(tester.widget<FilledButton>(handoverConfirm).onPressed, isNull);
 
-        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')),
+        );
         await tester.pumpAndSettle();
 
         // 4. QC Check Ticket (T-099): Action button is ENABLED for Supervisor!
         final qcCard = find.byKey(const ValueKey('kitchen-ticket-card-T-099'));
-        final qcAction = find.descendant(of: qcCard, matching: find.byType(FilledButton));
+        final qcAction = find.descendant(
+          of: qcCard,
+          matching: find.byType(FilledButton),
+        );
         expect(tester.widget<FilledButton>(qcAction).onPressed, isNotNull);
 
         // Tap QC Check button to open QC check modal
@@ -978,18 +1033,25 @@ void main() {
         await tester.tap(find.text('Pass').first);
         await tester.pumpAndSettle();
 
-        final passAllButton = find.byKey(const ValueKey('kitchen-ticket-dialog-action-button'));
+        final passAllButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
         expect(tester.widget<FilledButton>(passAllButton).onPressed, isNotNull);
 
         await tester.tap(passAllButton);
         await tester.pumpAndSettle();
 
-        expect(repo.passedQcAttemptIds, contains('00000000-0000-4000-8000-000000000099'));
+        expect(
+          repo.passedQcAttemptIds,
+          contains('00000000-0000-4000-8000-000000000099'),
+        );
       },
     );
 
     test('KitchenBoardNotifier rejects status transitions for supervisor except QC', () async {
-      final repo = _FakeKitchenBoardRepository(() async => sampleKitchenBoardTickets);
+      final repo = _FakeKitchenBoardRepository(
+        () async => sampleKitchenBoardTickets,
+      );
       final container = ProviderContainer(
         overrides: [
           kitchenBoardRepositoryProvider.overrideWithValue(repo),
@@ -1010,8 +1072,17 @@ void main() {
       expect(await notifier.handOverTicket('any-id'), isFalse);
 
       // QC pass and reject are allowed for supervisor
-      expect(await notifier.passQc(kitchenTicketId: 'any-id', attemptId: 'att-1'), isTrue);
-      expect(await notifier.rejectQc(kitchenTicketId: 'any-id', reason: 'Under-seasoned'), isTrue);
+      expect(
+        await notifier.passQc(kitchenTicketId: 'any-id', attemptId: 'att-1'),
+        isTrue,
+      );
+      expect(
+        await notifier.rejectQc(
+          kitchenTicketId: 'any-id',
+          reason: 'Under-seasoned',
+        ),
+        isTrue,
+      );
     });
 
     testWidgets(
@@ -1027,9 +1098,7 @@ void main() {
           ),
         );
 
-        final repo = _FakeKitchenBoardRepository(
-          () async => [qcTicket],
-        );
+        final repo = _FakeKitchenBoardRepository(() async => [qcTicket]);
 
         // Pump as KITCHEN_STAFF (unauthorized to pass QC)
         await pumpBoard(tester, repository: repo, role: UserRole.kitchenStaff);
@@ -1090,9 +1159,7 @@ void main() {
           ),
         );
 
-        final repo = _FakeKitchenBoardRepository(
-          () async => [qcTicket],
-        );
+        final repo = _FakeKitchenBoardRepository(() async => [qcTicket]);
 
         // Pump as KITCHEN_HEAD (authorized to pass QC)
         await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
@@ -1186,7 +1253,10 @@ void main() {
         await tester.tap(allItemsPassedFinder);
         await tester.pumpAndSettle();
 
-        expect(repo.passedQcAttemptIds, contains('00000000-0000-4000-8000-000000000099'));
+        expect(
+          repo.passedQcAttemptIds,
+          contains('00000000-0000-4000-8000-000000000099'),
+        );
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );
@@ -1215,11 +1285,7 @@ void main() {
                 name: 'Item Alpha',
                 modifiers: ['Note: Hot'],
               ),
-              KitchenTicketItem(
-                quantity: 1,
-                name: 'Item Beta',
-                modifiers: [],
-              ),
+              KitchenTicketItem(quantity: 1, name: 'Item Beta', modifiers: []),
             ],
             paymentStatus: 'Paid',
           ),
@@ -1342,7 +1408,9 @@ void main() {
         addTearDown(container.dispose);
 
         // Prepopulate token so we can verify it gets cleared on confirm
-        container.read(sessionTokenProvider.notifier).setToken('kitchen-test-jwt');
+        container
+            .read(sessionTokenProvider.notifier)
+            .setToken('kitchen-test-jwt');
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -1389,54 +1457,51 @@ void main() {
       },
     );
 
-    test(
-      'KitchenBoardState.ticketsForLane prioritizes REWORKING tickets at the top of Preparing lane',
-      () {
-        final samplePreparing = sampleKitchenBoardTickets.firstWhere(
-          (t) => t.lane == KitchenBoardLane.preparing,
-        );
-        final normalPrep1 = samplePreparing.copyWith(
-          kitchenTicketId: 'prep-1',
-          orderCode: 'ORD-PREP-1',
-          rawStatus: 'PREPARING',
-          data: samplePreparing.data.copyWith(
-            ticketNumber: 'T-101',
-            status: KkfcStatus.preparing,
-          ),
-        );
-        final normalPrep2 = samplePreparing.copyWith(
-          kitchenTicketId: 'prep-2',
-          orderCode: 'ORD-PREP-2',
-          rawStatus: 'PREPARING',
-          data: samplePreparing.data.copyWith(
-            ticketNumber: 'T-102',
-            status: KkfcStatus.preparing,
-          ),
-        );
-        final reworkTicket = samplePreparing.copyWith(
-          kitchenTicketId: 'prep-rework',
-          orderCode: 'ORD-REWORK',
-          rawStatus: 'REWORKING',
-          data: samplePreparing.data.copyWith(
-            ticketNumber: 'T-999',
-            status: KkfcStatus.reworking,
-          ),
-        );
+    test('KitchenBoardState.ticketsForLane prioritizes REWORKING tickets at the top of Preparing lane', () {
+      final samplePreparing = sampleKitchenBoardTickets.firstWhere(
+        (t) => t.lane == KitchenBoardLane.preparing,
+      );
+      final normalPrep1 = samplePreparing.copyWith(
+        kitchenTicketId: 'prep-1',
+        orderCode: 'ORD-PREP-1',
+        rawStatus: 'PREPARING',
+        data: samplePreparing.data.copyWith(
+          ticketNumber: 'T-101',
+          status: KkfcStatus.preparing,
+        ),
+      );
+      final normalPrep2 = samplePreparing.copyWith(
+        kitchenTicketId: 'prep-2',
+        orderCode: 'ORD-PREP-2',
+        rawStatus: 'PREPARING',
+        data: samplePreparing.data.copyWith(
+          ticketNumber: 'T-102',
+          status: KkfcStatus.preparing,
+        ),
+      );
+      final reworkTicket = samplePreparing.copyWith(
+        kitchenTicketId: 'prep-rework',
+        orderCode: 'ORD-REWORK',
+        rawStatus: 'REWORKING',
+        data: samplePreparing.data.copyWith(
+          ticketNumber: 'T-999',
+          status: KkfcStatus.reworking,
+        ),
+      );
 
-        // Input list has rework at the very end
-        final state = KitchenBoardState(
-          tickets: [normalPrep1, normalPrep2, reworkTicket],
-        );
+      // Input list has rework at the very end
+      final state = KitchenBoardState(
+        tickets: [normalPrep1, normalPrep2, reworkTicket],
+      );
 
-        final laneTickets = state.ticketsForLane(KitchenBoardLane.preparing);
-        expect(laneTickets.length, 3);
-        // Rework ticket must be prioritized at index 0 (top of column)
-        expect(laneTickets[0].kitchenTicketId, 'prep-rework');
-        expect(laneTickets[0].data.status, KkfcStatus.reworking);
-        expect(laneTickets[1].kitchenTicketId, 'prep-1');
-        expect(laneTickets[2].kitchenTicketId, 'prep-2');
-      },
-    );
+      final laneTickets = state.ticketsForLane(KitchenBoardLane.preparing);
+      expect(laneTickets.length, 3);
+      // Rework ticket must be prioritized at index 0 (top of column)
+      expect(laneTickets[0].kitchenTicketId, 'prep-rework');
+      expect(laneTickets[0].data.status, KkfcStatus.reworking);
+      expect(laneTickets[1].kitchenTicketId, 'prep-1');
+      expect(laneTickets[2].kitchenTicketId, 'prep-2');
+    });
 
     testWidgets(
       'QC Fail flow: opens dialog, validates empty reason banner, and confirming with reason statically closes dialogs without changing ticket',
@@ -1454,15 +1519,9 @@ void main() {
               ),
             );
 
-        final repo = _FakeKitchenBoardRepository(
-          () async => [qcTicket],
-        );
+        final repo = _FakeKitchenBoardRepository(() async => [qcTicket]);
 
-        await pumpBoard(
-          tester,
-          repository: repo,
-          role: UserRole.kitchenHead,
-        );
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
 
         // 1. Open QC check dialog
         final qcCheckButton = find.widgetWithText(FilledButton, 'QC check');
@@ -1524,7 +1583,10 @@ void main() {
         // 6. Both dialogs are closed, ticket remains on board in QC check lane
         expect(find.byType(FailQcSendToReworkDialog), findsNothing);
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
-        expect(find.byKey(const ValueKey('kitchen-ticket-card-T-QC-777')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-card-T-QC-777')),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1543,15 +1605,9 @@ void main() {
               ),
             );
 
-        final repo = _FakeKitchenBoardRepository(
-          () async => [readyTicket],
-        );
+        final repo = _FakeKitchenBoardRepository(() async => [readyTicket]);
 
-        await pumpBoard(
-          tester,
-          repository: repo,
-          role: UserRole.kitchenHead,
-        );
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
 
         // 1. Click "Hand over" button on ticket card in Ready lane
         final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
@@ -1590,7 +1646,9 @@ void main() {
 
         // Check the 3 items exist
         final matchCheck = find.text('The item matches the ticket');
-        final cutleryCheck = find.text('Cutlery, napkins and condiments included');
+        final cutleryCheck = find.text(
+          'Cutlery, napkins and condiments included',
+        );
         final packagingCheck = find.text('Packaging sealed');
         expect(matchCheck, findsOneWidget);
         expect(cutleryCheck, findsOneWidget);
@@ -1602,25 +1660,36 @@ void main() {
         );
         expect(footerButtonFinder, findsOneWidget);
         expect(find.text('Finish the check to hand over'), findsOneWidget);
-        final initialFilledButton = tester.widget<FilledButton>(footerButtonFinder);
+        final initialFilledButton = tester.widget<FilledButton>(
+          footerButtonFinder,
+        );
         expect(initialFilledButton.onPressed, isNull);
 
         // 3. Tick first checkbox -> button remains disabled
         await tester.tap(matchCheck);
         await tester.pumpAndSettle();
-        expect(tester.widget<FilledButton>(footerButtonFinder).onPressed, isNull);
+        expect(
+          tester.widget<FilledButton>(footerButtonFinder).onPressed,
+          isNull,
+        );
         expect(find.text('Finish the check to hand over'), findsOneWidget);
 
         // 4. Tick second checkbox -> button remains disabled
         await tester.tap(cutleryCheck);
         await tester.pumpAndSettle();
-        expect(tester.widget<FilledButton>(footerButtonFinder).onPressed, isNull);
+        expect(
+          tester.widget<FilledButton>(footerButtonFinder).onPressed,
+          isNull,
+        );
         expect(find.text('Finish the check to hand over'), findsOneWidget);
 
         // 5. Tick third checkbox -> button enables and shows "Confirm handover"
         await tester.tap(packagingCheck);
         await tester.pumpAndSettle();
-        expect(tester.widget<FilledButton>(footerButtonFinder).onPressed, isNotNull);
+        expect(
+          tester.widget<FilledButton>(footerButtonFinder).onPressed,
+          isNotNull,
+        );
         expect(find.text('Confirm handover'), findsOneWidget);
 
         // 6. Tap "Confirm handover"
@@ -1634,10 +1703,7 @@ void main() {
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
         expect(find.byType(HandedOverSuccessDialog), findsOneWidget);
         expect(find.text('Handed over'), findsOneWidget);
-        expect(
-          find.textContaining('T-016 was handed over at'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('T-016 was handed over at'), findsOneWidget);
         expect(
           find.textContaining('It is no longer on the board.'),
           findsOneWidget,
@@ -1653,7 +1719,10 @@ void main() {
 
         expect(find.byType(HandedOverSuccessDialog), findsNothing);
         // Handed over ticket is removed from the board
-        expect(find.byKey(const ValueKey('kitchen-ticket-card-T-016')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
+          findsNothing,
+        );
       },
     );
 
@@ -1662,20 +1731,11 @@ void main() {
       (tester) async {
         final deliveryTicket = sampleKitchenBoardTickets
             .firstWhere((t) => t.data.ticketNumber == 'T-014')
-            .copyWith(
-              lane: KitchenBoardLane.ready,
-              rawStatus: 'READY',
-            );
+            .copyWith(lane: KitchenBoardLane.ready, rawStatus: 'READY');
 
-        final repo = _FakeKitchenBoardRepository(
-          () async => [deliveryTicket],
-        );
+        final repo = _FakeKitchenBoardRepository(() async => [deliveryTicket]);
 
-        await pumpBoard(
-          tester,
-          repository: repo,
-          role: UserRole.kitchenHead,
-        );
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
 
         // 1. Click "Hand over" button on ticket card in Ready lane
         final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
@@ -1769,10 +1829,7 @@ void main() {
       (tester) async {
         final deliveryTicket = sampleKitchenBoardTickets
             .firstWhere((t) => t.data.ticketNumber == 'T-014')
-            .copyWith(
-              lane: KitchenBoardLane.ready,
-              rawStatus: 'READY',
-            );
+            .copyWith(lane: KitchenBoardLane.ready, rawStatus: 'READY');
 
         var handoverCalled = false;
         var pickCounter = 0;
@@ -1880,55 +1937,52 @@ void main() {
       },
     );
 
-    test(
-      'automatically refreshes tickets when the user logs in or switches tokens',
-      () async {
-        var currentTickets = [sampleKitchenBoardTickets[0]];
-        final repo = _FakeKitchenBoardRepository(() async => currentTickets);
+    test('automatically refreshes tickets when the user logs in or switches tokens', () async {
+      var currentTickets = [sampleKitchenBoardTickets[0]];
+      final repo = _FakeKitchenBoardRepository(() async => currentTickets);
 
-        final container = ProviderContainer(
-          overrides: [
-            kitchenBoardRepositoryProvider.overrideWithValue(repo),
-            authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          kitchenBoardRepositoryProvider.overrideWithValue(repo),
+          authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        // 1. Initial build loads the first ticket set
-        final initial = container.read(kitchenBoardProvider);
-        expect(initial.isLoading, isTrue);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(repo.fetchCount, 1);
-        expect(container.read(kitchenBoardProvider).tickets.length, 1);
-        expect(
-          container.read(kitchenBoardProvider).tickets.first.data.ticketNumber,
-          'T-016',
-        );
+      // 1. Initial build loads the first ticket set
+      final initial = container.read(kitchenBoardProvider);
+      expect(initial.isLoading, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(repo.fetchCount, 1);
+      expect(container.read(kitchenBoardProvider).tickets.length, 1);
+      expect(
+        container.read(kitchenBoardProvider).tickets.first.data.ticketNumber,
+        'T-016',
+      );
 
-        // 2. Repository updates with new tickets
-        currentTickets = sampleKitchenBoardTickets;
+      // 2. Repository updates with new tickets
+      currentTickets = sampleKitchenBoardTickets;
 
-        // 3. User logs in (sessionTokenProvider receives a new token)
-        container.read(sessionTokenProvider.notifier).setToken('new-user-token');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+      // 3. User logs in (sessionTokenProvider receives a new token)
+      container.read(sessionTokenProvider.notifier).setToken('new-user-token');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-        // 4. Kitchen board automatically refreshed tickets
-        expect(repo.fetchCount, 2);
-        expect(container.read(kitchenBoardProvider).tickets.length, 3);
+      // 4. Kitchen board automatically refreshed tickets
+      expect(repo.fetchCount, 2);
+      expect(container.read(kitchenBoardProvider).tickets.length, 3);
 
-        // 5. User logs out: clears tickets
-        container.read(sessionTokenProvider.notifier).setToken(null);
-        expect(container.read(kitchenBoardProvider).tickets, isEmpty);
+      // 5. User logs out: clears tickets
+      container.read(sessionTokenProvider.notifier).setToken(null);
+      expect(container.read(kitchenBoardProvider).tickets, isEmpty);
 
-        // 6. Another user logs in: automatically refreshes tickets again
-        container
-            .read(sessionTokenProvider.notifier)
-            .setToken('kitchen-head-token');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(repo.fetchCount, 3);
-        expect(container.read(kitchenBoardProvider).tickets.length, 3);
-      },
-    );
+      // 6. Another user logs in: automatically refreshes tickets again
+      container
+          .read(sessionTokenProvider.notifier)
+          .setToken('kitchen-head-token');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(repo.fetchCount, 3);
+      expect(container.read(kitchenBoardProvider).tickets.length, 3);
+    });
 
     testWidgets(
       'KitchenBoardScreen automatically refreshes and displays new tickets when user logs in',
@@ -2003,11 +2057,7 @@ void main() {
         expect(headerWaves, findsOneWidget);
 
         // 3. Verifies both phone and tablet layouts render background waves without overflow
-        await pumpBoard(
-          tester,
-          repository: repo,
-          size: const Size(390, 844),
-        );
+        await pumpBoard(tester, repository: repo, size: const Size(390, 844));
         expect(find.byType(KkfcCanvasWaves), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
@@ -2134,7 +2184,10 @@ void main() {
 
         final dialogAckRect = tester.getRect(dialogAckButton);
         final dialogCancelRect = tester.getRect(dialogCancelButton);
-        expect(dialogCancelRect.top, greaterThanOrEqualTo(dialogAckRect.bottom));
+        expect(
+          dialogCancelRect.top,
+          greaterThanOrEqualTo(dialogAckRect.bottom),
+        );
 
         // 3. Clicking 'Cancel ticket' inside the popup opens CancelKitchenTicketDialog
         await tester.tap(dialogCancelButton);
@@ -2149,10 +2202,7 @@ void main() {
           const ValueKey('cancel-ticket-reason-field'),
         );
         expect(reasonFieldFinder, findsOneWidget);
-        expect(
-          tester.widget<TextField>(reasonFieldFinder).maxLength,
-          200,
-        );
+        expect(tester.widget<TextField>(reasonFieldFinder).maxLength, 200);
 
         final submitButtonFinder = find.byKey(
           const ValueKey('cancel-ticket-submit-button'),
@@ -2188,7 +2238,10 @@ void main() {
         expect(find.byType(CancelKitchenTicketDialog), findsNothing);
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
         // Ticket remains on the board (static flow)
-        expect(find.byKey(const ValueKey('kitchen-ticket-card-T-016')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
+          findsOneWidget,
+        );
       },
     );
   });

@@ -96,10 +96,7 @@ class KitchenBoardLaneColumn extends StatelessWidget {
       switchOutCurve: KkfcMotion.easeIn,
       layoutBuilder: (currentChild, previousChildren) => Stack(
         alignment: Alignment.topCenter,
-        children: [
-          ...previousChildren,
-          ?currentChild,
-        ],
+        children: [...previousChildren, ?currentChild],
       ),
       child: body,
     );
@@ -131,7 +128,8 @@ class KitchenBoardLaneColumn extends StatelessWidget {
 
   Widget _buildTicketCard(KitchenBoardTicket boardTicket) {
     final actionLabel = lane.actionLabelFor(boardTicket.data.status);
-    final isQcLane = lane == KitchenBoardLane.qcCheck ||
+    final isQcLane =
+        lane == KitchenBoardLane.qcCheck ||
         boardTicket.data.status == KkfcStatus.checking ||
         boardTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         boardTicket.rawStatus.toUpperCase() == 'CHECKING';
@@ -183,7 +181,8 @@ class _AnimatedTicketEntryState extends State<_AnimatedTicketEntry>
   @override
   void initState() {
     super.initState();
-    final staggerDelayMs = widget.index.clamp(0, KkfcMotion.staggerMaxRows) *
+    final staggerDelayMs =
+        widget.index.clamp(0, KkfcMotion.staggerMaxRows) *
         KkfcMotion.stagger.inMilliseconds;
     final totalDurationMs =
         KkfcMotion.durLayout.inMilliseconds + staggerDelayMs;
@@ -191,8 +190,7 @@ class _AnimatedTicketEntryState extends State<_AnimatedTicketEntry>
       vsync: this,
       duration: Duration(milliseconds: totalDurationMs),
     );
-    final delayFraction =
-        staggerDelayMs / totalDurationMs.toDouble();
+    final delayFraction = staggerDelayMs / totalDurationMs.toDouble();
     final curved = CurvedAnimation(
       parent: _controller,
       curve: Interval(
@@ -214,10 +212,7 @@ class _AnimatedTicketEntryState extends State<_AnimatedTicketEntry>
       begin: KkfcMotion.peerOffset,
       end: 0.0,
     ).animate(curved);
-    _scale = Tween<double>(
-      begin: 0.98,
-      end: 1.0,
-    ).animate(springCurved);
+    _scale = Tween<double>(begin: 0.98, end: 1.0).animate(springCurved);
   }
 
   @override
@@ -251,10 +246,7 @@ class _AnimatedTicketEntryState extends State<_AnimatedTicketEntry>
           opacity: _fade.value.clamp(0.0, 1.0),
           child: Transform.translate(
             offset: Offset(0, _translateY.value),
-            child: Transform.scale(
-              scale: _scale.value,
-              child: child,
-            ),
+            child: Transform.scale(scale: _scale.value, child: child),
           ),
         );
       },

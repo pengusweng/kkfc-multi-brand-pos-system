@@ -33,89 +33,89 @@ class KitchenBoardLanesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-          final width = constraints.maxWidth;
+        final width = constraints.maxWidth;
 
-          if (width >= _fourLaneBreakpoint) {
-            return Padding(
-              padding: const EdgeInsets.all(KkfcSpace.s16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
-                    if (i > 0) const SizedBox(width: KkfcSpace.s12),
-                    Expanded(
-                      child: _buildLane(
-                        KitchenBoardLane.values[i],
-                        scrollable: true,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }
-
-          if (width >= _twoByTwoBreakpoint) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(KkfcSpace.s16),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildLane(
-                          KitchenBoardLane.queued,
-                          scrollable: false,
-                        ),
-                      ),
-                      const SizedBox(width: KkfcSpace.s12),
-                      Expanded(
-                        child: _buildLane(
-                          KitchenBoardLane.preparing,
-                          scrollable: false,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: KkfcSpace.s12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildLane(
-                          KitchenBoardLane.qcCheck,
-                          scrollable: false,
-                        ),
-                      ),
-                      const SizedBox(width: KkfcSpace.s12),
-                      Expanded(
-                        child: _buildLane(
-                          KitchenBoardLane.ready,
-                          scrollable: false,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(KkfcSpace.s12),
-            child: Column(
+        if (width >= _fourLaneBreakpoint) {
+          return Padding(
+            padding: const EdgeInsets.all(KkfcSpace.s16),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
-                  if (i > 0) const SizedBox(height: KkfcSpace.s12),
-                  _buildLane(KitchenBoardLane.values[i], scrollable: false),
+                  if (i > 0) const SizedBox(width: KkfcSpace.s12),
+                  Expanded(
+                    child: _buildLane(
+                      KitchenBoardLane.values[i],
+                      scrollable: true,
+                    ),
+                  ),
                 ],
               ],
             ),
           );
-        },
-      );
+        }
+
+        if (width >= _twoByTwoBreakpoint) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(KkfcSpace.s16),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildLane(
+                        KitchenBoardLane.queued,
+                        scrollable: false,
+                      ),
+                    ),
+                    const SizedBox(width: KkfcSpace.s12),
+                    Expanded(
+                      child: _buildLane(
+                        KitchenBoardLane.preparing,
+                        scrollable: false,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: KkfcSpace.s12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildLane(
+                        KitchenBoardLane.qcCheck,
+                        scrollable: false,
+                      ),
+                    ),
+                    const SizedBox(width: KkfcSpace.s12),
+                    Expanded(
+                      child: _buildLane(
+                        KitchenBoardLane.ready,
+                        scrollable: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(KkfcSpace.s12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
+                if (i > 0) const SizedBox(height: KkfcSpace.s12),
+                _buildLane(KitchenBoardLane.values[i], scrollable: false),
+              ],
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildLane(KitchenBoardLane lane, {required bool scrollable}) {
@@ -166,8 +166,7 @@ class _StaggeredLaneEntranceState extends State<_StaggeredLaneEntrance>
       vsync: this,
       duration: Duration(milliseconds: totalDurationMs),
     );
-    final delayFraction =
-        (widget.laneIndex * 40) / totalDurationMs.toDouble();
+    final delayFraction = (widget.laneIndex * 40) / totalDurationMs.toDouble();
     final curved = CurvedAnimation(
       parent: _controller,
       curve: Interval(

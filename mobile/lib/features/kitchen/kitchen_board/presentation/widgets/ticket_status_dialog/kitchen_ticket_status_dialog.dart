@@ -64,38 +64,44 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         ticket.data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
 
-    final isQcCheck = ticket.lane == KitchenBoardLane.qcCheck ||
+    final isQcCheck =
+        ticket.lane == KitchenBoardLane.qcCheck ||
         ticket.data.status == KkfcStatus.checking ||
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
-    final isHandover = ticket.lane == KitchenBoardLane.ready ||
+    final isHandover =
+        ticket.lane == KitchenBoardLane.ready ||
         ticket.data.status == KkfcStatus.ready ||
         ticket.rawStatus.toUpperCase() == 'READY';
 
-    final resolvedActionLabel = actionLabel ??
+    final resolvedActionLabel =
+        actionLabel ??
         (isAcknowledged
             ? 'Start Preparing'
             : (isQcCheck
-                ? 'All items passed'
-                : (isHandover
-                    ? 'Confirm handover'
-                    : ticket.lane.actionLabelFor(ticket.data.status))));
-    final resolvedStatusLabel = statusLabel ??
+                  ? 'All items passed'
+                  : (isHandover
+                        ? 'Confirm handover'
+                        : ticket.lane.actionLabelFor(ticket.data.status))));
+    final resolvedStatusLabel =
+        statusLabel ??
         (isAcknowledged
             ? 'Acknowledged'
             : (isHandover ? 'Ready' : ticket.lane.title));
-    final resolvedActionIcon = actionIcon ??
+    final resolvedActionIcon =
+        actionIcon ??
         switch (resolvedActionLabel) {
           'Start Preparing' => Icons.local_fire_department_rounded,
           'Acknowledge' || 'All items passed' => Icons.check_rounded,
           'Send to QC' || 'QC check' => Icons.search_rounded,
-          _ => isAcknowledged
-              ? Icons.local_fire_department_rounded
-              : (ticket.lane == KitchenBoardLane.queued ||
-                      ticket.data.status == KkfcStatus.queued
-                  ? Icons.check_rounded
-                  : null),
+          _ =>
+            isAcknowledged
+                ? Icons.local_fire_department_rounded
+                : (ticket.lane == KitchenBoardLane.queued ||
+                          ticket.data.status == KkfcStatus.queued
+                      ? Icons.check_rounded
+                      : null),
         };
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -104,10 +110,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
       tween: Tween<double>(begin: reduceMotion ? 1.0 : 0.96, end: 1.0),
       duration: reduceMotion ? Duration.zero : KkfcMotion.durOverlay,
       curve: KkfcMotion.easeSpring,
-      builder: (context, scale, child) => Transform.scale(
-        scale: scale,
-        child: child,
-      ),
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
       child: Dialog(
         backgroundColor: KkfcColors.surface,
         surfaceTintColor: Colors.transparent,
@@ -163,12 +167,12 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   showCancelTicketButton: isQueued,
                   onCancelTicket: isQueued
                       ? (onCancelTicket ??
-                          (isActionEnabled
-                              ? () => showCancelKitchenTicketDialog(
+                            (isActionEnabled
+                                ? () => showCancelKitchenTicketDialog(
                                     context,
                                     ticket: ticket,
                                   )
-                              : null))
+                                : null))
                       : null,
                 ),
               ],
@@ -201,8 +205,9 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground =
-        isActionEnabled ? KkfcColors.onSolid : KkfcColors.ticketMuted;
+    final foreground = isActionEnabled
+        ? KkfcColors.onSolid
+        : KkfcColors.ticketMuted;
     final canCancel =
         isActionEnabled && !isActionLoading && onCancelTicket != null;
 
@@ -277,14 +282,18 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
               width: double.infinity,
               height: KkfcSizing.controlMd,
               child: OutlinedButton(
-                key: const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+                key: const ValueKey(
+                  'kitchen-ticket-dialog-cancel-ticket-button',
+                ),
                 onPressed: canCancel ? onCancelTicket : null,
                 style: OutlinedButton.styleFrom(
                   backgroundColor: KkfcColors.surface,
                   foregroundColor: KkfcColors.danger,
                   disabledForegroundColor: KkfcColors.ticketMuted,
                   side: BorderSide(
-                    color: canCancel ? KkfcColors.qcFailBorder : KkfcColors.border,
+                    color: canCancel
+                        ? KkfcColors.qcFailBorder
+                        : KkfcColors.border,
                     width: KkfcBorderWidth.thin,
                   ),
                   elevation: 0,
@@ -299,7 +308,9 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
                     Icon(
                       Icons.close_rounded,
                       size: 18,
-                      color: canCancel ? KkfcColors.danger : KkfcColors.ticketMuted,
+                      color: canCancel
+                          ? KkfcColors.danger
+                          : KkfcColors.ticketMuted,
                     ),
                     const SizedBox(width: KkfcSpace.s8),
                     Flexible(
@@ -357,12 +368,14 @@ Future<void> showKitchenTicketStatusDialog(
             currentTicket.kitchenTicketId,
           );
 
-          final isQcLane = currentTicket.lane == KitchenBoardLane.qcCheck ||
+          final isQcLane =
+              currentTicket.lane == KitchenBoardLane.qcCheck ||
               currentTicket.data.status == KkfcStatus.checking ||
               currentTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
               currentTicket.rawStatus.toUpperCase() == 'CHECKING';
           final canPass = userRole?.canPassQc ?? false;
-          final effectiveActionEnabled = isActionEnabled ??
+          final effectiveActionEnabled =
+              isActionEnabled ??
               (userRole != null
                   ? userRole.canChangeTicketStatus(isQcCheck: isQcLane)
                   : (!isQcLane || canPass));

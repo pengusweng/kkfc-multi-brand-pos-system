@@ -42,10 +42,7 @@ Future<ProviderContainer> _pumpMenu(
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(
-          theme: counterTheme,
-          routerConfig: router,
-        ),
+        child: MaterialApp.router(theme: counterTheme, routerConfig: router),
       ),
     );
   } else {
@@ -195,8 +192,8 @@ void main() {
                 final extra = state.extra;
                 final initialStep =
                     extra is Map<String, dynamic> && extra['initialStep'] is int
-                        ? extra['initialStep'] as int
-                        : 2;
+                    ? extra['initialStep'] as int
+                    : 2;
                 return MobileOrderFlowScreen(initialStep: initialStep);
               },
             ),
@@ -227,43 +224,41 @@ void main() {
       },
     );
 
-    testWidgets(
-      'renders background canvas wave accents and header wave arcs',
-      (tester) async {
-        await _pumpMenu(tester, _desktop);
+    testWidgets('renders background canvas wave accents and header wave arcs', (
+      tester,
+    ) async {
+      await _pumpMenu(tester, _desktop);
 
-        // Verifies the fluid background canvas waves from the login page are present
-        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+      // Verifies the fluid background canvas waves from the login page are present
+      expect(find.byType(KkfcCanvasWaves), findsOneWidget);
 
-        // Verifies custom paint with CanvasWavesPainter is in the widget tree
-        final canvasWaves = find.byWidgetPredicate(
-          (widget) =>
-              widget is CustomPaint && widget.painter is CanvasWavesPainter,
-        );
-        expect(canvasWaves, findsOneWidget);
+      // Verifies custom paint with CanvasWavesPainter is in the widget tree
+      final canvasWaves = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is CanvasWavesPainter,
+      );
+      expect(canvasWaves, findsOneWidget);
 
-        // Verifies the navy header copper wave arcs from the login page are present
-        final headerWaves = find.byWidgetPredicate(
-          (widget) =>
-              widget is CustomPaint && widget.painter is HeaderWavesPainter,
-        );
-        expect(headerWaves, findsOneWidget);
-      },
-    );
+      // Verifies the navy header copper wave arcs from the login page are present
+      final headerWaves = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is HeaderWavesPainter,
+      );
+      expect(headerWaves, findsOneWidget);
+    });
 
-    testWidgets(
-      'renders background canvas wave accents on phone layout',
-      (tester) async {
-        await _pumpMenu(tester, _phone);
+    testWidgets('renders background canvas wave accents on phone layout', (
+      tester,
+    ) async {
+      await _pumpMenu(tester, _phone);
 
-        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
-        final headerWaves = find.byWidgetPredicate(
-          (widget) =>
-              widget is CustomPaint && widget.painter is HeaderWavesPainter,
-        );
-        expect(headerWaves, findsOneWidget);
-      },
-    );
+      expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+      final headerWaves = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is HeaderWavesPainter,
+      );
+      expect(headerWaves, findsOneWidget);
+    });
 
     testWidgets(
       'tapping current menu card on a compact screen opens choose menu modal without pixel overflow and scrolls smoothly',

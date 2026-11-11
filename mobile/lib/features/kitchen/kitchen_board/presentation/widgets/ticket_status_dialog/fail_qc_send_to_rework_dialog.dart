@@ -211,8 +211,7 @@ class _FailQcSendToReworkDialogState
                   required currentLength,
                   required isFocused,
                   maxLength,
-                }) =>
-                    null,
+                }) => null,
                 style: const TextStyle(
                   fontFamily: KkfcFonts.ibmPlexSans,
                   fontSize: KkfcTextSizes.textBase,
@@ -261,7 +260,7 @@ class _FailQcSendToReworkDialogState
                         onPressed: _isSubmitting
                             ? null
                             : (widget.onCancel ??
-                                () => Navigator.of(context).pop(false)),
+                                  () => Navigator.of(context).pop(false)),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: KkfcColors.surface,
                           foregroundColor: KkfcColors.ink,

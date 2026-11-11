@@ -32,12 +32,14 @@ class KitchenTicketDialogHeader extends StatelessWidget {
         data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
 
-    final isQc = lane == KitchenBoardLane.qcCheck ||
+    final isQc =
+        lane == KitchenBoardLane.qcCheck ||
         data.status == KkfcStatus.checking ||
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
-    final isHandover = lane == KitchenBoardLane.ready ||
+    final isHandover =
+        lane == KitchenBoardLane.ready ||
         data.status == KkfcStatus.ready ||
         ticket.rawStatus.toUpperCase() == 'READY';
 
@@ -45,14 +47,17 @@ class KitchenTicketDialogHeader extends StatelessWidget {
         ? 'HANDOVER'
         : (isQc ? 'QUALITY CHECK' : 'TICKET DETAILS');
 
-    final badgeIcon = statusIcon ??
-        (isAcknowledged ? Icons.visibility_outlined : lane.icon);
-    final badgeForeground =
-        isAcknowledged ? KkfcColors.info : lane.headerForeground;
-    final badgeBackground =
-        isAcknowledged ? KkfcColors.infoBg : lane.headerBackground;
-    final badgeBorder =
-        isAcknowledged ? KkfcColors.infoBorder : lane.headerBorder;
+    final badgeIcon =
+        statusIcon ?? (isAcknowledged ? Icons.visibility_outlined : lane.icon);
+    final badgeForeground = isAcknowledged
+        ? KkfcColors.info
+        : lane.headerForeground;
+    final badgeBackground = isAcknowledged
+        ? KkfcColors.infoBg
+        : lane.headerBackground;
+    final badgeBorder = isAcknowledged
+        ? KkfcColors.infoBorder
+        : lane.headerBorder;
 
     return Container(
       width: double.infinity,
@@ -184,7 +189,7 @@ class KitchenTicketDialogHeader extends StatelessWidget {
             runSpacing: KkfcSpace.s4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-               IntrinsicWidth(child: KitchenTicketBrandRow(brand: data.brand)),
+              IntrinsicWidth(child: KitchenTicketBrandRow(brand: data.brand)),
               IntrinsicWidth(
                 child: KitchenTicketChannelLine(
                   channel: data.channel,
