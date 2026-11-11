@@ -118,8 +118,28 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final mergedTickets = tickets.map((t) {
+        final prev = prevMap[t.kitchenTicketId];
+        if (prev != null) {
+          final returnedReason = t.qcReturnedReason ?? prev.qcReturnedReason;
+          final notes = t.reworkNotes ?? prev.reworkNotes;
+          if (returnedReason != null || notes != null) {
+            return t.copyWith(
+              qcReturnedReason: returnedReason,
+              reworkNotes: notes,
+              data: t.data.copyWith(
+                qcReturnedReason: returnedReason,
+                reworkNotes: notes,
+              ),
+            );
+          }
+        }
+        return t;
+      }).toList();
+
       state = state.copyWith(
-        tickets: tickets,
+        tickets: mergedTickets,
         updatedAt: DateTime.now(),
         isLoading: false,
         isRefreshing: false,
@@ -249,7 +269,10 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
-  Future<bool> sendToQc(String kitchenTicketId) async {
+  Future<bool> sendToQc(
+    String kitchenTicketId, {
+    String? reworkNotes,
+  }) async {
     final userRole = ref.read(userRoleProvider);
     if (userRole == UserRole.supervisor) return false;
 
@@ -268,6 +291,16 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
+      final prevTicket = state.tickets.firstWhere(
+        (t) => t.kitchenTicketId == kitchenTicketId,
+        orElse: () => tickets.firstWhere(
+          (t) => t.kitchenTicketId == kitchenTicketId,
+          orElse: () => tickets.first,
+        ),
+      );
+      final effectiveReworkNotes = reworkNotes ?? prevTicket.reworkNotes;
+      final effectiveQcReturnedReason = prevTicket.qcReturnedReason;
+
       final updatedTickets = tickets.map((t) {
         if (t.kitchenTicketId == kitchenTicketId &&
             (t.rawStatus.toUpperCase() == 'PREPARING' ||
@@ -277,7 +310,13 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
           return t.copyWith(
             rawStatus: 'FOR_CHECKING',
             lane: KitchenBoardLane.qcCheck,
-            data: t.data.copyWith(status: KkfcStatus.checking),
+            qcReturnedReason: effectiveQcReturnedReason,
+            reworkNotes: effectiveReworkNotes,
+            data: t.data.copyWith(
+              status: KkfcStatus.checking,
+              qcReturnedReason: effectiveQcReturnedReason,
+              reworkNotes: effectiveReworkNotes,
+            ),
           );
         }
         return t;
@@ -403,7 +442,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
           return t.copyWith(
             rawStatus: 'REWORKING',
             lane: KitchenBoardLane.preparing,
-            data: t.data.copyWith(status: KkfcStatus.reworking),
+            qcReturnedReason: effectiveReason,
+            data: t.data.copyWith(
+              status: KkfcStatus.reworking,
+              qcReturnedReason: effectiveReason,
+            ),
           );
         }
         return t;
@@ -502,7 +545,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         ticket.data.status == KkfcStatus.preparing ||
         ticket.data.status == KkfcStatus.reworking;
     if (isPreparingOrReworking) {
-      return sendToQc(ticket.kitchenTicketId);
+      return sendToQc(ticket.kitchenTicketId, reworkNotes: ticket.reworkNotes);
     }
 
     if (isQcLane) {

@@ -31,6 +31,8 @@ class KitchenTicketData {
     required this.brand,
     required this.items,
     this.paymentStatus = 'Paid',
+    this.qcReturnedReason,
+    this.reworkNotes,
   });
 
   final String ticketNumber; // "T-014"
@@ -42,6 +44,8 @@ class KitchenTicketData {
   final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
   final String paymentStatus;
+  final String? qcReturnedReason;
+  final String? reworkNotes;
 
   /// Whether this ticket is a delivery channel (e.g. GrabFood or foodpanda).
   bool get isDelivery {
@@ -59,6 +63,8 @@ class KitchenTicketData {
     AssignedBrand? brand,
     List<KitchenTicketItem>? items,
     String? paymentStatus,
+    String? qcReturnedReason,
+    String? reworkNotes,
   }) {
     return KitchenTicketData(
       ticketNumber: ticketNumber ?? this.ticketNumber,
@@ -70,6 +76,8 @@ class KitchenTicketData {
       brand: brand ?? this.brand,
       items: items ?? this.items,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      qcReturnedReason: qcReturnedReason ?? this.qcReturnedReason,
+      reworkNotes: reworkNotes ?? this.reworkNotes,
     );
   }
 }

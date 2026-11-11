@@ -35,6 +35,62 @@ class KitchenTicketQcDialogBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (ticket.data.reworkNotes != null &&
+                ticket.data.reworkNotes!.trim().isNotEmpty) ...[
+              Container(
+                key: const ValueKey('qc-dialog-rework-note-banner'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KkfcSpace.s12,
+                  vertical: KkfcSpace.s8,
+                ),
+                decoration: BoxDecoration(
+                  color: KkfcColors.ticketNoteBg,
+                  borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                  border: Border.all(
+                    color: KkfcColors.ticketNoteBorder,
+                    width: KkfcBorderWidth.thin,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.sync_rounded,
+                      size: 16,
+                      color: Color(0xFF8A4621),
+                    ),
+                    const SizedBox(width: KkfcSpace.s8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: 'Rework note: ',
+                              style: TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: KkfcTextSizes.textSm,
+                                fontWeight: KkfcFontWeights.bold,
+                                color: KkfcColors.ticketInk,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ticket.data.reworkNotes!,
+                              style: const TextStyle(
+                                fontFamily: KkfcFonts.ibmPlexSans,
+                                fontSize: KkfcTextSizes.textSm,
+                                fontWeight: KkfcFontWeights.regular,
+                                color: KkfcColors.ticketInk,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: KkfcSpace.s12),
+            ],
             const Text(
               'Check temperature, plating, portion and special requests for each item.',
               style: TextStyle(

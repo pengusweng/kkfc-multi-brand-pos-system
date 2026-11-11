@@ -69,9 +69,10 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
         : kitchenTicketActionLabel(widget.ticket.status);
     final resolvedLabel = widget.actionLabel ?? defaultLabel ?? 'Acknowledge';
     final showAction = widget.onAction != null || widget.actionLabel != null;
+    final isRework = widget.ticket.status == KkfcStatus.reworking;
     final hideDetailsForFullWidthAction =
         isBoard &&
-        widget.ticket.status == KkfcStatus.ready &&
+        (widget.ticket.status == KkfcStatus.ready || isRework) &&
         widget.isActionEnabled;
 
     return MouseRegion(
@@ -145,6 +146,130 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                   reference: widget.ticket.reference,
                   useChannelSpecificIcon: isBoard,
                 ),
+                if (isRework) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      key: const ValueKey('kitchen-ticket-rework-badge'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFBF6EF),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: const Color(0xFFDCBFA9),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.sync_rounded,
+                            size: 14,
+                            color: Color(0xFF8A4621),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Rework',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF8A4621),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    key: const ValueKey('kitchen-ticket-qc-returned-box'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.ticketNoteBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: KkfcColors.ticketNoteBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'QC returned: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                          TextSpan(
+                            text: widget.ticket.qcReturnedReason?.trim().isNotEmpty == true
+                                ? widget.ticket.qcReturnedReason!
+                                : 'Rice portion short; plate again',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                if (widget.ticket.status == KkfcStatus.checking &&
+                    widget.ticket.reworkNotes != null &&
+                    widget.ticket.reworkNotes!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    key: const ValueKey('kitchen-ticket-rework-note-box'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.ticketNoteBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: KkfcColors.ticketNoteBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'Rework note: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                          TextSpan(
+                            text: widget.ticket.reworkNotes!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // 4. Ticket items list

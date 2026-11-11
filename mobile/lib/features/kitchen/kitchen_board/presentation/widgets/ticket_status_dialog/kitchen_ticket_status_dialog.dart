@@ -13,6 +13,7 @@ import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticke
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_qc_view.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_rework_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
@@ -32,6 +33,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.onAction,
     this.onFail,
     this.onReject,
+    this.onReworkDone,
     this.onCancelTicket,
     this.onClose,
     this.imagePicker,
@@ -48,6 +50,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final VoidCallback? onAction;
   final VoidCallback? onFail;
   final Future<void> Function(List<QcItemRejection> rejections)? onReject;
+  final Future<void> Function(String? reworkNotes)? onReworkDone;
   final VoidCallback? onCancelTicket;
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
@@ -72,6 +75,10 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
+    final isRework =
+        ticket.data.status == KkfcStatus.reworking ||
+        ticket.rawStatus.toUpperCase() == 'REWORKING';
+
     final isHandover =
         ticket.lane == KitchenBoardLane.ready ||
         ticket.data.status == KkfcStatus.ready ||
@@ -81,29 +88,36 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         actionLabel ??
         (isAcknowledged
             ? 'Start Preparing'
-            : (isQcCheck
-                  ? 'All items passed'
-                  : (isHandover
-                        ? 'Confirm handover'
-                        : ticket.lane.actionLabelFor(ticket.data.status))));
+            : (isRework
+                  ? 'Open rework'
+                  : (isQcCheck
+                        ? 'All items passed'
+                        : (isHandover
+                              ? 'Confirm handover'
+                              : ticket.lane.actionLabelFor(ticket.data.status)))));
     final resolvedStatusLabel =
         statusLabel ??
         (isAcknowledged
             ? 'Acknowledged'
-            : (isHandover ? 'Ready' : ticket.lane.title));
+            : (isRework
+                  ? 'Rework'
+                  : (isHandover ? 'Ready' : ticket.lane.title)));
     final resolvedActionIcon =
         actionIcon ??
         switch (resolvedActionLabel) {
           'Start Preparing' => Icons.local_fire_department_rounded,
           'Acknowledge' || 'All items passed' => Icons.check_rounded,
           'Send to QC' || 'QC check' => Icons.search_rounded,
+          'Open rework' => Icons.sync_rounded,
           _ =>
             isAcknowledged
                 ? Icons.local_fire_department_rounded
-                : (ticket.lane == KitchenBoardLane.queued ||
-                          ticket.data.status == KkfcStatus.queued
-                      ? Icons.check_rounded
-                      : null),
+                : (isRework
+                      ? Icons.sync_rounded
+                      : (ticket.lane == KitchenBoardLane.queued ||
+                                ticket.data.status == KkfcStatus.queued
+                            ? Icons.check_rounded
+                            : null)),
         };
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -157,6 +171,18 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     onHandover: onAction,
                     imagePicker: imagePicker,
                     onPickImage: onPickImage,
+                  ),
+                )
+              else if (isRework)
+                Flexible(
+                  child: KitchenTicketReworkView(
+                    ticket: ticket,
+                    isActionLoading: isActionLoading,
+                    isActionEnabled: isActionEnabled,
+                    onReworkDone: onReworkDone ??
+                        (reworkNotes) async {
+                          onAction?.call();
+                        },
                   ),
                 )
               else ...[
@@ -412,6 +438,19 @@ Future<void> showKitchenTicketStatusDialog(
                           kitchenTicketId: currentTicket.kitchenTicketId,
                           attemptId: currentTicket.qcAttemptId,
                           rejections: rejections,
+                        );
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
+            onReworkDone: effectiveActionEnabled
+                ? (reworkNotes) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .sendToQc(
+                          currentTicket.kitchenTicketId,
+                          reworkNotes: reworkNotes,
                         );
                     if (success && dialogContext.mounted) {
                       Navigator.of(dialogContext).maybePop();

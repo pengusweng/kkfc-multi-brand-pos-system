@@ -6,7 +6,7 @@ String? kitchenTicketActionLabel(KkfcStatus status) => switch (status) {
   KkfcStatus.acknowledged => 'Start Preparing',
   KkfcStatus.preparing => 'Send to QC',
   KkfcStatus.checking => 'QC check',
-  KkfcStatus.reworking => 'View rework',
+  KkfcStatus.reworking => 'Open rework',
   KkfcStatus.ready => 'Hand over',
   _ => null,
 };

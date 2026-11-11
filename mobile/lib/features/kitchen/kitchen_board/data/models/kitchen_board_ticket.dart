@@ -35,6 +35,12 @@ class KitchenBoardTicket {
   final String? checkerId;
   final String? qcAttemptId;
 
+  /// Quality check rejection reason if this ticket was returned to rework.
+  String? get qcReturnedReason => data.qcReturnedReason;
+
+  /// Notes added by the preparer when completing rework and returning to QC.
+  String? get reworkNotes => data.reworkNotes;
+
   /// Whether this ticket is a delivery channel (GrabFood or foodpanda)
   /// requiring photo evidence before handover.
   bool get isDelivery => data.isDelivery;
@@ -51,13 +57,22 @@ class KitchenBoardTicket {
     String? preparerId,
     String? checkerId,
     String? qcAttemptId,
+    String? qcReturnedReason,
+    String? reworkNotes,
   }) {
+    var effectiveData = data ?? this.data;
+    if (qcReturnedReason != null || reworkNotes != null) {
+      effectiveData = effectiveData.copyWith(
+        qcReturnedReason: qcReturnedReason ?? effectiveData.qcReturnedReason,
+        reworkNotes: reworkNotes ?? effectiveData.reworkNotes,
+      );
+    }
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
       orderId: orderId ?? this.orderId,
       orderCode: orderCode ?? this.orderCode,
       lane: lane ?? this.lane,
-      data: data ?? this.data,
+      data: effectiveData,
       rawStatus: rawStatus ?? this.rawStatus,
       sentToKitchenLabel: sentToKitchenLabel ?? this.sentToKitchenLabel,
       preparationStartedLabel:
@@ -121,6 +136,16 @@ class KitchenBoardTicket {
                   : null)
             : null);
 
+    final qcReturnedReason =
+        (json['qc_returned_reason'] as String?)?.trim() ??
+        (json['rejection_reason'] as String?)?.trim() ??
+        _extractRejectionReason(json['qc_attempts']) ??
+        _extractRejectionReason(json['rejections']);
+
+    final reworkNotes =
+        (json['rework_notes'] as String?)?.trim() ??
+        (json['rework_note'] as String?)?.trim();
+
     return KitchenBoardTicket(
       kitchenTicketId: ticketId.isNotEmpty ? ticketId : ticketNumber,
       orderId: orderId,
@@ -142,8 +167,30 @@ class KitchenBoardTicket {
         brand: brand,
         items: items,
         paymentStatus: paymentStatus,
+        qcReturnedReason: qcReturnedReason,
+        reworkNotes: reworkNotes,
       ),
     );
+  }
+
+  static String? _extractRejectionReason(dynamic obj) {
+    if (obj is List && obj.isNotEmpty) {
+      for (final item in obj) {
+        final reason = _extractRejectionReason(item);
+        if (reason != null && reason.isNotEmpty) return reason;
+      }
+    } else if (obj is Map<String, dynamic>) {
+      final desc = (obj['description'] as String?)?.trim();
+      if (desc != null && desc.isNotEmpty) return desc;
+      final reason = (obj['rejection_reason'] as String?)?.trim() ??
+          (obj['reason'] as String?)?.trim();
+      if (reason != null && reason.isNotEmpty) return reason;
+      final rejections = obj['rejections'] ?? obj['order_item_qc_rejections'];
+      if (rejections != null) {
+        return _extractRejectionReason(rejections);
+      }
+    }
+    return null;
   }
 
   static String _parseTimeLabel(String? isoString, {required String fallback}) {

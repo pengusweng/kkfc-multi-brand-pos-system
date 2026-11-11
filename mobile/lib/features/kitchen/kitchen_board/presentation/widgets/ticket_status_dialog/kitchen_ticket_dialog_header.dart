@@ -32,6 +32,10 @@ class KitchenTicketDialogHeader extends StatelessWidget {
         data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
 
+    final isRework =
+        data.status == KkfcStatus.reworking ||
+        ticket.rawStatus.toUpperCase() == 'REWORKING';
+
     final isQc =
         lane == KitchenBoardLane.qcCheck ||
         data.status == KkfcStatus.checking ||
@@ -45,19 +49,28 @@ class KitchenTicketDialogHeader extends StatelessWidget {
 
     final subtitle = isHandover
         ? 'HANDOVER'
-        : (isQc ? 'QUALITY CHECK' : 'TICKET DETAILS');
+        : (isQc
+            ? 'QUALITY CHECK'
+            : (isRework ? 'REWORK' : 'TICKET DETAILS'));
 
-    final badgeIcon =
-        statusIcon ?? (isAcknowledged ? Icons.visibility_outlined : lane.icon);
-    final badgeForeground = isAcknowledged
-        ? KkfcColors.info
-        : lane.headerForeground;
-    final badgeBackground = isAcknowledged
-        ? KkfcColors.infoBg
-        : lane.headerBackground;
-    final badgeBorder = isAcknowledged
-        ? KkfcColors.infoBorder
-        : lane.headerBorder;
+    final badgeIcon = statusIcon ??
+        (isRework
+            ? Icons.sync_rounded
+            : (isAcknowledged ? Icons.visibility_outlined : lane.icon));
+    final badgeForeground = isRework
+        ? const Color(0xFF8A4621)
+        : (isAcknowledged ? KkfcColors.info : lane.headerForeground);
+    final badgeBackground = isRework
+        ? const Color(0xFFFBF6EF)
+        : (isAcknowledged ? KkfcColors.infoBg : lane.headerBackground);
+    final badgeBorder = isRework
+        ? const Color(0xFFDCBFA9)
+        : (isAcknowledged ? KkfcColors.infoBorder : lane.headerBorder);
+
+    final effectiveStatusLabel =
+        isRework && (statusLabel == 'Preparing' || statusLabel == 'TICKET DETAILS')
+            ? 'Rework'
+            : statusLabel;
 
     return Container(
       width: double.infinity,
@@ -168,7 +181,7 @@ class KitchenTicketDialogHeader extends StatelessWidget {
                     Icon(badgeIcon, size: 16, color: badgeForeground),
                     const SizedBox(width: 6),
                     Text(
-                      statusLabel,
+                      effectiveStatusLabel,
                       style: TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: KkfcTextSizes.textSm,
