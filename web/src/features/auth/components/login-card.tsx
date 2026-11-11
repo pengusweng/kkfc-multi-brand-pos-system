@@ -20,7 +20,7 @@ export default function LoginCard({ form, serverError, redirecting = false }: Lo
   return (
     <section aria-labelledby="login-title" className="w-full max-w-sm lg:-mt-8">
       <header className="motion-safe:animate-rise" style={rise(0)}>
-        <h1 id="login-title" className="text-3xl leading-tight font-semibold tracking-[-0.02em] text-ink">
+        <h1 id="login-title" className="text-3xl leading-tight font-semibold tracking-[-0.01em] text-ink">
           Sign in
         </h1>
         <p className="mt-2 text-base leading-6 text-ink-muted">
