@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/cart_step_view.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/confirmation_step_view.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_details_step_view.dart';
@@ -49,8 +50,12 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
 
   void _closeFlow() {
     final router = GoRouter.maybeOf(context);
-    if (router != null && router.canPop()) {
-      router.pop();
+    if (router != null) {
+      if (router.canPop()) {
+        router.pop();
+      } else {
+        router.go(AppRoutes.menu);
+      }
     } else {
       Navigator.of(context).maybePop();
     }
@@ -106,11 +111,13 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 850.0;
+
     return KkfcScaffold(
       body: Column(
         children: [
           // Navy App Header: "Orders" with Cashier Staff dropdown
-          const AppHeader(title: 'Orders', compact: true),
+          AppHeader(title: 'Orders', compact: !isWide),
 
           // Sub-header: [< Back] Current order [Clear] (hidden on final Sent step)
           if (_currentStep < 5) ...[
@@ -158,7 +165,15 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
                   child: FadeTransition(opacity: animation, child: child),
                 );
               },
-              child: _buildCurrentStepView(),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isWide ? 680.0 : double.infinity,
+                  ),
+                  child: _buildCurrentStepView(),
+                ),
+              ),
             ),
           ),
         ],

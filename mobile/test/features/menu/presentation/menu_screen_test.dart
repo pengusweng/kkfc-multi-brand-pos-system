@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
+import 'package:mobile/features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
@@ -20,6 +22,7 @@ Future<ProviderContainer> _pumpMenu(
   WidgetTester tester,
   Size size, {
   void Function(ProviderContainer container)? onInit,
+  GoRouter? router,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -31,12 +34,24 @@ Future<ProviderContainer> _pumpMenu(
   addTearDown(container.dispose);
   onInit?.call(container);
 
-  await tester.pumpWidget(
-    UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(theme: counterTheme, home: const MenuScreen()),
-    ),
-  );
+  if (router != null) {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: counterTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+  } else {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(theme: counterTheme, home: const MenuScreen()),
+      ),
+    );
+  }
   await tester.pumpAndSettle();
   return container;
 }
@@ -149,5 +164,53 @@ void main() {
         lessThanOrEqualTo(_narrowPhone.width),
       );
     });
+
+    testWidgets(
+      'in tablet version of menu screen, continuing from cart panel opens the step-by-step order flow',
+      (tester) async {
+        final router = GoRouter(
+          initialLocation: AppRoutes.menu,
+          routes: [
+            GoRoute(
+              path: AppRoutes.menu,
+              builder: (_, _) => const MenuScreen(),
+            ),
+            GoRoute(
+              path: AppRoutes.mobileOrderFlow,
+              builder: (context, state) {
+                final extra = state.extra;
+                final initialStep =
+                    extra is Map<String, dynamic> && extra['initialStep'] is int
+                        ? extra['initialStep'] as int
+                        : 2;
+                return MobileOrderFlowScreen(initialStep: initialStep);
+              },
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await _pumpMenu(
+          tester,
+          _desktop,
+          router: router,
+          onInit: (c) {
+            c.read(cartProvider.notifier).add(sampleMenu[0]);
+          },
+        );
+
+        expect(find.byType(CartPanel), findsOneWidget);
+        final continueButton = find.text('Continue to order details');
+        expect(continueButton, findsOneWidget);
+
+        await tester.tap(continueButton);
+        await tester.pumpAndSettle();
+
+        // Step-by-step order flow is opened at Step 3 (Order details)
+        expect(find.byType(MobileOrderFlowScreen), findsOneWidget);
+        expect(find.text('Order details'), findsOneWidget);
+        expect(find.text('Review order'), findsOneWidget);
+      },
+    );
   });
 }

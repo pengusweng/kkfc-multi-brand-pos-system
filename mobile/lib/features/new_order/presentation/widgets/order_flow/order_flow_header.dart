@@ -20,11 +20,17 @@ class OrderFlowHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 850.0;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: Row(
-        children: [
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isWide ? 680.0 : double.infinity,
+          ),
+          child: Row(
+            children: [
           // [< Back] button
           Material(
             color: Colors.transparent,
@@ -155,6 +161,8 @@ class OrderFlowHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

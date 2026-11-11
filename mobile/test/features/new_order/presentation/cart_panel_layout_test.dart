@@ -42,7 +42,7 @@ void main() {
                 ),
               ),
               GoRoute(
-                path: AppRoutes.orderEntry,
+                path: AppRoutes.mobileOrderFlow,
                 builder: (_, _) => const Scaffold(body: Text('Review route')),
               ),
             ],
