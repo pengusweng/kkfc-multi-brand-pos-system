@@ -135,3 +135,12 @@ Feature: Additional users unit coverage
     Given a user listing for a single role
     When UsersRepository lists users
     Then only users with that role are returned and counted in both status counts
+
+  # Jest: server/src/modules/users/tests/users.repository.spec.ts
+  # Context: UsersRepository
+  @UT-USER-031
+  Scenario: Orders users by the requested column with a stable tiebreak
+    Test Case ID: UT-USER-031
+    Given a sort column and direction, or none
+    When UsersRepository lists users
+    Then users are ordered by that column, newest first by default, and ties end in user_id order

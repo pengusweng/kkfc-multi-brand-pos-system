@@ -53,10 +53,18 @@ export class UsersService {
     return user;
   }
 
-  async findAllUsers({ page, limit, status, search, role }: FindUsersDTO) {
+  async findAllUsers({
+    page,
+    limit,
+    status,
+    search,
+    role,
+    sortBy,
+    sortOrder,
+  }: FindUsersDTO) {
     // The search text can contain names, so only log whether one was given.
     this.logger.log(
-      `Listing users: page=${page}, limit=${limit}, status=${status}, role=${role ?? 'any'}, search=${search ? 'yes' : 'no'}`,
+      `Listing users: page=${page}, limit=${limit}, status=${status}, role=${role ?? 'any'}, search=${search ? 'yes' : 'no'}, sort=${sortBy ? `${sortBy} ${sortOrder ?? 'asc'}` : 'default'}`,
     );
 
     const skip = (page - 1) * limit;
@@ -66,6 +74,8 @@ export class UsersService {
       status,
       search,
       role,
+      sortBy,
+      sortOrder,
     });
     const total = counts[status];
 

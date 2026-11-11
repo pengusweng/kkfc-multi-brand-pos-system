@@ -161,6 +161,10 @@ username, first_name, and last_name; each space-separated term must match one of
 them, so `ana rey` finds "Ana Reyes". A blank search is ignored. `role` (one `UserRole`,
 e.g. `CASHIER_STAFF`) limits results to that role. Its `meta` also has
 `counts: { all, active, inactive }` for users matching the search and role, regardless of `status`.
+`sortBy` (`name`, `username`, `role`, `status`, `created_at`) with `sortOrder` (`asc`, default, or
+`desc`) orders the list; without `sortBy` the newest accounts come first. `name` sorts by first
+then last name, `role` by seniority (SUPERADMIN first when ascending), and `status` puts active
+accounts first when ascending.
 
 Usernames are limited to 16 characters. User UUIDs
 take priority over usernames for profile searches. Session validation and user update/delete operations use strict user-ID lookups.

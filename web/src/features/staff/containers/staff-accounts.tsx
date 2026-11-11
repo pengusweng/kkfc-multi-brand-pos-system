@@ -14,7 +14,7 @@ import { useDeactivateStaff } from "../hooks/useDeactivateStaff";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { USERS_PAGE_SIZE, useUsers } from "../hooks/useUsers";
 import type { UserRole } from "../schemas/userSchema";
-import { toStaffMember, type StaffMember, type StaffStatusFilter } from "../utils/staff";
+import { nextSort, toStaffMember, type StaffMember, type StaffSort, type StaffStatusFilter } from "../utils/staff";
 
 const NO_COUNTS: Record<StaffStatusFilter, number> = { all: 0, active: 0, inactive: 0 };
 
@@ -22,6 +22,7 @@ export default function StaffAccounts() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StaffStatusFilter>("all");
   const [role, setRole] = useState<UserRole | undefined>();
+  const [sort, setSort] = useState<StaffSort>(null);
   const search = useDebouncedValue(query.trim());
   const [creating, setCreating] = useState(false);
 
@@ -36,13 +37,16 @@ export default function StaffAccounts() {
     setViewing(member); // the modal now shows "Inactive" and hides the Deactivate button
   });
 
-  // The page belongs to one status + role + search combination; changing any
+  // The page belongs to one status + role + search + sort combination; changing any
   // of them (including when the debounced search settles) goes back to page 1.
-  const filterKey = `${status}|${role ?? ""}|${search}`;
+  const filterKey = `${status}|${role ?? ""}|${search}|${sort ? `${sort.by}:${sort.order}` : ""}`;
   const [paging, setPaging] = useState({ filterKey, page: 1 });
+  // Record the new combination right away (React's "adjust state while rendering"
+  // pattern); otherwise returning to an earlier combination would resurrect its old page.
+  if (paging.filterKey !== filterKey) setPaging({ filterKey, page: 1 });
   const page = paging.filterKey === filterKey ? paging.page : 1;
 
-  const { data, error, isPending, isPlaceholderData } = useUsers({ status, search, role, page });
+  const { data, error, isPending, isPlaceholderData } = useUsers({ status, search, role, sort, page });
 
   const staff = data?.data.map(toStaffMember) ?? [];
   const meta = data?.meta;
@@ -75,6 +79,8 @@ export default function StaffAccounts() {
 
       <StaffTable
         staff={staff}
+        sort={sort}
+        onSort={(by) => setSort((current) => nextSort(current, by))}
         onView={(member) => {
           setViewing(member);
           setModalOpen(true);

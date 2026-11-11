@@ -3,6 +3,16 @@ import type { User, UserRole } from "../schemas/userSchema";
 export type StaffStatus = "active" | "inactive";
 export type StaffStatusFilter = "all" | StaffStatus;
 
+export type StaffSortField = "name" | "username" | "role" | "status";
+/** null means the API default: newest accounts first. */
+export type StaffSort = { by: StaffSortField; order: "asc" | "desc" } | null;
+
+// Clicking a header cycles that column: ascending, descending, then back to the default.
+export function nextSort(current: StaffSort, by: StaffSortField): StaffSort {
+  if (current?.by !== by) return { by, order: "asc" };
+  return current.order === "asc" ? { by, order: "desc" } : null;
+}
+
 export type StaffMember = {
   id: string;
   name: string;

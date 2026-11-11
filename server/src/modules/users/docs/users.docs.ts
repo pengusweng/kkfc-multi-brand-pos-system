@@ -88,7 +88,7 @@ export function FindAllUsersDocs() {
     ApiOperation({
       summary: 'List all users (manager or superadmin).',
       description:
-        'Managers and superadmins can list all users. status filters by account state (active by default, inactive, or all). search does a case-insensitive partial match on username, first_name, and last_name; every space-separated term must match one of them, and a blank search is ignored. role limits results to a single UserRole. Responses omit password_hash.',
+        'Managers and superadmins can list all users. status filters by account state (active by default, inactive, or all). search does a case-insensitive partial match on username, first_name, and last_name; every space-separated term must match one of them, and a blank search is ignored. role limits results to a single UserRole. sortBy (name, username, role, status, created_at) with sortOrder (asc or desc) orders the results; without sortBy the newest accounts come first. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,

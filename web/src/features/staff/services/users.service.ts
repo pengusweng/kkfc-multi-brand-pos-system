@@ -2,7 +2,7 @@ import { ApiError } from "@/src/lib/api-error";
 import type { CreateStaffInput } from "../schemas/createStaffSchema";
 import type { UpdateStaffInput } from "../schemas/editStaffSchema";
 import { userSchema, usersPageSchema, type User, type UserRole, type UsersPage } from "../schemas/userSchema";
-import type { StaffStatusFilter } from "../utils/staff";
+import type { StaffSort, StaffStatusFilter } from "../utils/staff";
 
 export type GetUsersParams = {
   page: number;
@@ -10,12 +10,17 @@ export type GetUsersParams = {
   status: StaffStatusFilter;
   search?: string;
   role?: UserRole;
+  sort?: StaffSort;
 };
 
-export async function getUsers({ page, limit, status, search, role }: GetUsersParams): Promise<UsersPage> {
+export async function getUsers({ page, limit, status, search, role, sort }: GetUsersParams): Promise<UsersPage> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit), status });
   if (search) params.set("search", search);
   if (role) params.set("role", role);
+  if (sort) {
+    params.set("sortBy", sort.by);
+    params.set("sortOrder", sort.order);
+  }
 
   let response: Response;
   try {

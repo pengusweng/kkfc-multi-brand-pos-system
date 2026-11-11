@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { StaffMember } from "../../utils/staff";
+import type { StaffMember, StaffSort, StaffSortField } from "../../utils/staff";
 import { CLUSTER, COL, COLUMN_COUNT, HEAD } from "../../utils/table-columns";
+import SortableHead from "../molecules/sortable-head";
 import StaffRow from "../molecules/staff-row";
 import StaffSkeletonRow from "../molecules/staff-skeleton-row";
 
 type StaffTableProps = {
   staff: StaffMember[];
   onView: (member: StaffMember) => void;
+  sort: StaffSort;
+  onSort: (field: StaffSortField) => void;
   loading?: boolean;
   skeletonRows?: number;
   emptyMessage?: string;
@@ -17,6 +20,8 @@ type StaffTableProps = {
 export default function StaffTable({
   staff,
   onView,
+  sort,
+  onSort,
   loading = false,
   skeletonRows = 8,
   emptyMessage = "No staff accounts yet.",
@@ -32,10 +37,22 @@ export default function StaffTable({
       <Table className="xl:table-fixed" aria-busy={loading}>
         <TableHeader>
           <TableRow className="border-hairline bg-surface-hover hover:bg-surface-hover">
-            <TableHead className={`${HEAD} ${COL.name}`}>Name</TableHead>
-            <TableHead className={`${HEAD} hidden md:table-cell ${COL.username}`}>Username</TableHead>
-            <TableHead className={`${HEAD} ${CLUSTER} hidden md:table-cell ${COL.role}`}>Role</TableHead>
-            <TableHead className={`${HEAD} w-px ${COL.status}`}>Status</TableHead>
+            <SortableHead field="name" label="Name" sort={sort} onSort={onSort} className={`${HEAD} ${COL.name}`} />
+            <SortableHead
+              field="username"
+              label="Username"
+              sort={sort}
+              onSort={onSort}
+              className={`${HEAD} hidden md:table-cell ${COL.username}`}
+            />
+            <SortableHead
+              field="role"
+              label="Role"
+              sort={sort}
+              onSort={onSort}
+              className={`${HEAD} ${CLUSTER} hidden md:table-cell ${COL.role}`}
+            />
+            <SortableHead field="status" label="Status" sort={sort} onSort={onSort} className={`${HEAD} w-px ${COL.status}`} />
             <TableHead className={`${HEAD} w-px ${COL.view}`}>
               <span className="sr-only">Actions</span>
             </TableHead>

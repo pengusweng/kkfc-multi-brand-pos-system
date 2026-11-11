@@ -88,4 +88,79 @@ describe('UsersRepository', () => {
       where: { role: UserRole.KITCHEN_STAFF, is_active: false },
     });
   });
+
+  it.each([
+    {
+      sortBy: undefined,
+      sortOrder: undefined,
+      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+    },
+    {
+      sortBy: 'name',
+      sortOrder: undefined,
+      orderBy: [
+        { first_name: 'asc' },
+        { last_name: 'asc' },
+        { user_id: 'asc' },
+      ],
+    },
+    {
+      sortBy: 'name',
+      sortOrder: 'desc',
+      orderBy: [
+        { first_name: 'desc' },
+        { last_name: 'desc' },
+        { user_id: 'asc' },
+      ],
+    },
+    {
+      sortBy: 'username',
+      sortOrder: 'desc',
+      orderBy: [{ username: 'desc' }, { user_id: 'asc' }],
+    },
+    {
+      sortBy: 'role',
+      sortOrder: 'asc',
+      orderBy: [
+        { role: 'asc' },
+        { first_name: 'asc' },
+        { last_name: 'asc' },
+        { user_id: 'asc' },
+      ],
+    },
+    {
+      sortBy: 'status',
+      sortOrder: 'asc',
+      orderBy: [
+        { is_active: 'desc' },
+        { first_name: 'asc' },
+        { last_name: 'asc' },
+        { user_id: 'asc' },
+      ],
+    },
+    {
+      sortBy: 'status',
+      sortOrder: 'desc',
+      orderBy: [
+        { is_active: 'asc' },
+        { first_name: 'asc' },
+        { last_name: 'asc' },
+        { user_id: 'asc' },
+      ],
+    },
+    {
+      sortBy: 'created_at',
+      sortOrder: 'asc',
+      orderBy: [{ created_at: 'asc' }, { user_id: 'asc' }],
+    },
+  ] as const)(
+    'UT-USER-031: orders users for sortBy=$sortBy sortOrder=$sortOrder with a stable user_id tiebreak',
+    async ({ sortBy, sortOrder, orderBy }) => {
+      await repository.findAll(0, 10, { status: 'all', sortBy, sortOrder });
+
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ orderBy }),
+      );
+    },
+  );
 });

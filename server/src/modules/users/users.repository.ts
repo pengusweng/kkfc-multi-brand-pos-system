@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
-import { FindUsersDTO } from './dto/find-users.dto';
+import { FindUsersDTO, SortOrder, UserSortField } from './dto/find-users.dto';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 
@@ -31,7 +31,16 @@ export class UsersRepository {
   async findAll(
     skip: number,
     take: number,
-    { status, search, role }: Pick<FindUsersDTO, 'status' | 'search' | 'role'>,
+    {
+      status,
+      search,
+      role,
+      sortBy,
+      sortOrder,
+    }: Pick<
+      FindUsersDTO,
+      'status' | 'search' | 'role' | 'sortBy' | 'sortOrder'
+    >,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     // Everything except status, which the per-status counts below vary.
@@ -48,7 +57,7 @@ export class UsersRepository {
       where,
       skip,
       take,
-      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+      orderBy: this.orderBy(sortBy, sortOrder),
       omit: { password_hash: true },
     });
     // Per-status counts honour the search and role but not the status filter,
@@ -68,6 +77,34 @@ export class UsersRepository {
         : await Promise.all([usersQuery, activeQuery, inactiveQuery]);
 
     return { users, counts: { all: active + inactive, active, inactive } };
+  }
+
+  // Newest first by default. Every sort ends in user_id so pages never
+  // overlap or skip rows when the sorted values tie.
+  private orderBy(
+    sortBy?: UserSortField,
+    sortOrder: SortOrder = 'asc',
+  ): Prisma.UserOrderByWithRelationInput[] {
+    const byName: Prisma.UserOrderByWithRelationInput[] = [
+      { first_name: 'asc' },
+      { last_name: 'asc' },
+    ];
+    const primary: Record<
+      UserSortField,
+      Prisma.UserOrderByWithRelationInput[]
+    > = {
+      name: [{ first_name: sortOrder }, { last_name: sortOrder }],
+      username: [{ username: sortOrder }],
+      // The role enum is declared from most to least senior.
+      role: [{ role: sortOrder }, ...byName],
+      // Ascending means active first.
+      status: [{ is_active: sortOrder === 'asc' ? 'desc' : 'asc' }, ...byName],
+      created_at: [{ created_at: sortOrder }],
+    };
+    return [
+      ...(sortBy ? primary[sortBy] : [{ created_at: 'desc' as const }]),
+      { user_id: 'asc' },
+    ];
   }
 
   // Every whitespace-separated term must match the username, first name, or

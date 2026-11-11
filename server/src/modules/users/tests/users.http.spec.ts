@@ -268,7 +268,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     },
   );
 
-  it('IT-USER-003: lists users with default and custom pagination, status, search, and role filters', async () => {
+  it('IT-USER-003: lists users with default and custom pagination, status, search, role, and sorting', async () => {
     const defaultResp = await fetch(url);
     expect(defaultResp.status).toBe(200);
     expect(service.findAllUsers).toHaveBeenCalledWith({
@@ -300,6 +300,22 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       });
     }
 
+    for (const sortBy of ['name', 'username', 'role', 'status', 'created_at']) {
+      for (const sortOrder of ['asc', 'desc']) {
+        expect(
+          (await fetch(`${url}?sortBy=${sortBy}&sortOrder=${sortOrder}`))
+            .status,
+        ).toBe(200);
+        expect(service.findAllUsers).toHaveBeenLastCalledWith({
+          page: 1,
+          limit: 10,
+          status: 'active',
+          sortBy,
+          sortOrder,
+        });
+      }
+    }
+
     // A blank search is ignored rather than rejected (search is not '').
     expect((await fetch(`${url}?search=%20%20`)).status).toBe(200);
     expect(service.findAllUsers).toHaveBeenLastCalledWith({
@@ -324,6 +340,12 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     '?role=OWNER',
     '?role=cashier_staff',
     '?role=MANAGER&role=CASHIER_STAFF',
+    '?sortBy=password_hash',
+    '?sortBy=NAME',
+    '?sortBy=',
+    '?sortBy=name&sortBy=role',
+    '?sortBy=name&sortOrder=up',
+    '?sortOrder=ASC',
   ])(
     'IT-USER-004: rejects invalid user list query parameters: %s',
     async (query) => {

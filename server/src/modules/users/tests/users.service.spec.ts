@@ -157,7 +157,7 @@ describe('UsersService', () => {
     { status: 'inactive', total: 9, totalPages: 1 },
     { status: 'all', total: 30, totalPages: 3 },
   ] as const)(
-    'UT-USER-004: returns pagination metadata and per-status counts for status=$status',
+    'UT-USER-004: returns pagination metadata and per-status counts and forwards filters and sorting for status=$status',
     async ({ status, total, totalPages }) => {
       await expect(
         service.findAllUsers({
@@ -166,6 +166,8 @@ describe('UsersService', () => {
           status,
           search: 'ana',
           role: UserRole.CASHIER_STAFF,
+          sortBy: 'name',
+          sortOrder: 'desc',
         }),
       ).resolves.toEqual({
         data: [user],
@@ -181,6 +183,8 @@ describe('UsersService', () => {
         status,
         search: 'ana',
         role: UserRole.CASHIER_STAFF,
+        sortBy: 'name',
+        sortOrder: 'desc',
       });
     },
   );
