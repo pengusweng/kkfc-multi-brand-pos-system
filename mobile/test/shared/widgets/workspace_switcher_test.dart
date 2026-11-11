@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/app/router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
+import 'package:mobile/features/availability/providers/availability_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/workspace_switcher.dart';
 
 void main() {
@@ -75,6 +78,55 @@ void main() {
   ) async {
     await pump(tester, UserRole.kitchenHead);
     expect(find.byKey(const ValueKey('workspace-switcher')), findsNothing);
+  });
+
+  testWidgets('SUPERVISOR defaults to menu screen on login', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        sessionProvider.overrideWith((ref) => true),
+        userRoleProvider.overrideWith(() => _FixedRole(UserRole.supervisor)),
+        menuItemsProvider.overrideWith((ref) async => []),
+        availabilityMenuItemsProvider.overrideWith((ref) async => []),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = container.read(routerProvider);
+    router.go(AppRoutes.login);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, AppRoutes.menu);
+  });
+
+  testWidgets('KITCHEN_HEAD defaults to kitchenTickets on login', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        sessionProvider.overrideWith((ref) => true),
+        userRoleProvider.overrideWith(() => _FixedRole(UserRole.kitchenHead)),
+        menuItemsProvider.overrideWith((ref) async => []),
+        availabilityMenuItemsProvider.overrideWith((ref) async => []),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final router = container.read(routerProvider);
+    router.go(AppRoutes.login);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.path,
+      AppRoutes.kitchenTickets,
+    );
   });
 }
 

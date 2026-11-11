@@ -41,19 +41,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.login;
       }
 
-      final isKitchenRole = role?.isKitchen ?? false;
+      final canAccessPos = role?.canAccessPos ?? true;
+      final canAccessKitchen = role?.canAccessKitchenBoard ?? false;
       final onKitchenPage = state.matchedLocation == AppRoutes.kitchenTickets;
 
       if (isLoggedIn && onLogin) {
-        return isKitchenRole ? AppRoutes.kitchenTickets : AppRoutes.menu;
+        return canAccessPos ? AppRoutes.menu : AppRoutes.kitchenTickets;
       }
 
       if (isLoggedIn) {
         // Kitchen staff / kitchen head can only see the kitchen tickets page.
         // Supervisors and superadmins may switch between POS and KDS.
-        final canAccessPos = role?.canAccessPos ?? true;
-        final canAccessKitchen = role?.canAccessKitchenBoard ?? false;
-
         if (!canAccessPos && !onKitchenPage) {
           return AppRoutes.kitchenTickets;
         }

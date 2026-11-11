@@ -30,7 +30,7 @@ void main() {
   });
 
   testWidgets(
-    'supervisor login reroutes from login to the kitchen tickets page',
+    'supervisor login reroutes from login to the menu page',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -43,10 +43,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Supervisor must be routed to the kitchen board, NOT the menu screen
+      // Supervisor defaults to the menu screen, but retains switcher in header
+      expect(find.byType(MenuScreen), findsOneWidget);
+      expect(find.byType(KitchenBoardScreen), findsNothing);
+      expect(find.text('Supervisor'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'kitchen staff login reroutes from login to the kitchen tickets page',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            initialTokenProvider.overrideWithValue('mock-kitchen-staff-token'),
+            initialRoleProvider.overrideWithValue(UserRole.kitchenStaff),
+          ],
+          child: const App(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
       expect(find.byType(KitchenBoardScreen), findsOneWidget);
       expect(find.byType(MenuScreen), findsNothing);
-      expect(find.text('Supervisor'), findsOneWidget);
     },
   );
 

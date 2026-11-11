@@ -22,6 +22,18 @@ enum UserRole {
     return null;
   }
 
+  /// User-friendly display label (e.g. 'Cashier Staff', 'Supervisor').
+  String get displayName => switch (this) {
+    UserRole.superadmin => 'Superadmin',
+    UserRole.manager => 'Manager',
+    UserRole.recipeManager => 'Recipe Manager',
+    UserRole.supervisor => 'Supervisor',
+    UserRole.kitchenHead => 'Kitchen Head',
+    UserRole.inventoryStaff => 'Inventory Staff',
+    UserRole.kitchenStaff => 'Kitchen Staff',
+    UserRole.cashierStaff => 'Cashier Staff',
+  };
+
   /// Whether this role is an authorized kitchen workspace role.
   bool get isKitchen =>
       this == UserRole.kitchenHead ||
