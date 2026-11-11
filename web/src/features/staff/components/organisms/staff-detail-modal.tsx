@@ -62,12 +62,8 @@ export default function StaffDetailModal({
 
             <dl className="mt-5">
               <DetailRow label="Role">{member.role}</DetailRow>
-              <DetailRow label="Created">
-                <span className="tabular-nums">{member.createdAt}</span>
-              </DetailRow>
-              <DetailRow label="Last updated">
-                <span className="tabular-nums">{member.modifiedAt}</span>
-              </DetailRow>
+              <DetailRow label="Created">{member.createdAt}</DetailRow>
+              <DetailRow label="Last updated">{member.modifiedAt}</DetailRow>
               <DetailRow label="Account ID">
                 <span className="font-mono text-xs break-all text-ink-muted select-all">{member.id}</span>
               </DetailRow>
