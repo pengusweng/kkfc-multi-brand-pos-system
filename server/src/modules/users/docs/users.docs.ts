@@ -88,12 +88,12 @@ export function FindAllUsersDocs() {
     ApiOperation({
       summary: 'List all users (manager or superadmin).',
       description:
-        'Managers and superadmins can list all users. activeOnly defaults to true; false includes inactive users. Responses omit password_hash.',
+        'Managers and superadmins can list all users. status filters by account state (active by default, inactive, or all). search does a case-insensitive partial match on username, first_name, and last_name; every space-separated term must match one of them, and a blank search is ignored. role limits results to a single UserRole. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,
       description:
-        'Paginated users in data, with page, limit, total, and totalPages in meta. Password hashes and brand assignments are excluded.',
+        'Paginated users in data. meta holds page, limit, total, and totalPages for the requested status, plus counts of all, active, and inactive users matching the search and role (counts ignore the status filter). Password hashes and brand assignments are excluded.',
       content: {
         'application/json': {
           examples: {
@@ -101,14 +101,26 @@ export function FindAllUsersDocs() {
               summary: 'One matching user',
               value: {
                 data: [userExample],
-                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+                meta: {
+                  page: 1,
+                  limit: 10,
+                  total: 1,
+                  totalPages: 1,
+                  counts: { all: 2, active: 1, inactive: 1 },
+                },
               },
             },
             empty: {
               summary: 'No matching users',
               value: {
                 data: [],
-                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+                meta: {
+                  page: 1,
+                  limit: 10,
+                  total: 0,
+                  totalPages: 0,
+                  counts: { all: 0, active: 0, inactive: 0 },
+                },
               },
             },
           },

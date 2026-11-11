@@ -112,7 +112,7 @@ Password hashes are excluded from API responses.
 | `POST /api/auth/logout`       | Revokes the current session; returns 204.                                                                                                                         |
 | `POST /api/auth/logout-all`   | Revokes all sessions for the current user; returns 204.                                                                                                           |
 | `POST /api/users`             | Managers create non-superadmin accounts; superadmins create any role. No brand assignment is accepted.                                                            |
-| `GET /api/users`              | Managers and superadmins; lists all users.                                                                                                                        |
+| `GET /api/users`              | Managers and superadmins; lists users. Filters by `status` (`active`, `inactive`, `all`), `search`, and `role`; see below.                                        |
 | `GET /api/users/:id`          | Any authenticated user; accepts username or UUID.                                                                                                                 |
 | `PATCH /api/users/:id`        | Managers edit active non-superadmin users; superadmins edit any active user. Supports username, first_name, last_name, and password.                              |
 | `DELETE /api/users/:id`       | Managers deactivate active non-superadmin users; superadmins deactivate any active user.                                                                          |
@@ -153,7 +153,16 @@ Listings accept `page` (default 1), `limit` (default 10, maximum 100), and
 `activeOnly` (default true). `activeOnly=false` includes both active and inactive
 records. Listings return `{ data, meta: { page, limit, total, totalPages } }`.
 Single-user and single-menu-item lookups also accept `activeOnly`; the single-brand lookup
-returns active brands only. Usernames are limited to 16 characters. User UUIDs
+returns active brands only.
+
+`GET /api/users` uses `status` instead of `activeOnly`: `active` (default), `inactive`,
+or `all`. `search` (at most 100 characters) does a case-insensitive partial match on
+username, first_name, and last_name; each space-separated term must match one of
+them, so `ana rey` finds "Ana Reyes". A blank search is ignored. `role` (one `UserRole`,
+e.g. `CASHIER_STAFF`) limits results to that role. Its `meta` also has
+`counts: { all, active, inactive }` for users matching the search and role, regardless of `status`.
+
+Usernames are limited to 16 characters. User UUIDs
 take priority over usernames for profile searches. Session validation and user update/delete operations use strict user-ID lookups.
 
 Brand codes are unique and manually supplied. Setting `logo_url` to null clears

@@ -20,14 +20,14 @@ Feature: Users HTTP Integration Endpoints
     Then the status code should be 400
 
   @IT-USER-003
-  Scenario: List users with default and custom pagination
+  Scenario: List users with default and custom pagination, status, and search
     Given an authenticated SUPERADMIN session
-    When the client sends GET to "/api/users" with query parameters
-    Then the status code should be 200 and return data and meta pagination
+    When the client sends GET to "/api/users" with page, limit, status, search, and role query parameters
+    Then the status code should be 200 and the service receives the trimmed search, ignoring a blank one
 
   @IT-USER-004
   Scenario: Reject invalid query parameters on list users
-    Given an authenticated SUPERADMIN session and invalid query values
+    Given an authenticated SUPERADMIN session and invalid page, limit, status, search, or role values, or the removed activeOnly parameter
     When the client sends GET to "/api/users"
     Then the status code should be 400
 

@@ -24,11 +24,11 @@ Feature: Users Service Unit Logic
     When UsersRepository throws PrismaClientKnownRequestError
     Then UsersService should rethrow the error for the global exception filter
 
-  Scenario: Paginate users and forward activeOnly flag
+  Scenario: Paginate users and forward status, search, and role filters
     Test Case ID: UT-USER-004
-    Given pagination query parameters
+    Given pagination, status, search, and role query parameters
     When UsersService finds all users
-    Then it should calculate skip/take and return paginated data with meta
+    Then it should calculate skip/take and return paginated data with meta, the status total, and per-status counts
 
   Scenario: Return empty list and zero pages when no users match
     Test Case ID: UT-USER-005

@@ -43,7 +43,10 @@ describe('UsersService', () => {
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     repository = {
       create: jest.fn().mockResolvedValue(user),
-      findAll: jest.fn().mockResolvedValue({ users: [user], total: 21 }),
+      findAll: jest.fn().mockResolvedValue({
+        users: [user],
+        counts: { all: 30, active: 21, inactive: 9 },
+      }),
       findOne: jest.fn().mockResolvedValue(user),
       findByUsername: jest.fn().mockResolvedValue(null),
       safeFindByUsername: jest.fn().mockResolvedValue(null),
@@ -149,37 +152,62 @@ describe('UsersService', () => {
     },
   );
 
-  it.each([true, false])(
-    'UT-USER-004: returns pagination metadata and forwards activeOnly=%s',
-    async (activeOnly) => {
+  it.each([
+    { status: 'active', total: 21, totalPages: 3 },
+    { status: 'inactive', total: 9, totalPages: 1 },
+    { status: 'all', total: 30, totalPages: 3 },
+  ] as const)(
+    'UT-USER-004: returns pagination metadata and per-status counts for status=$status',
+    async ({ status, total, totalPages }) => {
       await expect(
-        service.findAllUsers({ page: 3, limit: 10, activeOnly }),
+        service.findAllUsers({
+          page: 3,
+          limit: 10,
+          status,
+          search: 'ana',
+          role: UserRole.CASHIER_STAFF,
+        }),
       ).resolves.toEqual({
         data: [user],
-        meta: { page: 3, limit: 10, total: 21, totalPages: 3 },
+        meta: {
+          page: 3,
+          limit: 10,
+          total,
+          totalPages,
+          counts: { all: 30, active: 21, inactive: 9 },
+        },
       });
-      expect(repository.findAll).toHaveBeenCalledWith(20, 10, activeOnly);
+      expect(repository.findAll).toHaveBeenCalledWith(20, 10, {
+        status,
+        search: 'ana',
+        role: UserRole.CASHIER_STAFF,
+      });
     },
   );
 
   it('UT-USER-005: returns an empty list and zero pages when no users match', async () => {
-    repository.findAll.mockResolvedValue({ users: [], total: 0 });
+    const counts = { all: 0, active: 0, inactive: 0 };
+    repository.findAll.mockResolvedValue({ users: [], counts });
 
     await expect(service.findAllUsers(new FindUsersDTO())).resolves.toEqual({
       data: [],
-      meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      meta: { page: 1, limit: 10, total: 0, totalPages: 0, counts },
     });
-    expect(repository.findAll).toHaveBeenCalledWith(0, 10, true);
+    expect(repository.findAll).toHaveBeenCalledWith(0, 10, {
+      status: 'active',
+      search: undefined,
+    });
   });
 
   it('UT-USER-006: returns an empty page past the last result while preserving totals', async () => {
-    repository.findAll.mockResolvedValue({ users: [], total: 21 });
+    const counts = { all: 21, active: 21, inactive: 0 };
+    repository.findAll.mockResolvedValue({ users: [], counts });
 
     await expect(
-      service.findAllUsers({ page: 4, limit: 10, activeOnly: true }),
+      service.findAllUsers({ page: 4, limit: 10, status: 'active' }),
     ).resolves.toEqual({
       data: [],
-      meta: { page: 4, limit: 10, total: 21, totalPages: 3 },
+      meta: { page: 4, limit: 10, total: 21, totalPages: 3, counts },
     });
   });
 
@@ -188,7 +216,7 @@ describe('UsersService', () => {
       service.findAllUsers({
         page: 2_147_483_647,
         limit: 2,
-        activeOnly: true,
+        status: 'active',
       }),
     ).rejects.toMatchObject({
       status: 400,
@@ -204,10 +232,26 @@ describe('UsersService', () => {
     await service.findAllUsers({
       page: 2_147_483_647,
       limit: 1,
-      activeOnly: true,
+      status: 'active',
     });
 
-    expect(repository.findAll).toHaveBeenCalledWith(2_147_483_646, 1, true);
+    expect(repository.findAll).toHaveBeenCalledWith(2_147_483_646, 1, {
+      status: 'active',
+      search: undefined,
+    });
+  });
+
+  it('UT-USER-027: does not log the search text', async () => {
+    await service.findAllUsers({
+      page: 1,
+      limit: 10,
+      status: 'all',
+      search: 'Maria Santos',
+    });
+
+    const messages = log.mock.calls.map(([message]) => String(message));
+    expect(messages.join(' ')).not.toContain('Maria');
+    expect(messages[0]).toContain('status=all, role=any, search=yes');
   });
 
   it('UT-USER-009: returns an existing user', async () => {
