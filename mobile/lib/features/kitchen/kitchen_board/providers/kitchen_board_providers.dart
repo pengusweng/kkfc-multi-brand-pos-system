@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
@@ -80,6 +81,15 @@ class KitchenBoardState {
 class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   @override
   KitchenBoardState build() {
+    // Automatically refresh kitchen tickets whenever the user logs in or switches accounts
+    ref.listen<String?>(sessionTokenProvider, (previous, next) {
+      if (next != null && next != previous) {
+        refresh(force: true);
+      } else if (next == null && previous != null) {
+        state = const KitchenBoardState(isLoading: false, tickets: []);
+      }
+    });
+
     Future.microtask(loadInitial);
     return const KitchenBoardState(isLoading: true);
   }
@@ -88,8 +98,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     await _fetch(isRefresh: false);
   }
 
-  Future<void> refresh() async {
-    if (state.isLoading || state.isRefreshing) return;
+  Future<void> refresh({bool force = false}) async {
+    if (!force && (state.isLoading || state.isRefreshing)) return;
+    if (force && state.isRefreshing) return;
     await _fetch(isRefresh: true);
   }
 

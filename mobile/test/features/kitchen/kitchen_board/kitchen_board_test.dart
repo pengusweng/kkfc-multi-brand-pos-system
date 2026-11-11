@@ -1730,5 +1730,102 @@ void main() {
         expect(handoverCalled, isTrue);
       },
     );
+
+    test(
+      'automatically refreshes tickets when the user logs in or switches tokens',
+      () async {
+        var currentTickets = [sampleKitchenBoardTickets[0]];
+        final repo = _FakeKitchenBoardRepository(() async => currentTickets);
+
+        final container = ProviderContainer(
+          overrides: [
+            kitchenBoardRepositoryProvider.overrideWithValue(repo),
+            authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // 1. Initial build loads the first ticket set
+        final initial = container.read(kitchenBoardProvider);
+        expect(initial.isLoading, isTrue);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(repo.fetchCount, 1);
+        expect(container.read(kitchenBoardProvider).tickets.length, 1);
+        expect(
+          container.read(kitchenBoardProvider).tickets.first.data.ticketNumber,
+          'T-016',
+        );
+
+        // 2. Repository updates with new tickets
+        currentTickets = sampleKitchenBoardTickets;
+
+        // 3. User logs in (sessionTokenProvider receives a new token)
+        container.read(sessionTokenProvider.notifier).setToken('new-user-token');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // 4. Kitchen board automatically refreshed tickets
+        expect(repo.fetchCount, 2);
+        expect(container.read(kitchenBoardProvider).tickets.length, 3);
+
+        // 5. User logs out: clears tickets
+        container.read(sessionTokenProvider.notifier).setToken(null);
+        expect(container.read(kitchenBoardProvider).tickets, isEmpty);
+
+        // 6. Another user logs in: automatically refreshes tickets again
+        container
+            .read(sessionTokenProvider.notifier)
+            .setToken('kitchen-head-token');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(repo.fetchCount, 3);
+        expect(container.read(kitchenBoardProvider).tickets.length, 3);
+      },
+    );
+
+    testWidgets(
+      'KitchenBoardScreen automatically refreshes and displays new tickets when user logs in',
+      (tester) async {
+        var currentTickets = [sampleKitchenBoardTickets[0]]; // Only T-016
+        final repo = _FakeKitchenBoardRepository(() async => currentTickets);
+
+        final container = ProviderContainer(
+          overrides: [
+            kitchenBoardRepositoryProvider.overrideWithValue(repo),
+            initialRoleProvider.overrideWithValue(UserRole.kitchenHead),
+            authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: counterTheme,
+              home: const KitchenBoardScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('T-016'), findsOneWidget);
+        expect(find.text('T-015'), findsNothing);
+        expect(repo.fetchCount, 1);
+
+        // Backend receives T-015 and T-014
+        currentTickets = sampleKitchenBoardTickets;
+
+        // User signs in / token is set
+        container
+            .read(sessionTokenProvider.notifier)
+            .setToken('kitchen-staff-token');
+        await tester.pumpAndSettle();
+
+        // Screen automatically refreshed and now displays T-015 and T-014
+        expect(repo.fetchCount, 2);
+        expect(find.text('T-016'), findsOneWidget);
+        expect(find.text('T-015'), findsOneWidget);
+        expect(find.text('T-014'), findsOneWidget);
+      },
+    );
   });
 }

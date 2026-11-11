@@ -34,6 +34,12 @@ class KitchenBoardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<String?>(sessionTokenProvider, (previous, next) {
+      if (next != null && next != previous) {
+        ref.read(kitchenBoardProvider.notifier).refresh(force: true);
+      }
+    });
+
     ref.watch(userRoleInitializerProvider);
     final boardState = ref.watch(kitchenBoardProvider);
     final userRole = ref.watch(userRoleProvider);
