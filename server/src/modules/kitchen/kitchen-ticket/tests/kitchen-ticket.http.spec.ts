@@ -40,6 +40,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     findManyByPreparer: jest.fn(),
     findManyByChecker: jest.fn(),
     findOne: jest.fn(),
+    findOneWithItems: jest.fn(),
     assignPreparer: jest.fn(),
     assignChecker: jest.fn(),
   };
@@ -84,8 +85,8 @@ describe('Kitchen ticket HTTP endpoints', () => {
     {
       method: 'GET',
       path: `/${ticketId}`,
-      handler: 'findOne',
-      args: [ticketId, undefined],
+      handler: 'findOneWithItems',
+      args: [ticketId],
       result: ticket,
       roles: kitchenRoles,
     },
@@ -148,6 +149,8 @@ describe('Kitchen ticket HTTP endpoints', () => {
     for (const route of routes) {
       repository[route.handler].mockResolvedValue(route.result);
     }
+    // Assignment routes look the ticket up before writing.
+    repository.findOne.mockResolvedValue(ticket);
   });
 
   afterAll(async () => app?.close());
@@ -344,6 +347,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     'IT-KT-011: Given method %s and path %s for a missing ticket, When the endpoint is requested, Then return KITCHEN_TICKET_NOT_FOUND without writing',
     async (method, path, body) => {
       repository.findOne.mockResolvedValue(null);
+      repository.findOneWithItems.mockResolvedValue(null);
 
       const response = await request(path, method, body);
 

@@ -35,6 +35,12 @@ type CreateOrderContext = {
   payment?: { payment_method: PaymentMethod; payment_status: PaymentStatus };
 };
 
+export type OrderListFilters = {
+  status?: OrderStatus;
+  order_channel?: OrderChannel;
+  order_date?: Date;
+};
+
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -133,6 +139,41 @@ export class OrdersRepository {
       where: { order_id: orderId, brand_id: brandId },
       include: includeOrder,
     });
+  }
+
+  async findManyByBrand(
+    brandId: string,
+    filters: OrderListFilters,
+    skip: number,
+    take: number,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const where: Prisma.OrderWhereInput = {
+      brand_id: brandId,
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.order_channel
+        ? { order_channel: filters.order_channel }
+        : {}),
+      ...(filters.order_date ? { order_date: filters.order_date } : {}),
+    };
+    const ordersQuery = tx.order.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { order_id: 'asc' }],
+      include: includeOrder,
+    });
+    const totalQuery = tx.order.count({ where });
+
+    // Keep the page and its total consistent when running on the root client.
+    const [orders, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([ordersQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([ordersQuery, totalQuery]);
+
+    return { orders, total };
   }
 
   update(

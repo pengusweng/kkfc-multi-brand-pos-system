@@ -44,6 +44,17 @@ export class KitchenTicketService {
     return ticket;
   }
 
+  async findOneWithItems(kitchenTicketId: string) {
+    this.logger.debug(`Finding kitchen ticket ${kitchenTicketId} with items`);
+    const ticket =
+      await this.kitchenTicketRepository.findOneWithItems(kitchenTicketId);
+
+    assertExists(ticket, 'KitchenTicket', kitchenTicketId, this.logger);
+
+    this.logger.log(`Found kitchen ticket ${ticket.kitchen_ticket_id}`);
+    return ticket;
+  }
+
   async findAll(skip: number, take: number) {
     this.logger.debug(`Listing kitchen tickets: skip=${skip}, take=${take}`);
     assertValidPagination(skip, this.logger);

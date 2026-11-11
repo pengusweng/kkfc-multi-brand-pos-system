@@ -3,6 +3,48 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { CreateKitchenTicketDTO } from './dto/create-kitchen-ticket.dto';
 import { KitchenTicketStatus, Prisma } from '@prisma/client';
 
+// Kitchen views need item identities (for QC rejections) but never prices or
+// restricted recipe snapshots.
+const includeOrderItems = {
+  order: {
+    select: {
+      order_items_order: {
+        select: {
+          order_item_id: true,
+          menu_item_id: true,
+          item_name: true,
+          quantity: true,
+          notes: true,
+          order_item_modifiers_order_item: {
+            select: {
+              order_item_modifier_id: true,
+              modifier_id: true,
+              modifier_name: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.KitchenTicketInclude;
+
+type TicketWithOrderItems = Prisma.KitchenTicketGetPayload<{
+  include: typeof includeOrderItems;
+}>;
+
+function withOrderItems(ticket: TicketWithOrderItems) {
+  const { order, ...rest } = ticket;
+  return {
+    ...rest,
+    order_items: order.order_items_order.map(
+      ({ order_item_modifiers_order_item, ...item }) => ({
+        ...item,
+        modifiers: order_item_modifiers_order_item,
+      }),
+    ),
+  };
+}
+
 @Injectable()
 export class KitchenTicketRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -27,6 +69,17 @@ export class KitchenTicketRepository {
     });
   }
 
+  async findOneWithItems(
+    kitchenTicketId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const ticket = await tx.kitchenTicket.findUnique({
+      where: { kitchen_ticket_id: kitchenTicketId },
+      include: includeOrderItems,
+    });
+    return ticket ? withOrderItems(ticket) : null;
+  }
+
   async findAll(
     skip: number,
     take: number,
@@ -36,6 +89,7 @@ export class KitchenTicketRepository {
       skip,
       take,
       orderBy: [{ created_at: 'desc' }, { kitchen_ticket_id: 'asc' }],
+      include: includeOrderItems,
     });
     const totalQuery = tx.kitchenTicket.count();
 
@@ -46,7 +100,7 @@ export class KitchenTicketRepository {
           })
         : await Promise.all([ticketsQuery, totalQuery]);
 
-    return { kitchenTickets, total };
+    return { kitchenTickets: kitchenTickets.map(withOrderItems), total };
   }
 
   async findMany(tx: Prisma.TransactionClient | PrismaService = this.prisma) {
@@ -57,14 +111,16 @@ export class KitchenTicketRepository {
     const startOfTomorrow = new Date(startOfDay);
     startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
 
-    return tx.kitchenTicket.findMany({
+    const tickets = await tx.kitchenTicket.findMany({
       where: {
         created_at: {
           gte: startOfDay,
           lt: startOfTomorrow,
         },
       },
+      include: includeOrderItems,
     });
+    return tickets.map(withOrderItems);
   }
 
   async findManyByPreparer(
@@ -80,7 +136,7 @@ export class KitchenTicketRepository {
     const startOfTomorrow = new Date(startOfDay);
     startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
 
-    return tx.kitchenTicket.findMany({
+    const tickets = await tx.kitchenTicket.findMany({
       where: {
         preparer_id: preparerId,
         ...(onlyToday
@@ -90,7 +146,9 @@ export class KitchenTicketRepository {
           ? { status: { not: KitchenTicketStatus.HANDED_OVER } }
           : {}),
       },
+      include: includeOrderItems,
     });
+    return tickets.map(withOrderItems);
   }
 
   async findManyByChecker(
@@ -106,7 +164,7 @@ export class KitchenTicketRepository {
     const startOfTomorrow = new Date(startOfDay);
     startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
 
-    return tx.kitchenTicket.findMany({
+    const tickets = await tx.kitchenTicket.findMany({
       where: {
         checker_id: checkerId,
         ...(onlyToday
@@ -116,7 +174,9 @@ export class KitchenTicketRepository {
           ? { status: { not: KitchenTicketStatus.HANDED_OVER } }
           : {}),
       },
+      include: includeOrderItems,
     });
+    return tickets.map(withOrderItems);
   }
 
   async updateStatus(

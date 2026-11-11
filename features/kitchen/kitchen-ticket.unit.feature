@@ -156,3 +156,16 @@ Feature: Kitchen ticket lifecycle and repository rules
     Given a concurrent status change causes the guarded write to fail
     When a status transition is persisted
     Then P2025 is propagated without retrying or overwriting the newer status
+
+  @UT-KT-018
+  Scenario: Expose order item identities when reading a ticket with items
+    Given a kitchen ticket whose order has an item with a modifier
+    When the ticket is read with its items
+    Then order_items contains the order_item_id, quantity and modifiers
+    And the nested order relation, prices and recipe snapshots are not returned
+
+  @UT-KT-019
+  Scenario: Return null when reading a missing ticket with items
+    Given no kitchen ticket exists for the requested ID
+    When the ticket is read with its items
+    Then null is returned
