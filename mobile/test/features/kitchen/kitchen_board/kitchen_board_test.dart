@@ -18,6 +18,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_
 import 'package:mobile/features/kitchen/kitchen_board/data/seed/sample_kitchen_board_tickets.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/cancel_kitchen_ticket_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
@@ -932,6 +933,8 @@ void main() {
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
         final queuedDialogAction = find.byKey(const ValueKey('kitchen-ticket-dialog-action-button'));
         expect(tester.widget<FilledButton>(queuedDialogAction).onPressed, isNull);
+        final queuedDialogCancel = find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'));
+        expect(tester.widget<OutlinedButton>(queuedDialogCancel).onPressed, isNull);
 
         // Close dialog
         await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
@@ -2083,6 +2086,109 @@ void main() {
           find.byKey(const ValueKey('lane-count-pill-ready-1')),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'Queued ticket popup renders Cancel ticket button below Acknowledge and opens static CancelKitchenTicketDialog (max 200 chars)',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        await pumpBoard(tester, repository: repo);
+
+        // 1. Ticket cards on the board do NOT show 'Cancel ticket' directly
+        final queuedCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-016'),
+        );
+        expect(queuedCard, findsOneWidget);
+        expect(find.text('Cancel ticket'), findsNothing);
+
+        final cardAcknowledgeButton = find.descendant(
+          of: queuedCard,
+          matching: find.widgetWithText(FilledButton, 'Acknowledge'),
+        );
+        expect(cardAcknowledgeButton, findsOneWidget);
+
+        // 2. Opening the queued ticket status popup shows 'Cancel ticket' below 'Acknowledge'
+        await tester.tap(cardAcknowledgeButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        final dialogAckButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-action-button'),
+        );
+        final dialogCancelButton = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+        );
+        expect(dialogAckButton, findsOneWidget);
+        expect(dialogCancelButton, findsOneWidget);
+        expect(
+          find.descendant(
+            of: dialogCancelButton,
+            matching: find.text('Cancel ticket'),
+          ),
+          findsOneWidget,
+        );
+
+        final dialogAckRect = tester.getRect(dialogAckButton);
+        final dialogCancelRect = tester.getRect(dialogCancelButton);
+        expect(dialogCancelRect.top, greaterThanOrEqualTo(dialogAckRect.bottom));
+
+        // 3. Clicking 'Cancel ticket' inside the popup opens CancelKitchenTicketDialog
+        await tester.tap(dialogCancelButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CancelKitchenTicketDialog), findsOneWidget);
+        expect(find.text('Cancel ticket T-016'), findsOneWidget);
+        expect(find.text('Cancellation reason'), findsOneWidget);
+        expect(find.text('0/200'), findsOneWidget);
+
+        final reasonFieldFinder = find.byKey(
+          const ValueKey('cancel-ticket-reason-field'),
+        );
+        expect(reasonFieldFinder, findsOneWidget);
+        expect(
+          tester.widget<TextField>(reasonFieldFinder).maxLength,
+          200,
+        );
+
+        final submitButtonFinder = find.byKey(
+          const ValueKey('cancel-ticket-submit-button'),
+        );
+        expect(submitButtonFinder, findsOneWidget);
+        expect(find.text('Submit'), findsOneWidget);
+
+        // 4. Clicking Submit with empty reason displays validation banner
+        await tester.tap(submitButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('cancel-ticket-error-banner')),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Enter a cancellation reason (up to 200 characters).'),
+          findsOneWidget,
+        );
+        expect(find.byType(CancelKitchenTicketDialog), findsOneWidget);
+
+        // 5. Entering a reason updates character count and clicking Submit closes both popups statically
+        await tester.enterText(
+          reasonFieldFinder,
+          'Customer requested cancellation',
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('31/200'), findsOneWidget);
+
+        await tester.tap(submitButtonFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CancelKitchenTicketDialog), findsNothing);
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+        // Ticket remains on the board (static flow)
+        expect(find.byKey(const ValueKey('kitchen-ticket-card-T-016')), findsOneWidget);
       },
     );
   });

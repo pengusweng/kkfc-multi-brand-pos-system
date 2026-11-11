@@ -6,6 +6,7 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/cancel_kitchen_ticket_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
@@ -30,6 +31,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.isActionEnabled = true,
     this.onAction,
     this.onFail,
+    this.onCancelTicket,
     this.onClose,
     this.imagePicker,
     this.onPickImage,
@@ -44,6 +46,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final bool isActionEnabled;
   final VoidCallback? onAction;
   final VoidCallback? onFail;
+  final VoidCallback? onCancelTicket;
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
@@ -52,6 +55,11 @@ class KitchenTicketStatusDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isQueued =
+        ticket.lane == KitchenBoardLane.queued &&
+        ticket.data.status == KkfcStatus.queued &&
+        ticket.rawStatus.toUpperCase() != 'ACKNOWLEDGED';
+
     final isAcknowledged =
         ticket.data.status == KkfcStatus.acknowledged ||
         ticket.rawStatus.toUpperCase() == 'ACKNOWLEDGED';
@@ -152,6 +160,16 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   isActionLoading: isActionLoading,
                   isActionEnabled: isActionEnabled,
                   onAction: onAction,
+                  showCancelTicketButton: isQueued,
+                  onCancelTicket: isQueued
+                      ? (onCancelTicket ??
+                          (isActionEnabled
+                              ? () => showCancelKitchenTicketDialog(
+                                    context,
+                                    ticket: ticket,
+                                  )
+                              : null))
+                      : null,
                 ),
               ],
             ],
@@ -169,6 +187,8 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
     required this.isActionLoading,
     required this.isActionEnabled,
     required this.onAction,
+    this.showCancelTicketButton = false,
+    this.onCancelTicket,
   });
 
   final String actionLabel;
@@ -176,11 +196,15 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onAction;
+  final bool showCancelTicketButton;
+  final VoidCallback? onCancelTicket;
 
   @override
   Widget build(BuildContext context) {
     final foreground =
         isActionEnabled ? KkfcColors.onSolid : KkfcColors.ticketMuted;
+    final canCancel =
+        isActionEnabled && !isActionLoading && onCancelTicket != null;
 
     return Container(
       width: double.infinity,
@@ -194,54 +218,110 @@ class _KitchenTicketDialogFooter extends StatelessWidget {
           ),
         ),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: KkfcSizing.controlMd,
-        child: FilledButton(
-          key: const ValueKey('kitchen-ticket-dialog-action-button'),
-          onPressed: isActionEnabled && !isActionLoading ? onAction : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: KkfcColors.action,
-            disabledBackgroundColor: KkfcColors.ticketDisabledBg,
-            foregroundColor: KkfcColors.onSolid,
-            disabledForegroundColor: KkfcColors.ticketMuted,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: KkfcSizing.controlMd,
+            child: FilledButton(
+              key: const ValueKey('kitchen-ticket-dialog-action-button'),
+              onPressed: isActionEnabled && !isActionLoading ? onAction : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: KkfcColors.action,
+                disabledBackgroundColor: KkfcColors.ticketDisabledBg,
+                foregroundColor: KkfcColors.onSolid,
+                disabledForegroundColor: KkfcColors.ticketMuted,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: isActionLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: KkfcColors.onSolid,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (actionIcon != null) ...[
+                          Icon(actionIcon, size: 18, color: foreground),
+                          const SizedBox(width: KkfcSpace.s8),
+                        ],
+                        Flexible(
+                          child: Text(
+                            actionLabel,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: KkfcTextSizes.textBase,
+                              fontWeight: KkfcFontWeights.bold,
+                              color: foreground,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
-          child: isActionLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: KkfcColors.onSolid,
+          if (showCancelTicketButton) ...[
+            const SizedBox(height: KkfcSpace.s12),
+            SizedBox(
+              width: double.infinity,
+              height: KkfcSizing.controlMd,
+              child: OutlinedButton(
+                key: const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+                onPressed: canCancel ? onCancelTicket : null,
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: KkfcColors.surface,
+                  foregroundColor: KkfcColors.danger,
+                  disabledForegroundColor: KkfcColors.ticketMuted,
+                  side: BorderSide(
+                    color: canCancel ? KkfcColors.qcFailBorder : KkfcColors.border,
+                    width: KkfcBorderWidth.thin,
                   ),
-                )
-              : Row(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                  ),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (actionIcon != null) ...[
-                      Icon(actionIcon, size: 18, color: foreground),
-                      const SizedBox(width: KkfcSpace.s8),
-                    ],
+                    Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: canCancel ? KkfcColors.danger : KkfcColors.ticketMuted,
+                    ),
+                    const SizedBox(width: KkfcSpace.s8),
                     Flexible(
                       child: Text(
-                        actionLabel,
+                        'Cancel ticket',
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: KkfcFonts.ibmPlexSans,
                           fontSize: KkfcTextSizes.textBase,
                           fontWeight: KkfcFontWeights.bold,
-                          color: foreground,
+                          color: canCancel
+                              ? KkfcColors.danger
+                              : KkfcColors.ticketMuted,
                         ),
                       ),
                     ),
                   ],
                 ),
-        ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -297,6 +377,17 @@ Future<void> showKitchenTicketStatusDialog(
             imagePicker: imagePicker,
             onPickImage: onPickImage,
             onClose: () => Navigator.of(dialogContext).maybePop(),
+            onCancelTicket: effectiveActionEnabled
+                ? () async {
+                    final cancelled = await showCancelKitchenTicketDialog(
+                      dialogContext,
+                      ticket: currentTicket,
+                    );
+                    if (cancelled == true && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
             onFail: effectiveActionEnabled
                 ? () async {
                     final rejected = await showFailQcSendToReworkDialog(
