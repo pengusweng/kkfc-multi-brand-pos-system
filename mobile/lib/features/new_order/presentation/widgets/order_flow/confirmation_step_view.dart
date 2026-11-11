@@ -91,12 +91,10 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
     return Column(
       children: [
         Expanded(
-          child: Container(
-            color: const Color(0xFFF7F4EE),
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // Confirmed Card with Mint Border and subtle entrance animation
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              // Confirmed Card with Mint Border and subtle entrance animation
                 SlideTransition(
                   position: _cardSlideAnimation,
                   child: FadeTransition(
@@ -314,11 +312,9 @@ class _ConfirmationStepViewState extends ConsumerState<ConfirmationStepView>
               ],
             ),
           ),
-        ),
 
         // Bottom Actions
-        Container(
-          color: const Color(0xFFF7F4EE),
+        Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: SafeArea(
             top: false,

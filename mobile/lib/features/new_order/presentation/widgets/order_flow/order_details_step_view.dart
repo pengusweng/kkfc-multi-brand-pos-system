@@ -186,66 +186,62 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
     return Column(
       children: [
         Expanded(
-          child: Container(
-            color: const Color(0xFFF7F4EE),
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // Error Alert Banner (e.g. "Enter the table before reviewing a dine-in order." or API error)
-                if (hasError)
-                  OrderDetailsErrorBanner(message: _bannerErrorMessage(channel))
-                else if (_apiErrorMessage != null)
-                  OrderDetailsErrorBanner(message: _apiErrorMessage!),
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              // Error Alert Banner (e.g. "Enter the table before reviewing a dine-in order." or API error)
+              if (hasError)
+                OrderDetailsErrorBanner(message: _bannerErrorMessage(channel))
+              else if (_apiErrorMessage != null)
+                OrderDetailsErrorBanner(message: _apiErrorMessage!),
 
-                // Card 1: Channel & Table Input
-                OrderDetailsChannelCard(
-                  selectedChannel: channel,
-                  onChannelSelected: (c) {
-                    ref.read(menuChannelProvider.notifier).select(c);
+              // Card 1: Channel & Table Input
+              OrderDetailsChannelCard(
+                selectedChannel: channel,
+                onChannelSelected: (c) {
+                  ref.read(menuChannelProvider.notifier).select(c);
+                  setState(() {
+                    _apiErrorMessage = null;
+                    if (_showValidationError) {
+                      _showValidationError = !_isValidForChannel(
+                        c,
+                        _referenceController.text,
+                      );
+                    }
+                  });
+                },
+                controller: _referenceController,
+                focusNode: _focusNode,
+                onChanged: (val) {
+                  ref.read(orderReferenceProvider.notifier).set(val);
+                  if (_apiErrorMessage != null || _showValidationError) {
                     setState(() {
                       _apiErrorMessage = null;
-                      if (_showValidationError) {
-                        _showValidationError = !_isValidForChannel(
-                          c,
-                          _referenceController.text,
-                        );
+                      if (_showValidationError &&
+                          _isValidForChannel(channel, val)) {
+                        _showValidationError = false;
                       }
                     });
-                  },
-                  controller: _referenceController,
-                  focusNode: _focusNode,
-                  onChanged: (val) {
-                    ref.read(orderReferenceProvider.notifier).set(val);
-                    if (_apiErrorMessage != null || _showValidationError) {
-                      setState(() {
-                        _apiErrorMessage = null;
-                        if (_showValidationError &&
-                            _isValidForChannel(channel, val)) {
-                          _showValidationError = false;
-                        }
-                      });
-                    }
-                  },
-                  hasError: hasError,
-                  errorMessage: _fieldErrorMessage(channel),
-                ),
+                  }
+                },
+                hasError: hasError,
+                errorMessage: _fieldErrorMessage(channel),
+              ),
 
-                const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-                // Card 2: Subtotal, Total, Payment status
-                OrderDetailsSummaryCard(
-                  subtotalCentavos: total,
-                  totalCentavos: total,
-                  channel: channel,
-                ),
-              ],
-            ),
+              // Card 2: Subtotal, Total, Payment status
+              OrderDetailsSummaryCard(
+                subtotalCentavos: total,
+                totalCentavos: total,
+                channel: channel,
+              ),
+            ],
           ),
         ),
 
         // Bottom Action Bar: "Review order"
-        Container(
-          color: const Color(0xFFF7F4EE),
+        Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: SafeArea(
             top: false,

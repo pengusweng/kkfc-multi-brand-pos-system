@@ -7,6 +7,7 @@ import 'package:mobile/features/new_order/presentation/widgets/order_flow/cart_i
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/order_flow_stepper.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 class FakeOrderEntryRepository implements OrderEntryRepository {
   @override
@@ -313,6 +314,46 @@ void main() {
       expect(find.text('ORD-2026-1105-017'), findsOneWidget);
       expect(find.text('New order'), findsOneWidget);
       expect(find.text('Cancel order'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'MobileOrderFlowScreen renders background canvas wave accents and header wave arcs across steps',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          orderEntryRepositoryProvider.overrideWithValue(
+            FakeOrderEntryRepository(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(cartProvider.notifier).add(sampleItem);
+
+      await tester.pumpWidget(createSubject(container));
+      await tester.pumpAndSettle();
+
+      // 1. Verifies the fluid background canvas waves from the design system are present
+      expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+      final canvasWaves = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is CanvasWavesPainter,
+      );
+      expect(canvasWaves, findsOneWidget);
+
+      // 2. Verifies the navy header copper wave arcs are present
+      final headerWaves = find.byWidgetPredicate(
+        (widget) =>
+            widget is CustomPaint && widget.painter is HeaderWavesPainter,
+      );
+      expect(headerWaves, findsOneWidget);
+
+      // 3. Step to Step 3 (Order details) and verify waves remain visible behind content
+      await tester.tap(find.text('Continue to order details'));
+      await tester.pumpAndSettle();
+      expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }

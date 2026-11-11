@@ -204,12 +204,10 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
     return Column(
       children: [
         Expanded(
-          child: Container(
-            color: const Color(0xFFF7F4EE),
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // Info Banner
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              // Info Banner
                 Container(
                   margin: const EdgeInsets.only(bottom: 14.0),
                   padding: const EdgeInsets.symmetric(
@@ -550,11 +548,9 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
               ],
             ),
           ),
-        ),
 
         // Bottom Action Bar: "Confirm and send" & "Cancel order"
-        Container(
-          color: const Color(0xFFF7F3EC),
+        Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: SafeArea(
             top: false,

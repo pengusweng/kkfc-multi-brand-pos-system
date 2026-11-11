@@ -12,6 +12,7 @@ import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// The mobile multi-step order flow screen.
 /// Ready for multiple steps (Order, Details, Payment, Confirm) without rerouting.
@@ -144,36 +145,48 @@ class _MobileOrderFlowScreenState extends ConsumerState<MobileOrderFlowScreen> {
 
           const Divider(height: 1, thickness: 1, color: Color(0xFFEDE8DF)),
 
-          // Step Body with smooth directional slide & fade animation
+          // Step Body with background canvas wave accents and smooth directional slide & fade animation
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                return SlideTransition(
-                  position:
-                      Tween<Offset>(
-                        begin: Offset(_slideDirection * 0.05, 0),
-                        end: Offset.zero,
-                      ).animate(
-                        CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutCubic,
-                        ),
-                      ),
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isWide ? 680.0 : double.infinity,
-                  ),
-                  child: _buildCurrentStepView(),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Fluid organic wave landscape & precision contours from the KKFC design system
+                const Positioned.fill(
+                  child: KkfcCanvasWaves(),
                 ),
-              ),
+
+                Positioned.fill(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      return SlideTransition(
+                        position:
+                            Tween<Offset>(
+                              begin: Offset(_slideDirection * 0.05, 0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isWide ? 680.0 : double.infinity,
+                        ),
+                        child: _buildCurrentStepView(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
