@@ -473,13 +473,36 @@ html.theme-animating body *::after {
   * {
     @apply border-border outline-ring/50;
   }
+  /* Cream, not white: route transitions snapshot the body under the moving
+     rail, and a white body flashes beside it. Every page paints its own surface.
+     Literal colors, not the registered --page-* tokens: on some machines a
+     background painted from those tokens stayed light in dark mode. */
+  html,
   body {
-    /* Cream, not white: route transitions snapshot the body under the moving
-       rail, and a white body flashes beside it. Every page paints its own surface. */
-    @apply bg-page-to text-foreground;
+    background-color: #fbeee2;
+  }
+  html.dark,
+  .dark body {
+    background-color: oklch(0.172 0.025 255);
+  }
+  body {
+    @apply text-foreground;
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  /* The page surface behind every screen. Same literal colors as above, for the
+     same reason; it swaps instantly on a theme change while the rest fades. */
+  .page-surface {
+    background-color: #fbeee2;
+    background-image: radial-gradient(ellipse at center, #fdf7f1, #fbeee2);
+  }
+  .dark .page-surface {
+    background-color: oklch(0.172 0.025 255);
+    background-image: radial-gradient(ellipse at center, oklch(0.215 0.03 255), oklch(0.172 0.025 255));
   }
 }
 
