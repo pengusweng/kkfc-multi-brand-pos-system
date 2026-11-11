@@ -113,8 +113,7 @@ describe('Menu items HTTP endpoints', () => {
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
         { provide: APP_FILTER, useClass: PrismaExceptionFilter },
       ],
-    })
-      .compile();
+    }).compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');

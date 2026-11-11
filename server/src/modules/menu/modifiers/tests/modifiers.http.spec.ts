@@ -83,8 +83,7 @@ describe('Modifiers HTTP endpoints', () => {
         { provide: AuthService, useValue: auth },
         { provide: ModifiersService, useValue: service },
       ],
-    })
-      .compile();
+    }).compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');

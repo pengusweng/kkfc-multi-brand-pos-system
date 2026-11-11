@@ -123,8 +123,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
         { provide: AuthService, useValue: auth },
         { provide: MenuItemModifiersService, useValue: service },
       ],
-    })
-      .compile();
+    }).compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');
