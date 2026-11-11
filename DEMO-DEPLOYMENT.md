@@ -6,6 +6,31 @@ Demo: **12 November 2026 (Asia/Singapore)**. This guide uses the existing NestJS
 
 ## 1. Code preparation
 
+### Existing Docker deployment: correction for the login 500
+
+The supplied deployment log for commit `59380a9` shows Render building the normal `server/Dockerfile`. That image starts `node dist/main` directly, without migrations or seeding. It also omits the CLI and source files needed by `start:demo`. The log ends before the login failure, so the exact request error is not yet confirmed. A healthy `SELECT 1` alone does not prove the user/session tables exist.
+
+- [x] **DONE** - Added `server/Dockerfile.render`, a demo image containing the migration and seed tools, configured to run `npm run start:demo`.
+- [ ] **TODO** - Commit and push this new Dockerfile to the branch Render deploys. Earlier commits do not contain it.
+- [ ] **TODO** - In the existing API service, open **Settings -> Build & Deploy** and set these values:
+
+| Existing Docker service setting | Value |
+| --- | --- |
+| Root Directory | `server` |
+| Dockerfile Path (relative to Root Directory) | `Dockerfile.render` |
+| Docker Build Context Directory | `.` |
+| Docker Command | Leave empty to use the image's CMD; remove any `node dist/main` override |
+| Health Check Path | `/api/health` |
+
+- [ ] **TODO** - Keep `DATABASE_URL`, `DEMO_SEED_PASSWORD`, and `DEMO_SEED_PIN` in Render Environment. Use a password of **20-32 characters**: the login DTO rejects more than 32. The Docker image uses Node 22 from `FROM`, so `NODE_VERSION` does not control this Docker deployment.
+- [ ] **TODO** - Redeploy the latest commit. Confirm logs show `start:demo`, migration completion, fixture seeding, and finally Nest startup. If migrations fail, share the sanitized error; do not reset the database or bypass migrations.
+- [ ] **TODO** - Retry login using `test_order_staff` and the hosted seed password. Existing seeded passwords are preserved; changing an environment value does not rotate them.
+- [ ] **TODO** - If login still returns 500, export **runtime logs covering the login attempt**, not only the build/startup log. Remove credentials and tokens.
+
+This lets you keep the existing service and database. Section 3 below describes the alternative of creating a new native Node service; you do not need both approaches.
+
+Docker verification: `git diff --check` passed. A local image build could not be run because the Docker daemon is unavailable in this session. Hosted image build, migration replay, and login remain TODO.
+
 - [x] **DONE** — API listens on `0.0.0.0` and Render's `PORT` (`server/src/main.ts`).
 - [x] **DONE** — Public `GET /api/health` checks PostgreSQL with `SELECT 1`. Returns 200 for success and 503 for failure without exposing connection details (`server/src/health.controller.ts`).
 - [x] **DONE** — Health controller registered in `server/src/app.module.ts`.
@@ -13,7 +38,7 @@ Demo: **12 November 2026 (Asia/Singapore)**. This guide uses the existing NestJS
 - [x] **DONE** — `npm run start:demo` applies committed migrations, seeds missing fixtures, then starts the built API (`server/package.json`).
 - [x] **DONE** — Empty demo-secret placeholders documented in `server/.env.example`.
 - [x] **DONE** — Seed checks include missing production credentials, invalid PINs, and hashing of hosting overrides (`server/prisma/seed.check.ts`).
-- [ ] **TODO** — Commit and push the prepared changes to the branch you will deploy. Review the diff; do not commit `.env` files, real passwords, database connection strings, private keys, or tokens.
+- [x] **TODO** — Commit and push the prepared changes to the branch you will deploy. Review the diff; do not commit `.env` files, real passwords, database connection strings, private keys, or tokens.
 
 Local verification results are recorded in section 8. Hosted migrations, endpoint checks, and device tests remain TODO until you run them.
 
@@ -29,15 +54,15 @@ Local verification results are recorded in section 8. Hosted migrations, endpoin
 | PostgreSQL version | 17, matching local Docker Compose |
 | Instance type | **Free** |
 
-- [ ] **TODO** — Wait until the database is available.
-- [ ] **TODO** — Locate the **Internal Database URL** in its connection details. Paste it only into Render's API environment settings below. It contains a password; do not copy it into this file, GitHub, the APK, screenshots, or chat.
-- [ ] **TODO** — If external database access is unnecessary, remove public access rules in the database's Networking settings. The API will use the internal connection.
+- [x] **TODO** — Wait until the database is available.
+- [x] **TODO** — Locate the **Internal Database URL** in its connection details. Paste it only into Render's API environment settings below. It contains a password; do not copy it into this file, GitHub, the APK, screenshots, or chat.
+- [x] **TODO** — If external database access is unnecessary, remove public access rules in the database's Networking settings. The API will use the internal connection.
 
 The free database expires after 30 days and has no managed backups. That covers this demo, but reconstructing synthetic fixtures does not recover orders created during the presentation.
 
 ## 3. Create the API service
 
-- [ ] **TODO** — Choose **New → Web Service**, connect this GitHub repository, and select your prepared branch.
+- [x] **TODO** — Choose **New → Web Service**, connect this GitHub repository, and select your prepared branch.
 
 **Choose the Node runtime explicitly, even though Render may detect the Dockerfile.** The existing Docker runtime does not contain the migration and TypeScript seed tooling needed by this walkthrough. You do not need to upload `.env` or use Docker Compose on Render.
 
@@ -59,7 +84,7 @@ Before deploying, add the following under **Environment**:
 | `NODE_ENV` | `production` |
 | `NODE_VERSION` | `22` |
 | `DATABASE_URL` | The database's **Internal Database URL** |
-| `DEMO_SEED_PASSWORD` | A newly generated strong password, preferably 20+ characters |
+| `DEMO_SEED_PASSWORD` | A newly generated strong password, 20-32 characters (login accepts at most 32) |
 | `DEMO_SEED_PIN` | A new four-digit PIN, preserving any leading zero |
 
 Do not add a custom `PORT`; the API reads Render's assigned value. Do not use the password or PIN from the local test fixtures.
@@ -68,7 +93,7 @@ For this one-day demo, all newly seeded users share the configured demo password
 
 **Important:** seeding preserves existing users and PINs. Changing a Render seed setting later does not change existing account credentials. Start with a fresh database; do not seed public development credentials first.
 
-- [ ] **TODO** — Deploy the service and inspect the logs for successful build, migration, seeding, and Nest startup.
+- [x] **TODO** — Deploy the service and inspect the logs for successful build, migration, seeding, and Nest startup.
 
 The startup command reruns on restarts and cold starts. Migrations apply only when pending; seeding fills missing records and preserves existing rows. This adds startup time but avoids needing shell access, which Free web services do not provide.
 
