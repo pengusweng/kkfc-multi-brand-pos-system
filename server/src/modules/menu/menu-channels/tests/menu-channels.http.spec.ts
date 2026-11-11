@@ -1,4 +1,3 @@
-import { PinGuard } from '../../../pin/pin.guard';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -35,8 +34,6 @@ describe('Menu channels HTTP endpoints', () => {
       .overrideGuard(Authenticated)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
-      .useValue({ canActivate: () => true })
-      .overrideGuard(PinGuard)
       .useValue({ canActivate: () => true })
       .compile();
     app = module.createNestApplication();

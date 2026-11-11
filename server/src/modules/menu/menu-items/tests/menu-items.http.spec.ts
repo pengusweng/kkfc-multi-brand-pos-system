@@ -1,4 +1,3 @@
-import { PinGuard } from '../../../pin/pin.guard';
 import {
   ConflictException,
   INestApplication,
@@ -114,10 +113,7 @@ describe('Menu items HTTP endpoints', () => {
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
         { provide: APP_FILTER, useClass: PrismaExceptionFilter },
       ],
-    })
-      .overrideGuard(PinGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');

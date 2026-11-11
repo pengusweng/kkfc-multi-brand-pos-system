@@ -3,7 +3,6 @@ import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { AuthService } from '../../../auth/auth.service';
-import { PinService } from '../../../pin/pin.service';
 import { MenuCatalogController } from '../menu-catalog.controller';
 import { MenuCatalogService } from '../menu-catalog.service';
 
@@ -46,12 +45,10 @@ describe('Menu catalog HTTP endpoints', () => {
   };
   const service = { create: jest.fn(), findAll: jest.fn() };
   const auth = { validateSession: jest.fn() };
-  const pin = { verifyPin: jest.fn() };
   const brandLookup = jest.fn();
   const headers = {
     authorization: 'Bearer session-token',
     'content-type': 'application/json',
-    'x-action-pin': '1234',
   };
   let app: INestApplication;
   let url: string;
@@ -62,7 +59,6 @@ describe('Menu catalog HTTP endpoints', () => {
       providers: [
         { provide: MenuCatalogService, useValue: service },
         { provide: AuthService, useValue: auth },
-        { provide: PinService, useValue: pin },
         {
           provide: PrismaService,
           useValue: { brand: { findUnique: brandLookup } },
@@ -88,7 +84,6 @@ describe('Menu catalog HTTP endpoints', () => {
     service.create.mockResolvedValue(createdEntry);
     service.findAll.mockResolvedValue({ data: [], meta: { total: 0 } });
     auth.validateSession.mockResolvedValue({ user });
-    pin.verifyPin.mockResolvedValue({ status: 'valid' });
     brandLookup.mockResolvedValue({ brand_id: brandId });
   });
 
@@ -104,7 +99,6 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual(createdEntry);
     expect(service.create).toHaveBeenCalledWith(dto);
-    expect(pin.verifyPin).toHaveBeenCalledWith(user.user_id, '1234');
   });
 
   it.each([
@@ -120,7 +114,6 @@ describe('Menu catalog HTTP endpoints', () => {
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ data: [], meta: { total: 0 } });
       expect(service.findAll).toHaveBeenCalledWith(brandId, pagination);
-      expect(pin.verifyPin).not.toHaveBeenCalled();
     },
   );
 
@@ -165,27 +158,12 @@ describe('Menu catalog HTTP endpoints', () => {
 
     expect(response.status).toBe(201);
     expect(service.create).toHaveBeenCalled();
-    expect(pin.verifyPin).toHaveBeenCalled();
   });
 
   it('IT-MCAT-006: lists any brand', async () => {
     const response = await fetch(`${url}/brand/${otherBrandId}`, { headers });
     expect(response.status).toBe(200);
     expect(service.findAll).toHaveBeenCalled();
-  });
-
-  it('IT-MCAT-007: requires an action PIN for creation', async () => {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        authorization: headers.authorization,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(dto),
-    });
-
-    expect(response.status).toBe(403);
-    expect(service.create).not.toHaveBeenCalled();
   });
 
   it.each([undefined, null, {}])(

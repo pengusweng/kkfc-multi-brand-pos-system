@@ -32,6 +32,8 @@ describe('PIN protection on business endpoints', () => {
     { method: 'post', path: '/users' },
     { method: 'patch', path: `/users/${id}` },
     { method: 'delete', path: `/users/${id}` },
+  ];
+  const unprotectedRoutes: typeof routes = [
     { method: 'post', path: '/brands' },
     { method: 'patch', path: `/brands/${id}` },
     { method: 'delete', path: `/brands/${id}` },
@@ -158,7 +160,7 @@ describe('PIN protection on business endpoints', () => {
     },
   );
 
-  it.each(routes)(
+  it.each([...routes, ...unprotectedRoutes])(
     'IT-PIN-003: keeps unauthorized roles blocked on $method $path with a correct PIN',
     async ({ method, path }) => {
       role = UserRole.CASHIER_STAFF;
@@ -181,7 +183,7 @@ describe('PIN protection on business endpoints', () => {
         until: new Date(Date.now() + 300000),
       });
       const response = await request(app.getHttpServer())
-        .delete(`/api/brands/${id}`)
+        .delete(`/api/users/${id}`)
         .auth('session', { type: 'bearer' })
         .set('X-Action-Pin', '0123')
         .expect(status === 'locked' ? 429 : 403);
@@ -190,29 +192,6 @@ describe('PIN protection on business endpoints', () => {
         expect(Number(response.headers['retry-after'])).toBeGreaterThan(0);
     },
   );
-
-  it('IT-PIN-005: checks the PIN for actions across brands', async () => {
-    role = UserRole.MANAGER;
-    callerBrandId = '00000000-0000-4000-8000-000000000099';
-    await request(app.getHttpServer())
-      .delete(`/api/menu-items/${id}`)
-      .auth('session', { type: 'bearer' })
-      .set('X-Action-Pin', '0123')
-      .expect(200);
-    expect(pin.verifyPin).toHaveBeenCalled();
-    expect(action).toHaveBeenCalled();
-  });
-
-  it('IT-PIN-006: rejects multipart writes before uploading a file', async () => {
-    await request(app.getHttpServer())
-      .post('/api/brands')
-      .auth('session', { type: 'bearer' })
-      .field('name', 'New brand')
-      .attach('file', Buffer.from('image'), 'image.png')
-      .expect(403);
-    expect(upload).not.toHaveBeenCalled();
-    expect(action).not.toHaveBeenCalled();
-  });
 
   it('IT-PIN-007: documents all protected writes and leaves reads and availability without a required PIN', () => {
     const document = SwaggerModule.createDocument(

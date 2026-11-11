@@ -162,3 +162,48 @@ Feature: Additional orders integration coverage
     Given a malformed order UUID
     When cancellation is requested through the draft orders endpoint
     Then the response is 400 before calling the cancellation service
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Order detail HTTP API
+  @IT-ORD-035
+  Scenario: Allow order and kitchen roles to read an order
+    Test Case ID: IT-ORD-035
+    Given an authenticated cashier, manager, superadmin, kitchen head, or kitchen staff
+    When an order is requested by UUID
+    Then the response is 200 with the order from the service
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Order detail HTTP API
+  @IT-ORD-036
+  Scenario: Requires authentication to read an order
+    Test Case ID: IT-ORD-036
+    Given no authenticated session
+    When an order is requested by UUID
+    Then the response is 401
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Order detail HTTP API
+  @IT-ORD-037
+  Scenario: Rejects roles without order read permission
+    Test Case ID: IT-ORD-037
+    Given a role without order read permission
+    When an order is requested by UUID
+    Then the response is 403 before calling the orders service
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Order detail HTTP API
+  @IT-ORD-038
+  Scenario: Returns 404 for a missing order on read
+    Test Case ID: IT-ORD-038
+    Given the orders service reports a missing order
+    When an order is requested by UUID
+    Then the response is 404
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Order detail HTTP API
+  @IT-ORD-039
+  Scenario: Rejects malformed brand or order IDs on read
+    Test Case ID: IT-ORD-039
+    Given a malformed brand or order UUID
+    When an order is requested by UUID
+    Then the response is 400 before calling the orders service

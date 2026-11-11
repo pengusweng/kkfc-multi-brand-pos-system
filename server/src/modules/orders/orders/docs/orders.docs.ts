@@ -65,7 +65,7 @@ export function FindOneOrderDocs() {
     ApiOperation({
       summary: 'Get an order by UUID',
       description:
-        'Returns the saved order with items and kitchen ticket in any status. Orders belonging to another brand return 404.',
+        'Returns the saved order with items and kitchen ticket in any status. Orders belonging to another brand return 404. Kitchen head and kitchen staff may also read orders.',
     }),
     ApiParam({
       name: 'orderId',

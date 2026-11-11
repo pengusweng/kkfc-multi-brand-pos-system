@@ -1,6 +1,5 @@
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -66,7 +65,6 @@ export class MenuItemsController {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
     }),
   )
-  @UseGuards(PinGuard)
   async create(
     @Body() dto: CreateMenuItemDTO,
     @UploadedFile() file: AssetUpload,
@@ -112,7 +110,6 @@ export class MenuItemsController {
 
   @Patch(':id')
   @UpdateMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -156,7 +153,6 @@ export class MenuItemsController {
 
   @Patch('reactivate/:id')
   @ReactivateMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.reactivateMenuItem(menuItemId);
@@ -164,7 +160,6 @@ export class MenuItemsController {
 
   @Delete(':id')
   @DeleteMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.deleteMenuItem(menuItemId);

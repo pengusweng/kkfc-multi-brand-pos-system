@@ -1,6 +1,5 @@
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -44,7 +43,6 @@ export class MenuChannelsController {
   @Post()
   @CreateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(PinGuard)
   async create(@Body() dto: CreateMenuChannelDTO) {
     return this.menuChannelsService.create(dto);
   }
@@ -80,7 +78,6 @@ export class MenuChannelsController {
   @Patch(':id')
   @UpdateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) menuItemChannelId: string,
     @Body() dto: UpdateMenuItemChannelDTO,
@@ -91,7 +88,6 @@ export class MenuChannelsController {
   @Patch('reactivate/:id')
   @ReactivateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(PinGuard)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.reactivate(menuItemChannelId);
   }
@@ -99,7 +95,6 @@ export class MenuChannelsController {
   @Delete(':id')
   @DeleteMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(PinGuard)
   async delete(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.delete(menuItemChannelId);
   }
