@@ -117,17 +117,20 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
   });
   it('IT-ORD-019: persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
     const userId = fixture.users[0].user_id;
+    const original = await prisma.user.findUniqueOrThrow({
+      where: { user_id: userId },
+    });
     for (let attempt = 0; attempt < 5; attempt++) {
       const response =
         attempt % 2 === 0
           ? await request(
-              `/menu-items/${fixture.item.menu_item_id}`,
+              `/users/${userId}`,
               'PATCH',
-              { name: 'Blocked change' },
+              { first_name: 'Blocked' },
               0,
               '0000',
             )
-          : await request('/menu-channels', 'POST', channelBody(), 0, '0000');
+          : await request('/users', 'POST', {}, 0, '0000');
       expect(response.status).toBe(attempt === 4 ? 429 : 403);
     }
     const credential = await prisma.userPinCredential.findUniqueOrThrow({
@@ -135,34 +138,22 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     });
     expect(credential.failed_attempts).toBe(5);
     expect(credential.locked_until!.getTime()).toBeGreaterThan(Date.now());
-    const locked = await request(
-      `/menu-items/${fixture.item.menu_item_id}`,
-      'PATCH',
-      { name: 'Still blocked' },
-    );
+    const locked = await request(`/users/${userId}`, 'PATCH', {
+      first_name: 'Still blocked',
+    });
     expect(locked.status).toBe(429);
     expect(Number(locked.headers.get('Retry-After'))).toBeGreaterThan(0);
     expect(
-      (
-        await prisma.menuItem.findUniqueOrThrow({
-          where: { menu_item_id: fixture.item.menu_item_id },
-        })
-      ).name,
-    ).toBe(fixture.item.name);
-    expect(
-      await prisma.menuItemChannel.count({
-        where: { menu_item_id: fixture.item.menu_item_id },
-      }),
-    ).toBe(0);
+      (await prisma.user.findUniqueOrThrow({ where: { user_id: userId } }))
+        .first_name,
+    ).toBe(original.first_name);
     await prisma.userPinCredential.update({
       where: { user_id: userId },
       data: { locked_until: new Date(Date.now() - 1000) },
     });
-    const allowed = await request(
-      `/menu-items/${fixture.item.menu_item_id}`,
-      'PATCH',
-      { name: 'Allowed change' },
-    );
+    const allowed = await request(`/users/${userId}`, 'PATCH', {
+      first_name: 'Allowed',
+    });
     expect(allowed.status).toBe(200);
     expect(
       await prisma.userPinCredential.findUniqueOrThrow({

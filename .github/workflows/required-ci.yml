@@ -123,6 +123,40 @@ jobs:
             await report({ github, context, core,
               dependencyResults: JSON.parse(process.env.CI_JOB_RESULTS) });
 
+  resolve-failures:
+    name: Resolve recovered CI issues
+    needs: [ci, automation-tests, detect-changes, backend, frontend, web]
+    if: >-
+      always() && !cancelled() && needs.ci.result == 'success' &&
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+      pull-requests: read
+    concurrency:
+      group: ci-issues-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout reporting code from this CI revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Close issues after verified CI recovery
+        uses: actions/github-script@v7
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const report = require('./.github/scripts/report-ci-failure.cjs');
+            await report({ github, context, core, recover: true,
+              dependencyResults: JSON.parse(process.env.CI_JOB_RESULTS) });
+
   ci:
     name: CI
     needs:

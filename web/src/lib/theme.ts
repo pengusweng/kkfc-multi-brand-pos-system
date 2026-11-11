@@ -46,6 +46,14 @@ export function setTheme(theme: Theme) {
   applyTheme(theme);
 }
 
+// Does what THEME_SCRIPT does, for pages where it never ran: when a server render
+// fails, Next sends an error shell and renders the app on the client, and a
+// <script> React inserts on the client doesn't execute.
+export function restoreTheme() {
+  const theme = savedTheme() ?? (window.matchMedia(DARK_QUERY).matches ? "dark" : "light");
+  document.documentElement.classList.toggle("dark", theme === "dark");
+}
+
 function subscribe(onChange: () => void) {
   // The class on <html> is the source of truth; any tab or toggle that flips it notifies here.
   const observer = new MutationObserver(onChange);

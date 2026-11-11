@@ -52,6 +52,13 @@ export class OrdersController {
 
   @FindOneOrderDocs()
   @Get(':orderId')
+  @Roles(
+    UserRole.CASHIER_STAFF,
+    UserRole.MANAGER,
+    UserRole.SUPERADMIN,
+    UserRole.KITCHEN_HEAD,
+    UserRole.KITCHEN_STAFF,
+  )
   findOne(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('orderId', ParseUUIDPipe) orderId: string,

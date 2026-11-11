@@ -7,7 +7,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { PinRequiredDocs } from '../../../pin/docs/pin.docs';
 import { MenuCatalogSetupDTO } from '../dto/menu-catalog-setup.dto';
 
 const menuItemExample = {
@@ -83,7 +82,6 @@ export function MenuCatalogDocs() {
 
 export function CreateMenuCatalogDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary:
         'Create a menu item with channels and modifiers (manager or superadmin).',

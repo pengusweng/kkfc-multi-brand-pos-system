@@ -1,6 +1,5 @@
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -44,7 +43,6 @@ export class MenuItemModifiersController {
 
   @Post()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
     return this.menuItemModifiersService.create(dto);
@@ -85,7 +83,6 @@ export class MenuItemModifiersController {
   @Patch(':id')
   @UpdateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
     @Body() dto: UpdateMenuItemModifierDTO,
@@ -96,7 +93,6 @@ export class MenuItemModifiersController {
   @Patch('reactivate/:id')
   @ReactivateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.reactivate(menuItemModifierId);
   }
@@ -104,7 +100,6 @@ export class MenuItemModifiersController {
   @Delete(':id')
   @DeleteMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.delete(menuItemModifierId);
   }

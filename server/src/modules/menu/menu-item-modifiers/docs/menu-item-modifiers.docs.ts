@@ -1,4 +1,3 @@
-import { PinRequiredDocs } from '../../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -46,7 +45,6 @@ export function MenuItemModifiersDocs() {
 
 export function CreateMenuItemModifierDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Assign a modifier to a menu item.',
       description:
@@ -166,7 +164,6 @@ export function FindOneMenuItemModifierDocs() {
 
 export function UpdateMenuItemModifierDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Update a menu item modifier assignment.',
       description:
@@ -201,7 +198,6 @@ export function UpdateMenuItemModifierDocs() {
 
 export function ReactivateMenuItemModifierDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Reactivate a menu item modifier assignment.',
       description:
@@ -234,7 +230,6 @@ export function ReactivateMenuItemModifierDocs() {
 
 export function DeleteMenuItemModifierDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a menu item modifier assignment.',
       description:
