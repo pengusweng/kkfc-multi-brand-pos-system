@@ -89,6 +89,11 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+  - family: Schibsted_Grotesk
+    fonts:
+      - asset: assets/fonts/Schibsted_Grotesk/SchibstedGrotesk-VariableFont_wght.ttf
+      - asset: assets/fonts/Schibsted_Grotesk/SchibstedGrotesk-Italic-VariableFont_wght.ttf
+        style: italic
   - family: IBMPlexSansCondensed
     fonts:
       - asset: assets/fonts/IBM_Plex_Sans_Condensed/IBMPlexSansCondensed-Medium.ttf
