@@ -71,15 +71,15 @@ Feature: Authentication HTTP Integration Endpoints
     Then both requests should receive HTTP 401
 
   @IT-AUTH-011
-  Scenario: Paginates users with activeOnly query parameter
-    Given an authenticated SUPERADMIN session and users in database
-    When the client sends GET to "/api/users" with page, limit, and activeOnly
-    Then the status code should be 200 with structured data and meta pagination
+  Scenario: Paginates users with the status query parameter
+    Given an authenticated SUPERADMIN session and active and inactive users in database
+    When the client sends GET to "/api/users" with page, limit, and status
+    Then the status code should be 200 with structured data, meta pagination, and per-status counts
 
   @IT-AUTH-012
-  Scenario: Rejects invalid activeOnly query parameter
+  Scenario: Rejects invalid status query parameter and the removed activeOnly parameter
     Given an authenticated SUPERADMIN session
-    When the client sends GET to "/api/users?activeOnly=invalid"
+    When the client sends GET to "/api/users" with an invalid or repeated status, or with activeOnly
     Then the status code should be 400
 
   @IT-AUTH-013

@@ -108,8 +108,11 @@ describe('Auth HTTP endpoints', () => {
           return Promise.resolve(user?.is_active ? user : null);
         }),
         findAll: jest.fn(
-          (skip: number, take: number, activeOnly: boolean = true) =>
-            listingRepository.findAll(skip, take, activeOnly),
+          (
+            skip: number,
+            take: number,
+            filters: Parameters<UsersRepository['findAll']>[2],
+          ) => listingRepository.findAll(skip, take, filters),
         ),
       })
       .overrideProvider(AuthRepository)
@@ -203,7 +206,7 @@ describe('Auth HTTP endpoints', () => {
     users.set(unrelated.user_id, unrelated);
     const { token } = await login();
     const headers = { Authorization: `Bearer ${token}` };
-    for (const suffix of ['', '?activeOnly=false']) {
+    for (const suffix of ['', '?status=all']) {
       const response = await fetch(`${url}/api/users${suffix}`, { headers });
       expect(response.status).toBe(200);
       const body = (await response.json()) as {
@@ -386,12 +389,23 @@ describe('Auth HTTP endpoints', () => {
   });
 
   it.each([
-    { query: '', total: 2, inactiveReturned: false },
-    { query: '&activeOnly=true', total: 2, inactiveReturned: false },
-    { query: '&activeOnly=false', total: 3, inactiveReturned: true },
+    { query: '', total: 2, totalPages: 1, inactiveReturned: false },
+    {
+      query: '&status=active',
+      total: 2,
+      totalPages: 1,
+      inactiveReturned: false,
+    },
+    { query: '&status=all', total: 3, totalPages: 2, inactiveReturned: true },
+    {
+      query: '&status=inactive',
+      total: 1,
+      totalPages: 1,
+      inactiveReturned: false,
+    },
   ])(
-    'IT-AUTH-011: paginates users with the active-only filter: $query',
-    async ({ query, total, inactiveReturned }) => {
+    'IT-AUTH-011: paginates users with the status filter: $query',
+    async ({ query, total, totalPages, inactiveReturned }) => {
       const inactive = {
         ...staff,
         user_id: randomUUID(),
@@ -419,24 +433,29 @@ describe('Auth HTTP endpoints', () => {
           page: 2,
           limit: 2,
           total,
-          totalPages: inactiveReturned ? 2 : 1,
+          totalPages,
+          counts: { all: 3, active: 2, inactive: 1 },
         },
       });
     },
   );
 
-  it.each(['', 'yes', '1', '0', 'FALSE', 'false&activeOnly=true'])(
-    'IT-AUTH-012: rejects invalid activeOnly query values: %s',
-    async (value) => {
-      const { token } = await login();
+  it.each([
+    'status=',
+    'status=yes',
+    'status=ACTIVE',
+    'status=true',
+    'status=active&status=all',
+    'activeOnly=false',
+  ])('IT-AUTH-012: rejects invalid status query values: %s', async (query) => {
+    const { token } = await login();
 
-      const response = await fetch(`${url}/api/users?activeOnly=${value}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const response = await fetch(`${url}/api/users?${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      expect(response.status).toBe(400);
-    },
-  );
+    expect(response.status).toBe(400);
+  });
 
   it('IT-AUTH-013: requires superadmin access for user management', async () => {
     expect((await fetch(`${url}/api/users`)).status).toBe(401);

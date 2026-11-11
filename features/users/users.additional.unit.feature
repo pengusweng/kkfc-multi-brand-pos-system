@@ -99,3 +99,48 @@ Feature: Additional users unit coverage
     Given a concurrent update claims the requested username
     When the account username is saved
     Then the uniqueness error is propagated for the global conflict filter
+
+  # Jest: server/src/modules/users/tests/users.service.spec.ts
+  # Context: UsersService
+  @UT-USER-027
+  Scenario: Does not log the user search text
+    Test Case ID: UT-USER-027
+    Given a user listing with a search for a person's name
+    When UsersService lists users
+    Then the logs record that a search was given without its text
+
+  # Jest: server/src/modules/users/tests/users.repository.spec.ts
+  # Context: UsersRepository
+  @UT-USER-028
+  Scenario: Filters users by status and counts both statuses
+    Test Case ID: UT-USER-028
+    Given a requested status of active, inactive, or all
+    When UsersRepository lists users
+    Then only users in that status are returned and active and inactive users are both counted
+
+  # Jest: server/src/modules/users/tests/users.repository.spec.ts
+  # Context: UsersRepository
+  @UT-USER-029
+  Scenario: Matches every search term against username and names
+    Test Case ID: UT-USER-029
+    Given a search with several space-separated terms
+    When UsersRepository lists users
+    Then each term must match the username, first name, or last name case-insensitively, and the counts use the same search
+
+  # Jest: server/src/modules/users/tests/users.repository.spec.ts
+  # Context: UsersRepository
+  @UT-USER-030
+  Scenario: Filters users and status counts by role
+    Test Case ID: UT-USER-030
+    Given a user listing for a single role
+    When UsersRepository lists users
+    Then only users with that role are returned and counted in both status counts
+
+  # Jest: server/src/modules/users/tests/users.repository.spec.ts
+  # Context: UsersRepository
+  @UT-USER-031
+  Scenario: Orders users by the requested column with a stable tiebreak
+    Test Case ID: UT-USER-031
+    Given a sort column and direction, or none
+    When UsersRepository lists users
+    Then users are ordered by that column, newest first by default, and ties end in user_id order

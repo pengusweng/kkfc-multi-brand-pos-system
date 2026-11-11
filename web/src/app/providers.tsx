@@ -2,6 +2,7 @@
 
 import { environmentManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import PinProvider from "@/src/features/pin/containers/pin-provider";
 
 let browserQueryClient: QueryClient | undefined;
 
@@ -16,6 +17,8 @@ export default function Providers({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <PinProvider>{children}</PinProvider>
+    </QueryClientProvider>
   );
 }

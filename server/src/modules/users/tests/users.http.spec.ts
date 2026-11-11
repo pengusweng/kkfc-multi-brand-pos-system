@@ -103,7 +103,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       expect(service.findAllUsers).toHaveBeenCalledWith({
         page: 2,
         limit: 5,
-        activeOnly: true,
+        status: 'active',
       });
     },
   );
@@ -268,25 +268,85 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     },
   );
 
-  it('IT-USER-003: lists users with default and custom pagination/activeOnly filters', async () => {
+  it('IT-USER-003: lists users with default and custom pagination, status, search, role, and sorting', async () => {
     const defaultResp = await fetch(url);
     expect(defaultResp.status).toBe(200);
     expect(service.findAllUsers).toHaveBeenCalledWith({
       page: 1,
       limit: 10,
-      activeOnly: true,
+      status: 'active',
     });
 
-    const filteredResp = await fetch(`${url}?page=2&limit=5&activeOnly=false`);
-    expect(filteredResp.status).toBe(200);
+    for (const status of ['all', 'active', 'inactive']) {
+      const filteredResp = await fetch(
+        `${url}?page=2&limit=5&status=${status}&search=%20Ana%20Rey%20`,
+      );
+      expect(filteredResp.status).toBe(200);
+      expect(service.findAllUsers).toHaveBeenLastCalledWith({
+        page: 2,
+        limit: 5,
+        status,
+        search: 'Ana Rey',
+      });
+    }
+
+    for (const role of Object.values(UserRole)) {
+      expect((await fetch(`${url}?status=all&role=${role}`)).status).toBe(200);
+      expect(service.findAllUsers).toHaveBeenLastCalledWith({
+        page: 1,
+        limit: 10,
+        status: 'all',
+        role,
+      });
+    }
+
+    for (const sortBy of ['name', 'username', 'role', 'status', 'created_at']) {
+      for (const sortOrder of ['asc', 'desc']) {
+        expect(
+          (await fetch(`${url}?sortBy=${sortBy}&sortOrder=${sortOrder}`))
+            .status,
+        ).toBe(200);
+        expect(service.findAllUsers).toHaveBeenLastCalledWith({
+          page: 1,
+          limit: 10,
+          status: 'active',
+          sortBy,
+          sortOrder,
+        });
+      }
+    }
+
+    // A blank search is ignored rather than rejected (search is not '').
+    expect((await fetch(`${url}?search=%20%20`)).status).toBe(200);
     expect(service.findAllUsers).toHaveBeenLastCalledWith({
-      page: 2,
-      limit: 5,
-      activeOnly: false,
+      page: 1,
+      limit: 10,
+      status: 'active',
     });
   });
 
-  it.each(['?page=0', '?limit=0', '?limit=101', '?activeOnly=invalid'])(
+  it.each([
+    '?page=0',
+    '?limit=0',
+    '?limit=101',
+    '?status=invalid',
+    '?status=ACTIVE',
+    '?status=',
+    '?status=active&status=all',
+    '?search=a&search=b',
+    `?search=${'a'.repeat(101)}`,
+    '?activeOnly=false',
+    '?role=',
+    '?role=OWNER',
+    '?role=cashier_staff',
+    '?role=MANAGER&role=CASHIER_STAFF',
+    '?sortBy=password_hash',
+    '?sortBy=NAME',
+    '?sortBy=',
+    '?sortBy=name&sortBy=role',
+    '?sortBy=name&sortOrder=up',
+    '?sortOrder=ASC',
+  ])(
     'IT-USER-004: rejects invalid user list query parameters: %s',
     async (query) => {
       const response = await fetch(`${url}${query}`);
@@ -468,11 +528,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       ).status,
     ).toBe(201);
     expect(service.createUser).toHaveBeenCalledWith(payload, true);
-    expect((await fetch(`${url}?activeOnly=false`)).status).toBe(200);
+    expect((await fetch(`${url}?status=all`)).status).toBe(200);
     expect(service.findAllUsers).toHaveBeenCalledWith({
       page: 1,
       limit: 10,
-      activeOnly: false,
+      status: 'all',
     });
     expect((await fetch(`${url}/${userId}`)).status).toBe(200);
     expect(service.findOneUser).toHaveBeenCalledWith(userId, true);
