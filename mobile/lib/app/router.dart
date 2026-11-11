@@ -49,13 +49,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn) {
-        // Kitchen workspace roles (kitchen staff / kitchen head / supervisor) can only see the kitchen tickets page.
-        if (isKitchenRole && !onKitchenPage) {
+        // Kitchen staff / kitchen head can only see the kitchen tickets page.
+        // Supervisors and superadmins may switch between POS and KDS.
+        final canAccessPos = role?.canAccessPos ?? true;
+        final canAccessKitchen = role?.canAccessKitchenBoard ?? false;
+
+        if (!canAccessPos && !onKitchenPage) {
           return AppRoutes.kitchenTickets;
         }
 
-        // Users without kitchen role must never see the kitchen tickets page.
-        if (!isKitchenRole && onKitchenPage) {
+        // Roles without kitchen access must never see the kitchen tickets page.
+        if (!canAccessKitchen && onKitchenPage) {
           return AppRoutes.menu;
         }
       }

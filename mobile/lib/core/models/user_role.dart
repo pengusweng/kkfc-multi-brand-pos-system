@@ -35,6 +35,17 @@ enum UserRole {
       this == UserRole.supervisor ||
       this == UserRole.kitchenHead;
 
+  /// Whether this role may switch between the POS (menu/orders) workspace and
+  /// the kitchen display (KDS) workspace.
+  bool get canSwitchWorkspace =>
+      this == UserRole.superadmin || this == UserRole.supervisor;
+
+  /// Whether this role is allowed to open the kitchen board page.
+  bool get canAccessKitchenBoard => isKitchen || this == UserRole.superadmin;
+
+  /// Whether this role is allowed to open POS pages (menu, orders, etc.).
+  bool get canAccessPos => !isKitchen || this == UserRole.supervisor;
+
   /// Whether this role is authorized to cancel tickets.
   /// Allowed roles: SUPERADMIN, MANAGER, SUPERVISOR, and KITCHEN_HEAD.
   bool get canCancelTicket =>

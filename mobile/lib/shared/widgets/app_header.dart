@@ -6,6 +6,7 @@ import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart
 import 'package:mobile/shared/menu_channel_mapping.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/shared/widgets/wave_accents.dart';
+import 'package:mobile/shared/widgets/workspace_switcher.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
@@ -172,6 +173,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const WorkspaceSwitcher(),
                 ...?actions,
                 if (trailing != null)
                   trailing!
