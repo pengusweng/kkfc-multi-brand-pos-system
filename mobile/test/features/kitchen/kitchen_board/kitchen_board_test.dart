@@ -76,6 +76,7 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   final List<String> passedQcAttemptIds = [];
   final List<String> rejectedQcAttemptIds = [];
   final List<String> handedOverTicketIds = [];
+  final List<({String brandId, String orderId, String reason})> cancelledTickets = [];
   final List<
     ({String attemptId, String reason, List<Map<String, dynamic>> rejections})
   >
@@ -198,6 +199,15 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   @override
   Future<void> handOverTicket(String kitchenTicketId) async {
     handedOverTicketIds.add(kitchenTicketId);
+  }
+
+  @override
+  Future<void> cancelTicket({
+    required String brandId,
+    required String orderId,
+    required String reason,
+  }) async {
+    cancelledTickets.add((brandId: brandId, orderId: orderId, reason: reason));
   }
 }
 
@@ -2317,7 +2327,7 @@ void main() {
         );
         expect(find.byType(CancelKitchenTicketDialog), findsOneWidget);
 
-        // 5. Entering a reason updates character count and clicking Submit closes both popups statically
+        // 5. Entering a reason updates character count and clicking Submit closes both popups and cancels ticket via API
         await tester.enterText(
           reasonFieldFinder,
           'Customer requested cancellation',
@@ -2330,11 +2340,62 @@ void main() {
 
         expect(find.byType(CancelKitchenTicketDialog), findsNothing);
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
-        // Ticket remains on the board (static flow)
+        expect(repo.cancelledTickets.length, 1);
+        expect(repo.cancelledTickets.first.reason, 'Customer requested cancellation');
+        expect(repo.cancelledTickets.first.orderId, sampleKitchenBoardTickets.first.orderId);
+        // Cancelled ticket is removed from the board
         expect(
           find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'Cancel ticket button does NOT exist when user role is kitchen staff, but exists for allowed roles (kitchen head, supervisor, manager, superadmin)',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        // 1. Kitchen Staff: Cancel ticket button must NOT exist in the queued popup
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenStaff);
+
+        final queuedCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-016'),
+        );
+        expect(queuedCard, findsOneWidget);
+
+        final cardAckButton = find.descendant(
+          of: queuedCard,
+          matching: find.widgetWithText(FilledButton, 'Acknowledge'),
+        );
+        await tester.tap(cardAckButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button')),
+          findsNothing,
+        );
+        expect(find.text('Cancel ticket'), findsNothing);
+
+        // Close popup
+        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.pumpAndSettle();
+
+        // 2. Kitchen Head: Cancel ticket button MUST exist
+        await pumpBoard(tester, repository: repo, role: UserRole.kitchenHead);
+
+        await tester.tap(cardAckButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button')),
           findsOneWidget,
         );
+        expect(find.text('Cancel ticket'), findsOneWidget);
       },
     );
 

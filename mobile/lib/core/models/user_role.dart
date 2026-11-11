@@ -35,6 +35,14 @@ enum UserRole {
       this == UserRole.supervisor ||
       this == UserRole.kitchenHead;
 
+  /// Whether this role is authorized to cancel tickets.
+  /// Allowed roles: SUPERADMIN, MANAGER, SUPERVISOR, and KITCHEN_HEAD.
+  bool get canCancelTicket =>
+      this == UserRole.superadmin ||
+      this == UserRole.manager ||
+      this == UserRole.supervisor ||
+      this == UserRole.kitchenHead;
+
   /// Whether this role operates in read-only mode on the kitchen board,
   /// with the sole exception of quality control (QC) checks.
   bool get isKitchenReadOnlyExceptQc => this == UserRole.supervisor;

@@ -482,6 +482,26 @@ class KitchenBoardRepository {
     }
   }
 
+  /// Cancels an order and its associated kitchen ticket via
+  /// `POST /api/kitchen-fulfillment/brands/{brandId}/orders/{orderId}/cancel`.
+  Future<void> cancelTicket({
+    required String brandId,
+    required String orderId,
+    required String reason,
+  }) async {
+    try {
+      await _dio.post<Object?>(
+        _endpoint('/kitchen-fulfillment/brands/$brandId/orders/$orderId/cancel'),
+        data: {'cancellation_reason': reason.trim()},
+      );
+    } on DioException catch (error) {
+      throw KitchenBoardException(
+        _errorMessage(error),
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   List<Object?> _extractTicketList(Object? body) {
     if (body is List) {
       return body;

@@ -9,6 +9,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
+import 'package:mobile/features/new_order/data/repositories/brand_repository.dart';
 import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
@@ -520,6 +521,85 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       );
       return false;
     }
+  }
+
+  Future<bool> cancelTicket({
+    required KitchenBoardTicket ticket,
+    required String reason,
+  }) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole != null && !userRole.canCancelTicket) return false;
+
+    final id = ticket.kitchenTicketId;
+    if (state.loadingTicketIds.contains(id)) return false;
+
+    state = state.copyWith(
+      loadingTicketIds: {...state.loadingTicketIds, id},
+      clearError: true,
+    );
+
+    try {
+      final repo = ref.read(kitchenBoardRepositoryProvider);
+      final brandId = await _resolveBrandId(ticket);
+      await repo.cancelTicket(
+        brandId: brandId,
+        orderId: ticket.orderId,
+        reason: reason,
+      );
+      final tickets = await repo.fetchTodaysTickets();
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(id);
+
+      final updatedTickets = tickets
+          .where((t) => t.kitchenTicketId != id)
+          .toList();
+
+      state = state.copyWith(
+        tickets: updatedTickets,
+        updatedAt: DateTime.now(),
+        loadingTicketIds: nextLoading,
+        clearError: true,
+      );
+      return true;
+    } catch (error) {
+      final nextLoading = Set<String>.from(state.loadingTicketIds)
+        ..remove(id);
+      state = state.copyWith(
+        loadingTicketIds: nextLoading,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
+  Future<String> _resolveBrandId(KitchenBoardTicket ticket) async {
+    final directId = ticket.data.brand.id;
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    if (uuidRegex.hasMatch(directId)) {
+      return directId;
+    }
+
+    try {
+      final brandRepo = ref.read(brandRepositoryProvider);
+      final brands = await brandRepo.getAll();
+      final code = ticket.data.brand.code.toUpperCase();
+      final match = brands.firstWhere(
+        (b) => b.code.toUpperCase() == code,
+        orElse: () => brands.firstWhere(
+          (b) => b.name.toLowerCase() == ticket.data.brand.name.toLowerCase(),
+          orElse: () => brands.first,
+        ),
+      );
+      if (uuidRegex.hasMatch(match.id)) {
+        return match.id;
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    return directId;
   }
 
   Future<bool> handOverTicket(String kitchenTicketId) async {

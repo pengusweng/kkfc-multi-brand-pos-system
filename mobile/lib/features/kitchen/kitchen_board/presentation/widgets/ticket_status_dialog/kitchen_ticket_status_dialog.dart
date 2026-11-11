@@ -35,6 +35,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.onReject,
     this.onReworkDone,
     this.onCancelTicket,
+    this.showCancelTicketButton,
     this.onClose,
     this.imagePicker,
     this.onPickImage,
@@ -52,6 +53,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final Future<void> Function(List<QcItemRejection> rejections)? onReject;
   final Future<void> Function(String? reworkNotes)? onReworkDone;
   final VoidCallback? onCancelTicket;
+  final bool? showCancelTicketButton;
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
@@ -121,6 +123,9 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         };
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    final resolvedShowCancelTicketButton =
+        isQueued && (showCancelTicketButton ?? (onCancelTicket != null));
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: reduceMotion ? 1.0 : 0.96, end: 1.0),
@@ -193,8 +198,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   isActionLoading: isActionLoading,
                   isActionEnabled: isActionEnabled,
                   onAction: onAction,
-                  showCancelTicketButton: isQueued,
-                  onCancelTicket: isQueued
+                  showCancelTicketButton: resolvedShowCancelTicketButton,
+                  onCancelTicket: resolvedShowCancelTicketButton
                       ? (onCancelTicket ??
                             (isActionEnabled
                                 ? () => showCancelKitchenTicketDialog(
@@ -403,6 +408,7 @@ Future<void> showKitchenTicketStatusDialog(
               currentTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
               currentTicket.rawStatus.toUpperCase() == 'CHECKING';
           final canPass = userRole?.canPassQc ?? false;
+          final canCancel = userRole == null || userRole.canCancelTicket;
           final effectiveActionEnabled =
               isActionEnabled ??
               (userRole != null
@@ -419,11 +425,20 @@ Future<void> showKitchenTicketStatusDialog(
             imagePicker: imagePicker,
             onPickImage: onPickImage,
             onClose: () => Navigator.of(dialogContext).maybePop(),
-            onCancelTicket: effectiveActionEnabled
+            showCancelTicketButton: canCancel,
+            onCancelTicket: (effectiveActionEnabled && canCancel)
                 ? () async {
                     final cancelled = await showCancelKitchenTicketDialog(
                       dialogContext,
                       ticket: currentTicket,
+                      onConfirm: (reason) async {
+                        return ref
+                            .read(kitchenBoardProvider.notifier)
+                            .cancelTicket(
+                              ticket: currentTicket,
+                              reason: reason,
+                            );
+                      },
                     );
                     if (cancelled == true && dialogContext.mounted) {
                       Navigator.of(dialogContext).maybePop();
