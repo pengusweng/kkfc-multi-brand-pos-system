@@ -25,11 +25,14 @@ GitHub usernames, separated by commas or spaces. A leading `@` is accepted.
 | ---------------------- | ---------------------------------------- |
 | `CI_BACKEND_ASSIGNEES` | Backend test and build failures          |
 | `CI_FLUTTER_ASSIGNEES` | Flutter test and build failures          |
-| `CI_WEB_ASSIGNEES` | Web test and build failures              |
+| `CI_WEB_ASSIGNEES`     | Web test and build failures              |
 | `CI_DEFAULT_ASSIGNEES` | CI setup failures and fallback ownership |
 
-The reporter checks assignment eligibility. It tries area owners, default
-owners, then the first eligible PR author, workflow actor, or repository owner.
+The reporter checks assignment eligibility. For PR failures it assigns the PR
+author first, together with the configured owners of every failed CI area
+(including Web). Duplicate usernames are removed. Branch failures use the
+configured owners. If no one is eligible, it tries default owners, then the
+workflow actor or repository owner.
 Organization accounts cannot themselves receive assignments; configure a real
 user as the default owner. Up to ten users can be assigned. If none is eligible,
 the issue is still created with an explicit unassigned notice and an Actions
@@ -56,16 +59,19 @@ and GitHub Issues must be enabled.
 
 ## Reports and duplicates
 
-Each issue has a consistent title, such as **[CI] Flutter failure - PR #178**,
+Each issue has a consistent title, such as **[CI] Failure - PR #178**,
 and contains the source PR or branch, head commit, run attempt, assigned owners,
 failed jobs and steps, available test-report links, and an investigation
 checklist. A failed check is recorded for investigation, not as proof of an
 application bug. If reports are unavailable, the issue links the run logs.
 Artifacts remain subject to GitHub retention settings.
 
-One open issue is maintained per PR or branch and area. Later failures update
+One open issue combines all failed CI areas per PR or branch. Later failures update
 it and retain the earlier report in a comment. Repeated execution for the same
-attempt creates no duplicate. Manual reassignment is preserved. Superseded PR
+attempt creates no duplicate. Existing eligible assignees are retained, and the
+PR author and owners of newly failing areas are added, up to ten users. A previous
+area-specific report is reused when available; historical duplicate issues are
+not automatically closed. Superseded PR
 commits, closed PRs, obsolete reruns, success, and cancellation are ignored.
 Reporting jobs are serialized per PR or branch to avoid concurrent duplicates.
 GitHub may replace a pending reporting job when several runs finish quickly.

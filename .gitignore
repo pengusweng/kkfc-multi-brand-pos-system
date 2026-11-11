@@ -9,3 +9,5 @@ server/jest-html-reporters-attach/
 Master-Backend-QA-Automation-Rules.md
 *.xml
 .idea/kkfc-multi-brand-pos-system.iml
+docs/automation-test-plan-mobile-server.md
+docs/focused-automation-test-plan-mobile-server.md
