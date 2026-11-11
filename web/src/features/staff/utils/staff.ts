@@ -6,6 +6,8 @@ export type StaffStatusFilter = "all" | StaffStatus;
 export type StaffMember = {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   username: string;
   role: string;
   status: StaffStatus;
@@ -35,6 +37,8 @@ export function toStaffMember(user: User): StaffMember {
   return {
     id: user.user_id,
     name: `${user.first_name} ${user.last_name}`,
+    firstName: user.first_name,
+    lastName: user.last_name,
     username: user.username,
     role: ROLE_LABEL[user.role],
     status: user.is_active ? "active" : "inactive",
