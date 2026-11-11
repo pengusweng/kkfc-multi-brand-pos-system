@@ -18,6 +18,7 @@ class KitchenTicketHandoverView extends StatefulWidget {
     super.key,
     required this.ticket,
     required this.isActionLoading,
+    this.isActionEnabled = true,
     required this.onHandover,
     this.imagePicker,
     this.onPickImage,
@@ -26,6 +27,7 @@ class KitchenTicketHandoverView extends StatefulWidget {
 
   final KitchenBoardTicket ticket;
   final bool isActionLoading;
+  final bool isActionEnabled;
   final VoidCallback? onHandover;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
@@ -60,6 +62,7 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
   bool get _isDelivery => widget.ticket.isDelivery;
 
   bool get _canHandover {
+    if (!widget.isActionEnabled) return false;
     if (!_allChecked) return false;
     if (_isDelivery && _photos.isEmpty) return false;
     return true;

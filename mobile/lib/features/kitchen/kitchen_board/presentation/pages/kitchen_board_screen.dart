@@ -61,6 +61,7 @@ class KitchenBoardScreen extends ConsumerWidget {
               activeCount: boardState.activeCount,
               updatedAt: boardState.updatedAt,
               isRefreshing: boardState.isRefreshing || boardState.isLoading,
+              isReadOnly: userRole?.isKitchenReadOnlyExceptQc ?? false,
               onRefresh: () =>
                   ref.read(kitchenBoardProvider.notifier).refresh(),
             ),
@@ -83,6 +84,7 @@ class KitchenBoardScreen extends ConsumerWidget {
                   Positioned.fill(
                     child: KitchenBoardLanesView(
                       state: boardState,
+                      userRole: userRole,
                       canPassQc: userRole?.canPassQc ?? false,
                       onTicketAction: (ticket) => showKitchenTicketStatusDialog(
                         context,

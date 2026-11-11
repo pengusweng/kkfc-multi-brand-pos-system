@@ -128,6 +128,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                 child: KitchenTicketHandoverView(
                   ticket: ticket,
                   isActionLoading: isActionLoading,
+                  isActionEnabled: isActionEnabled,
                   onHandover: onAction,
                   imagePicker: imagePicker,
                   onPickImage: onPickImage,
@@ -270,8 +271,10 @@ Future<void> showKitchenTicketStatusDialog(
               currentTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
               currentTicket.rawStatus.toUpperCase() == 'CHECKING';
           final canPass = userRole?.canPassQc ?? false;
-          final effectiveActionEnabled =
-              isActionEnabled ?? (!isQcLane || canPass);
+          final effectiveActionEnabled = isActionEnabled ??
+              (userRole != null
+                  ? userRole.canChangeTicketStatus(isQcCheck: isQcLane)
+                  : (!isQcLane || canPass));
 
           return KitchenTicketStatusDialog(
             ticket: currentTicket,

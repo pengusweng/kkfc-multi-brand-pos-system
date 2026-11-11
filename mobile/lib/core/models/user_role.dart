@@ -24,7 +24,9 @@ enum UserRole {
 
   /// Whether this role is an authorized kitchen workspace role.
   bool get isKitchen =>
-      this == UserRole.kitchenHead || this == UserRole.kitchenStaff;
+      this == UserRole.kitchenHead ||
+      this == UserRole.kitchenStaff ||
+      this == UserRole.supervisor;
 
   /// Whether this role is authorized to pass QC checks on the kitchen board.
   bool get canPassQc =>
@@ -32,4 +34,22 @@ enum UserRole {
       this == UserRole.manager ||
       this == UserRole.supervisor ||
       this == UserRole.kitchenHead;
+
+  /// Whether this role operates in read-only mode on the kitchen board,
+  /// with the sole exception of quality control (QC) checks.
+  bool get isKitchenReadOnlyExceptQc => this == UserRole.supervisor;
+
+  /// Whether this role can change or advance ticket status on the kitchen board.
+  ///
+  /// Supervisors are in read-only mode across all lanes except for QC check.
+  /// Kitchen staff cannot pass QC checks.
+  bool canChangeTicketStatus({required bool isQcCheck}) {
+    if (this == UserRole.supervisor) {
+      return isQcCheck;
+    }
+    if (isQcCheck) {
+      return canPassQc;
+    }
+    return true;
+  }
 }

@@ -53,7 +53,7 @@ class KitchenTicketCard extends StatelessWidget {
     final resolvedLabel = actionLabel ?? defaultLabel ?? 'Acknowledge';
     final showAction = onAction != null || actionLabel != null;
     final hideDetailsForFullWidthAction =
-        isBoard && ticket.status == KkfcStatus.ready;
+        isBoard && ticket.status == KkfcStatus.ready && isActionEnabled;
 
     return Container(
       decoration: BoxDecoration(

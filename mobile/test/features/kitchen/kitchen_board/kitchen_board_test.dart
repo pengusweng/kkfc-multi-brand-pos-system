@@ -866,6 +866,151 @@ void main() {
       expect(UserRole.inventoryStaff.canPassQc, isFalse);
     });
 
+    test('UserRole supervisor read-only and ticket transition authorization rules', () {
+      // Supervisor is explicitly read-only on the kitchen board except for QC
+      expect(UserRole.supervisor.isKitchenReadOnlyExceptQc, isTrue);
+      expect(UserRole.kitchenHead.isKitchenReadOnlyExceptQc, isFalse);
+      expect(UserRole.kitchenStaff.isKitchenReadOnlyExceptQc, isFalse);
+      expect(UserRole.manager.isKitchenReadOnlyExceptQc, isFalse);
+      expect(UserRole.superadmin.isKitchenReadOnlyExceptQc, isFalse);
+
+      // Supervisor can ONLY change ticket status for QC check
+      expect(UserRole.supervisor.canChangeTicketStatus(isQcCheck: true), isTrue);
+      expect(UserRole.supervisor.canChangeTicketStatus(isQcCheck: false), isFalse);
+
+      // Kitchen Head and Manager can change status across all lanes
+      expect(UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: true), isTrue);
+      expect(UserRole.kitchenHead.canChangeTicketStatus(isQcCheck: false), isTrue);
+      expect(UserRole.manager.canChangeTicketStatus(isQcCheck: true), isTrue);
+      expect(UserRole.manager.canChangeTicketStatus(isQcCheck: false), isTrue);
+
+      // Kitchen Staff can change non-QC lanes but cannot pass QC
+      expect(UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: false), isTrue);
+      expect(UserRole.kitchenStaff.canChangeTicketStatus(isQcCheck: true), isFalse);
+    });
+
+    testWidgets(
+      'Supervisor is in read-only mode for Queued, Preparing, and Ready tickets, but can execute QC check',
+      (tester) async {
+        final queuedTicket = sampleKitchenBoardTickets[0]; // T-016 (Queued)
+        final preparingTicket = sampleKitchenBoardTickets[1]; // T-017 (Preparing)
+        final readyTicket = sampleKitchenBoardTickets[2]; // T-018 (Ready)
+        final qcTicket = sampleKitchenBoardTickets[1].copyWith(
+          kitchenTicketId: '00000000-0000-4000-8000-000000000099',
+          qcAttemptId: '00000000-0000-4000-8000-000000000099',
+          lane: KitchenBoardLane.qcCheck,
+          rawStatus: 'FOR_CHECKING',
+          data: sampleKitchenBoardTickets[1].data.copyWith(
+            ticketNumber: 'T-099',
+            status: KkfcStatus.checking,
+          ),
+        );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [queuedTicket, preparingTicket, qcTicket, readyTicket],
+        );
+
+        await pumpBoard(tester, repository: repo, role: UserRole.supervisor);
+
+        // Header displays Supervisor role
+        expect(find.text('Supervisor'), findsOneWidget);
+
+        // Toolbar displays read-only mode indicator badge
+        expect(find.byKey(const ValueKey('kitchen-board-readonly-badge')), findsOneWidget);
+        expect(find.text('Read-only (QC Check only)'), findsOneWidget);
+
+        // 1. Queued Ticket (T-016): Action button is disabled
+        final queuedCard = find.byKey(const ValueKey('kitchen-ticket-card-T-016'));
+        final queuedAction = find.descendant(of: queuedCard, matching: find.byType(FilledButton));
+        expect(tester.widget<FilledButton>(queuedAction).onPressed, isNull);
+
+        // Tapping Details on queued ticket opens dialog in read-only mode
+        final queuedDetails = find.descendant(of: queuedCard, matching: find.text('Details'));
+        await tester.tap(queuedDetails);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        final queuedDialogAction = find.byKey(const ValueKey('kitchen-ticket-dialog-action-button'));
+        expect(tester.widget<FilledButton>(queuedDialogAction).onPressed, isNull);
+
+        // Close dialog
+        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.pumpAndSettle();
+
+        // 2. Preparing Ticket (T-015): Action button is disabled
+        final preparingCard = find.byKey(const ValueKey('kitchen-ticket-card-T-015'));
+        final preparingAction = find.descendant(of: preparingCard, matching: find.byType(FilledButton));
+        expect(tester.widget<FilledButton>(preparingAction).onPressed, isNull);
+
+        // 3. Ready Ticket (T-014): Action button is disabled, Details button is available
+        final readyCard = find.byKey(const ValueKey('kitchen-ticket-card-T-014'));
+        final readyAction = find.descendant(of: readyCard, matching: find.byType(FilledButton));
+        expect(tester.widget<FilledButton>(readyAction).onPressed, isNull);
+
+        final readyDetails = find.descendant(of: readyCard, matching: find.text('Details'));
+        expect(readyDetails, findsOneWidget);
+        await tester.tap(readyDetails);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        final handoverConfirm = find.byKey(const ValueKey('kitchen-ticket-handover-confirm-button'));
+        expect(tester.widget<FilledButton>(handoverConfirm).onPressed, isNull);
+
+        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.pumpAndSettle();
+
+        // 4. QC Check Ticket (T-099): Action button is ENABLED for Supervisor!
+        final qcCard = find.byKey(const ValueKey('kitchen-ticket-card-T-099'));
+        final qcAction = find.descendant(of: qcCard, matching: find.byType(FilledButton));
+        expect(tester.widget<FilledButton>(qcAction).onPressed, isNotNull);
+
+        // Tap QC Check button to open QC check modal
+        await tester.tap(qcAction);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+        expect(find.text('QUALITY CHECK'), findsOneWidget);
+
+        // Supervisor marks items passed and submits
+        await tester.tap(find.text('Pass').first);
+        await tester.pumpAndSettle();
+
+        final passAllButton = find.byKey(const ValueKey('kitchen-ticket-dialog-action-button'));
+        expect(tester.widget<FilledButton>(passAllButton).onPressed, isNotNull);
+
+        await tester.tap(passAllButton);
+        await tester.pumpAndSettle();
+
+        expect(repo.passedQcAttemptIds, contains('00000000-0000-4000-8000-000000000099'));
+      },
+    );
+
+    test('KitchenBoardNotifier rejects status transitions for supervisor except QC', () async {
+      final repo = _FakeKitchenBoardRepository(() async => sampleKitchenBoardTickets);
+      final container = ProviderContainer(
+        overrides: [
+          kitchenBoardRepositoryProvider.overrideWithValue(repo),
+          initialRoleProvider.overrideWithValue(UserRole.supervisor),
+          authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(kitchenBoardProvider.notifier).loadInitial();
+
+      final notifier = container.read(kitchenBoardProvider.notifier);
+
+      // Non-QC actions are rejected (return false)
+      expect(await notifier.acknowledgeTicket('any-id'), isFalse);
+      expect(await notifier.prepareTicket('any-id'), isFalse);
+      expect(await notifier.sendToQc('any-id'), isFalse);
+      expect(await notifier.handOverTicket('any-id'), isFalse);
+
+      // QC pass and reject are allowed for supervisor
+      expect(await notifier.passQc(kitchenTicketId: 'any-id', attemptId: 'att-1'), isTrue);
+      expect(await notifier.rejectQc(kitchenTicketId: 'any-id', reason: 'Under-seasoned'), isTrue);
+    });
+
     testWidgets(
       'QC Check button on ticket card says "QC check" and is unclickable and muted for unauthorized role (KITCHEN_STAFF)',
       (tester) async {

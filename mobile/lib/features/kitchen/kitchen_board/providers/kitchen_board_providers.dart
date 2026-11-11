@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
@@ -143,6 +144,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<bool> acknowledgeTicket(String kitchenTicketId) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole == UserRole.supervisor) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -191,6 +195,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<bool> prepareTicket(String kitchenTicketId) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole == UserRole.supervisor) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -240,6 +247,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<bool> sendToQc(String kitchenTicketId) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole == UserRole.supervisor) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -292,6 +302,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     required String kitchenTicketId,
     String? attemptId,
   }) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole != null && !userRole.canPassQc) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -350,6 +363,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     String? attemptId,
     List<String>? orderItemIds,
   }) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole != null && !userRole.canPassQc) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -401,6 +417,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<bool> handOverTicket(String kitchenTicketId) async {
+    final userRole = ref.read(userRoleProvider);
+    if (userRole == UserRole.supervisor) return false;
+
     if (state.loadingTicketIds.contains(kitchenTicketId)) return false;
 
     state = state.copyWith(
@@ -440,6 +459,18 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
   Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
     final raw = ticket.rawStatus.toUpperCase();
+    final isQcLane =
+        raw == 'FOR_CHECKING' ||
+        raw == 'CHECKING' ||
+        ticket.data.status == KkfcStatus.checking ||
+        ticket.lane == KitchenBoardLane.qcCheck;
+
+    final userRole = ref.read(userRoleProvider);
+    if (userRole != null &&
+        !userRole.canChangeTicketStatus(isQcCheck: isQcLane)) {
+      return false;
+    }
+
     final isQueued =
         raw == 'QUEUED' ||
         ticket.data.status == KkfcStatus.queued ||
@@ -463,11 +494,6 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       return sendToQc(ticket.kitchenTicketId);
     }
 
-    final isQcLane =
-        raw == 'FOR_CHECKING' ||
-        raw == 'CHECKING' ||
-        ticket.data.status == KkfcStatus.checking ||
-        ticket.lane == KitchenBoardLane.qcCheck;
     if (isQcLane) {
       return passQc(
         kitchenTicketId: ticket.kitchenTicketId,

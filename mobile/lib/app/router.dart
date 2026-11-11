@@ -49,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn) {
-        // Kitchen staff / kitchen head can only see the kitchen tickets page.
+        // Kitchen workspace roles (kitchen staff / kitchen head / supervisor) can only see the kitchen tickets page.
         if (isKitchenRole && !onKitchenPage) {
           return AppRoutes.kitchenTickets;
         }

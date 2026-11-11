@@ -12,12 +12,14 @@ class KitchenBoardToolbar extends StatelessWidget {
     required this.updatedAt,
     required this.onRefresh,
     this.isRefreshing = false,
+    this.isReadOnly = false,
   });
 
   final int activeCount;
   final DateTime? updatedAt;
   final VoidCallback onRefresh;
   final bool isRefreshing;
+  final bool isReadOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -45,33 +47,78 @@ class KitchenBoardToolbar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Flexible(
-            child: RichText(
-              overflow: TextOverflow.ellipsis,
-              text: TextSpan(
-                style: const TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: KkfcTextSizes.textMd,
-                  color: KkfcColors.ink2,
-                  fontFeatures: tabularNumberFeatures,
-                ),
-                children: [
-                  TextSpan(
-                    text: '$activeCount active',
-                    style: const TextStyle(
-                      fontWeight: KkfcFontWeights.bold,
-                      color: KkfcColors.ink,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: RichText(
+                    overflow: TextOverflow.ellipsis,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textMd,
+                        color: KkfcColors.ink2,
+                        fontFeatures: tabularNumberFeatures,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '$activeCount active',
+                          style: const TextStyle(
+                            fontWeight: KkfcFontWeights.bold,
+                            color: KkfcColors.ink,
+                          ),
+                        ),
+                        if (timeLabel != null)
+                          TextSpan(
+                            text: ' · Updated $timeLabel',
+                            style: const TextStyle(
+                              fontWeight: KkfcFontWeights.regular,
+                              color: KkfcColors.ink2,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (timeLabel != null)
-                    TextSpan(
-                      text: ' · Updated $timeLabel',
-                      style: const TextStyle(
-                        fontWeight: KkfcFontWeights.regular,
-                        color: KkfcColors.ink2,
+                ),
+                if (isReadOnly) ...[
+                  const SizedBox(width: KkfcSpace.s12),
+                  Container(
+                    key: const ValueKey('kitchen-board-readonly-badge'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: KkfcSpace.s8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.canvasSunken,
+                      borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                      border: Border.all(
+                        color: KkfcColors.border,
+                        width: KkfcBorderWidth.thin,
                       ),
                     ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.visibility_outlined,
+                          size: 14,
+                          color: KkfcColors.ink2,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Read-only (QC Check only)',
+                          style: TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: KkfcTextSizes.textXs,
+                            fontWeight: KkfcFontWeights.medium,
+                            color: KkfcColors.ink2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
           const SizedBox(width: KkfcSpace.s12),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lane_header.dart';
@@ -16,6 +17,7 @@ class KitchenBoardLaneColumn extends StatelessWidget {
     required this.lane,
     required this.tickets,
     required this.loadingTicketIds,
+    this.userRole,
     this.canPassQc = true,
     this.onTicketAction,
     this.onTicketDetails,
@@ -25,6 +27,7 @@ class KitchenBoardLaneColumn extends StatelessWidget {
   final KitchenBoardLane lane;
   final List<KitchenBoardTicket> tickets;
   final Set<String> loadingTicketIds;
+  final UserRole? userRole;
   final bool canPassQc;
   final ValueChanged<KitchenBoardTicket>? onTicketAction;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
@@ -98,8 +101,12 @@ class KitchenBoardLaneColumn extends StatelessWidget {
   Widget _buildTicketCard(KitchenBoardTicket boardTicket) {
     final actionLabel = lane.actionLabelFor(boardTicket.data.status);
     final isQcLane = lane == KitchenBoardLane.qcCheck ||
-        boardTicket.data.status == KkfcStatus.checking;
-    final isActionEnabled = !isQcLane || canPassQc;
+        boardTicket.data.status == KkfcStatus.checking ||
+        boardTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
+        boardTicket.rawStatus.toUpperCase() == 'CHECKING';
+    final isActionEnabled = userRole != null
+        ? userRole!.canChangeTicketStatus(isQcCheck: isQcLane)
+        : (!isQcLane || canPassQc);
 
     return KitchenTicketCard.board(
       key: ValueKey('kitchen-ticket-card-${boardTicket.data.ticketNumber}'),

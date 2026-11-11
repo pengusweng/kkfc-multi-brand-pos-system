@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lane_column.dart';
@@ -13,12 +14,14 @@ class KitchenBoardLanesView extends StatelessWidget {
   const KitchenBoardLanesView({
     super.key,
     required this.state,
+    this.userRole,
     this.canPassQc = true,
     this.onTicketAction,
     this.onTicketDetails,
   });
 
   final KitchenBoardState state;
+  final UserRole? userRole;
   final bool canPassQc;
   final ValueChanged<KitchenBoardTicket>? onTicketAction;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
@@ -120,6 +123,7 @@ class KitchenBoardLanesView extends StatelessWidget {
       lane: lane,
       tickets: state.ticketsForLane(lane),
       loadingTicketIds: state.loadingTicketIds,
+      userRole: userRole,
       canPassQc: canPassQc,
       onTicketAction: onTicketAction,
       onTicketDetails: onTicketDetails,
