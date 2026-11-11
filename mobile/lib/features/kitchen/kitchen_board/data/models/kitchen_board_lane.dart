@@ -31,31 +31,31 @@ enum KitchenBoardLane {
   };
 
   Color get headerForeground => switch (this) {
-    KitchenBoardLane.queued => KkfcColors.neutral,
-    KitchenBoardLane.preparing => KkfcColors.info,
-    KitchenBoardLane.qcCheck => KkfcColors.review,
-    KitchenBoardLane.ready => KkfcColors.success,
+    KitchenBoardLane.queued => KkfcColors.statusQueuedFg,
+    KitchenBoardLane.preparing => KkfcColors.statusPreparingFg,
+    KitchenBoardLane.qcCheck => KkfcColors.statusCheckingFg,
+    KitchenBoardLane.ready => KkfcColors.statusReadyFg,
   };
 
   Color get headerBackground => switch (this) {
-    KitchenBoardLane.queued => KkfcColors.neutralBg,
-    KitchenBoardLane.preparing => KkfcColors.infoBg,
-    KitchenBoardLane.qcCheck => KkfcColors.reviewBg,
-    KitchenBoardLane.ready => KkfcColors.successBg,
+    KitchenBoardLane.queued => KkfcColors.statusQueuedBg,
+    KitchenBoardLane.preparing => KkfcColors.statusPreparingBg,
+    KitchenBoardLane.qcCheck => KkfcColors.statusCheckingBg,
+    KitchenBoardLane.ready => KkfcColors.statusReadyBg,
   };
 
   Color get headerBorder => switch (this) {
-    KitchenBoardLane.queued => KkfcColors.neutralBorder,
-    KitchenBoardLane.preparing => KkfcColors.infoBorder,
-    KitchenBoardLane.qcCheck => KkfcColors.reviewBorder,
-    KitchenBoardLane.ready => KkfcColors.successBorder,
+    KitchenBoardLane.queued => KkfcColors.statusQueuedBorder,
+    KitchenBoardLane.preparing => KkfcColors.statusPreparingBorder,
+    KitchenBoardLane.qcCheck => KkfcColors.statusCheckingBorder,
+    KitchenBoardLane.ready => KkfcColors.statusReadyBorder,
   };
 
   Color get badgeTextColor => switch (this) {
     KitchenBoardLane.queued => KkfcColors.ink,
-    KitchenBoardLane.preparing => KkfcColors.info,
-    KitchenBoardLane.qcCheck => KkfcColors.review,
-    KitchenBoardLane.ready => KkfcColors.success,
+    KitchenBoardLane.preparing => KkfcColors.statusPreparingFg,
+    KitchenBoardLane.qcCheck => KkfcColors.statusCheckingFg,
+    KitchenBoardLane.ready => KkfcColors.statusReadyFg,
   };
 
   /// Maps a [KkfcStatus] to its corresponding [KitchenBoardLane],

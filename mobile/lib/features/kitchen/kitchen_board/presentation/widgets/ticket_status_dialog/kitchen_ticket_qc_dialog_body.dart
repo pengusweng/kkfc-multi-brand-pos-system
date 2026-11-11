@@ -57,7 +57,7 @@ class KitchenTicketQcDialogBody extends StatelessWidget {
                     const Icon(
                       Icons.sync_rounded,
                       size: 16,
-                      color: Color(0xFF8A4621),
+                      color: KkfcColors.reworkText,
                     ),
                     const SizedBox(width: KkfcSpace.s8),
                     Expanded(

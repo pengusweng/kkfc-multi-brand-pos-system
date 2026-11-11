@@ -64,6 +64,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final isBoard = widget.variant == KitchenTicketVariant.board;
+    final statusColors = KkfcTicketStatusColors.forStatus(widget.ticket.status);
     final defaultLabel = isBoard && widget.ticket.status == KkfcStatus.queued
         ? 'Acknowledge'
         : kitchenTicketActionLabel(widget.ticket.status);
@@ -110,8 +111,8 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
               border: Border.all(
                 color: _isHovered && !reduceMotion
                     ? KkfcColors.borderStrong
-                    : KkfcColors.ticketBorder,
-                width: 1,
+                    : statusColors.cardBorder,
+                width: 1.5,
               ),
               boxShadow: _isHovered && !reduceMotion
                   ? KkfcElevation.shadow2
@@ -128,6 +129,17 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 0. Status accent top bar
+                Container(
+                  key: const ValueKey('kitchen-ticket-status-accent-bar'),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: statusColors.accent,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 // 1. Header with Ticket number, elapsed time, and progress bar
                 KitchenTicketHeader(
                   ticketNumber: widget.ticket.ticketNumber,
@@ -157,10 +169,10 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFBF6EF),
+                        color: KkfcColors.reworkBg,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: const Color(0xFFDCBFA9),
+                          color: KkfcColors.reworkBorder,
                           width: 1,
                         ),
                       ),
@@ -170,7 +182,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                           Icon(
                             Icons.sync_rounded,
                             size: 14,
-                            color: Color(0xFF8A4621),
+                            color: KkfcColors.reworkText,
                           ),
                           SizedBox(width: 4),
                           Text(
@@ -178,7 +190,47 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF8A4621),
+                              color: KkfcColors.reworkText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ] else if (widget.ticket.status == KkfcStatus.acknowledged ||
+                    !isBoard) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      key: const ValueKey('kitchen-ticket-status-badge'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColors.background,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: statusColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _statusIconFor(widget.ticket.status),
+                            size: 14,
+                            color: statusColors.foreground,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _statusLabelFor(widget.ticket.status),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: statusColors.foreground,
                             ),
                           ),
                         ],
@@ -355,4 +407,22 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
             ),
     );
   }
+
+  static String _statusLabelFor(KkfcStatus status) => switch (status) {
+    KkfcStatus.queued => 'Queued',
+    KkfcStatus.acknowledged => 'Acknowledged',
+    KkfcStatus.preparing => 'Preparing',
+    KkfcStatus.checking => 'QC check',
+    KkfcStatus.ready => 'Ready',
+    _ => status.label,
+  };
+
+  static IconData _statusIconFor(KkfcStatus status) => switch (status) {
+    KkfcStatus.queued => Icons.schedule_rounded,
+    KkfcStatus.acknowledged => Icons.visibility_outlined,
+    KkfcStatus.preparing => Icons.local_fire_department_rounded,
+    KkfcStatus.checking => Icons.search_rounded,
+    KkfcStatus.ready => Icons.check_circle_outline_rounded,
+    _ => Icons.label_outline_rounded,
+  };
 }

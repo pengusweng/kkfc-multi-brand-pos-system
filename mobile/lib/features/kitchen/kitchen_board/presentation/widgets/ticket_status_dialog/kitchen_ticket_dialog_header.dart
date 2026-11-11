@@ -36,6 +36,10 @@ class KitchenTicketDialogHeader extends StatelessWidget {
         data.status == KkfcStatus.reworking ||
         ticket.rawStatus.toUpperCase() == 'REWORKING';
 
+    final isPreparing =
+        data.status == KkfcStatus.preparing ||
+        ticket.rawStatus.toUpperCase() == 'PREPARING';
+
     final isQc =
         lane == KitchenBoardLane.qcCheck ||
         data.status == KkfcStatus.checking ||
@@ -56,16 +60,25 @@ class KitchenTicketDialogHeader extends StatelessWidget {
     final badgeIcon = statusIcon ??
         (isRework
             ? Icons.sync_rounded
-            : (isAcknowledged ? Icons.visibility_outlined : lane.icon));
-    final badgeForeground = isRework
-        ? const Color(0xFF8A4621)
-        : (isAcknowledged ? KkfcColors.info : lane.headerForeground);
-    final badgeBackground = isRework
-        ? const Color(0xFFFBF6EF)
-        : (isAcknowledged ? KkfcColors.infoBg : lane.headerBackground);
-    final badgeBorder = isRework
-        ? const Color(0xFFDCBFA9)
-        : (isAcknowledged ? KkfcColors.infoBorder : lane.headerBorder);
+            : (isAcknowledged
+                ? Icons.visibility_outlined
+                : (isPreparing
+                    ? Icons.local_fire_department_rounded
+                    : lane.icon)));
+    final statusColors = isRework
+        ? KkfcTicketStatusColors.reworking
+        : (isAcknowledged
+            ? KkfcTicketStatusColors.acknowledged
+            : (isPreparing
+                ? KkfcTicketStatusColors.preparing
+                : (isQc
+                    ? KkfcTicketStatusColors.checking
+                    : (isHandover
+                        ? KkfcTicketStatusColors.ready
+                        : KkfcTicketStatusColors.queued))));
+    final badgeForeground = statusColors.foreground;
+    final badgeBackground = statusColors.background;
+    final badgeBorder = statusColors.border;
 
     final effectiveStatusLabel =
         isRework && (statusLabel == 'Preparing' || statusLabel == 'TICKET DETAILS')

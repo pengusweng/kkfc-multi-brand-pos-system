@@ -107,7 +107,7 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                             Icon(
                               Icons.sync_rounded,
                               size: 16,
-                              color: Color(0xFF8A4621),
+                              color: KkfcColors.reworkText,
                             ),
                             SizedBox(width: KkfcSpace.s8),
                             Text(
@@ -116,7 +116,7 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                                 fontFamily: KkfcFonts.ibmPlexSans,
                                 fontSize: KkfcTextSizes.textMd,
                                 fontWeight: KkfcFontWeights.bold,
-                                color: Color(0xFF8A4621),
+                                color: KkfcColors.reworkText,
                               ),
                             ),
                             Text(

@@ -1,9 +1,105 @@
 import 'package:flutter/material.dart';
 
 import 'package:mobile/core/models/order_status.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 import 'color_tokens.dart';
 import 'semantic_colors.dart';
+
+/// Resolved color set for a kitchen ticket status.
+@immutable
+class KkfcTicketStatusColor {
+  const KkfcTicketStatusColor({
+    required this.background,
+    required this.border,
+    required this.foreground,
+    required this.accent,
+    required this.cardBorder,
+  });
+
+  /// Tinted background for the status badge / chip.
+  final Color background;
+
+  /// Border for the status badge / chip.
+  final Color border;
+
+  /// Text and icon ink color.
+  final Color foreground;
+
+  /// Prominent accent color for top card bar, solid fills, and indicators.
+  final Color accent;
+
+  /// Subtle card border color matching the status tone.
+  final Color cardBorder;
+}
+
+/// Palette mapping each [KkfcStatus] to its status badge and card colors.
+abstract final class KkfcTicketStatusColors {
+  /// Slate color set for queued status.
+  static const queued = KkfcTicketStatusColor(
+    background: KkfcColors.statusQueuedBg,
+    border: KkfcColors.statusQueuedBorder,
+    foreground: KkfcColors.statusQueuedFg,
+    accent: KkfcColors.statusQueuedSolid,
+    cardBorder: KkfcColors.statusQueuedCardBorder,
+  );
+
+  /// Darker shade of blue for acknowledged status.
+  static const acknowledged = KkfcTicketStatusColor(
+    background: KkfcColors.statusAcknowledgedBg,
+    border: KkfcColors.statusAcknowledgedBorder,
+    foreground: KkfcColors.statusAcknowledgedFg,
+    accent: KkfcColors.statusAcknowledgedSolid,
+    cardBorder: KkfcColors.statusAcknowledgedCardBorder,
+  );
+
+  /// Lighter shade of blue for preparing status.
+  static const preparing = KkfcTicketStatusColor(
+    background: KkfcColors.statusPreparingBg,
+    border: KkfcColors.statusPreparingBorder,
+    foreground: KkfcColors.statusPreparingFg,
+    accent: KkfcColors.statusPreparingSolid,
+    cardBorder: KkfcColors.statusPreparingCardBorder,
+  );
+
+  /// Violet color set for QC check / checking status.
+  static const checking = KkfcTicketStatusColor(
+    background: KkfcColors.statusCheckingBg,
+    border: KkfcColors.statusCheckingBorder,
+    foreground: KkfcColors.statusCheckingFg,
+    accent: KkfcColors.statusCheckingSolid,
+    cardBorder: KkfcColors.statusCheckingCardBorder,
+  );
+
+  /// Copper / amber color set for rework status.
+  static const reworking = KkfcTicketStatusColor(
+    background: KkfcColors.reworkBg,
+    border: KkfcColors.reworkBorder,
+    foreground: KkfcColors.reworkText,
+    accent: KkfcColors.reworkSolid,
+    cardBorder: KkfcColors.reworkCardBorder,
+  );
+
+  /// Green color set for ready status.
+  static const ready = KkfcTicketStatusColor(
+    background: KkfcColors.statusReadyBg,
+    border: KkfcColors.statusReadyBorder,
+    foreground: KkfcColors.statusReadyFg,
+    accent: KkfcColors.statusReadySolid,
+    cardBorder: KkfcColors.statusReadyCardBorder,
+  );
+
+  /// Resolves the ticket status colors for any [KkfcStatus].
+  static KkfcTicketStatusColor forStatus(KkfcStatus status) => switch (status) {
+    KkfcStatus.queued => queued,
+    KkfcStatus.acknowledged => acknowledged,
+    KkfcStatus.preparing => preparing,
+    KkfcStatus.checking => checking,
+    KkfcStatus.reworking => reworking,
+    KkfcStatus.ready => ready,
+    _ => queued,
+  };
+}
 
 @immutable
 class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
@@ -59,14 +155,14 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
       border: KkfcColors.neutralBorder, // --k-neutral-border (#D3DDE2)
     ),
     acknowledged: KkfcTone(
-      bg: KkfcColors.infoBg, // --k-info-bg (#E6F0FA)
-      fg: KkfcColors.info, // --k-info (#1B5A96)
-      border: KkfcColors.infoBorder, // --k-info-border (#A5C6E8)
+      bg: KkfcColors.statusAcknowledgedBg, // darker blue tint (#D8E6F5)
+      fg: KkfcColors.statusAcknowledgedFg, // darker blue text (#0D3B66)
+      border: KkfcColors.statusAcknowledgedBorder, // darker blue border (#8EB5E0)
     ),
     preparing: KkfcTone(
-      bg: KkfcColors.infoSolid, // --k-info-solid (#1F67AB)
-      fg: KkfcColors.onSolid, // --k-on-solid (#FFFFFF)
-      border: KkfcColors.infoSolid,
+      bg: KkfcColors.statusPreparingBg, // lighter blue tint (#EDF7FF)
+      fg: KkfcColors.statusPreparingFg, // lighter blue text (#0369A1)
+      border: KkfcColors.statusPreparingBorder, // lighter blue border (#BAE6FD)
     ),
     checking: KkfcTone(
       bg: KkfcColors.reviewBg, // --k-review-bg (#F0ECFB)
