@@ -11,6 +11,7 @@ import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticke
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 /// Main Kitchen Display System (KDS) four-lane board screen.
 class KitchenBoardScreen extends ConsumerWidget {
@@ -70,19 +71,32 @@ class KitchenBoardScreen extends ConsumerWidget {
                     ref.read(kitchenBoardProvider.notifier).refresh(),
               ),
             Expanded(
-              child: KitchenBoardLanesView(
-                state: boardState,
-                canPassQc: userRole?.canPassQc ?? false,
-                onTicketAction: (ticket) => showKitchenTicketStatusDialog(
-                  context,
-                  ticket: ticket,
-                ),
-                onTicketDetails:
-                    onTicketDetails ??
-                    (ticket) => showKitchenTicketStatusDialog(
-                      context,
-                      ticket: ticket,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Fluid organic wave landscape & precision contours from the KKFC design system
+                  const Positioned.fill(
+                    child: KkfcCanvasWaves(),
+                  ),
+
+                  // Responsive KDS 4-lane board
+                  Positioned.fill(
+                    child: KitchenBoardLanesView(
+                      state: boardState,
+                      canPassQc: userRole?.canPassQc ?? false,
+                      onTicketAction: (ticket) => showKitchenTicketStatusDialog(
+                        context,
+                        ticket: ticket,
+                      ),
+                      onTicketDetails:
+                          onTicketDetails ??
+                          (ticket) => showKitchenTicketStatusDialog(
+                            context,
+                            ticket: ticket,
+                          ),
                     ),
+                  ),
+                ],
               ),
             ),
           ],

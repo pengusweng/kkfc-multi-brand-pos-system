@@ -30,6 +30,7 @@ import 'package:mobile/shared/widgets/button/button.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 class _RecordingAdapter implements HttpClientAdapter {
   _RecordingAdapter(this.responder);
@@ -1825,6 +1826,42 @@ void main() {
         expect(find.text('T-016'), findsOneWidget);
         expect(find.text('T-015'), findsOneWidget);
         expect(find.text('T-014'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders background canvas wave accents and header wave arcs on KitchenBoardScreen',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        await pumpBoard(tester, repository: repo);
+
+        // 1. Verifies the fluid background canvas waves from the design system are present
+        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+
+        final canvasWaves = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is CanvasWavesPainter,
+        );
+        expect(canvasWaves, findsOneWidget);
+
+        // 2. Verifies the navy header copper wave arcs are present
+        final headerWaves = find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is HeaderWavesPainter,
+        );
+        expect(headerWaves, findsOneWidget);
+
+        // 3. Verifies both phone and tablet layouts render background waves without overflow
+        await pumpBoard(
+          tester,
+          repository: repo,
+          size: const Size(390, 844),
+        );
+        expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   });

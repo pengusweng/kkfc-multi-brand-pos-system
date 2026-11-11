@@ -28,10 +28,8 @@ class KitchenBoardLanesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: KkfcColors.canvas,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
           final width = constraints.maxWidth;
 
           if (width >= _fourLaneBreakpoint) {
@@ -114,8 +112,7 @@ class KitchenBoardLanesView extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildLane(KitchenBoardLane lane, {required bool scrollable}) {
