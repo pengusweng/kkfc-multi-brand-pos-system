@@ -9,6 +9,9 @@ export type StaffMember = {
   username: string;
   role: string;
   status: StaffStatus;
+  /** Display-ready, e.g. "Oct 31, 2026, 4:00 PM" (Manila time). */
+  createdAt: string;
+  modifiedAt: string;
 };
 
 export const ROLE_LABEL: Record<UserRole, string> = {
@@ -22,6 +25,12 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   CASHIER_STAFF: "Cashier Staff",
 };
 
+const dateTime = new Intl.DateTimeFormat("en-PH", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Manila",
+});
+
 export function toStaffMember(user: User): StaffMember {
   return {
     id: user.user_id,
@@ -29,5 +38,7 @@ export function toStaffMember(user: User): StaffMember {
     username: user.username,
     role: ROLE_LABEL[user.role],
     status: user.is_active ? "active" : "inactive",
+    createdAt: dateTime.format(new Date(user.created_at)),
+    modifiedAt: dateTime.format(new Date(user.modified_at)),
   };
 }

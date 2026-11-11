@@ -8,7 +8,7 @@ type StaffSearchFieldProps = {
 // DESIGN.md › Search Field: leading lens, trailing clear.
 export default function StaffSearchField({ value, onChange }: StaffSearchFieldProps) {
   return (
-    <div className="relative w-full md:w-auto md:max-w-sm md:min-w-60 md:flex-1">
+    <div className="relative w-full sm:w-auto sm:min-w-72 sm:flex-1 md:max-w-sm">
       <Search
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted"

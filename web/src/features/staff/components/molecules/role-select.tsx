@@ -11,7 +11,7 @@ type RoleSelectProps = {
 // Native select: keyboard, screen reader and mobile pickers come for free.
 export default function RoleSelect({ value, onChange }: RoleSelectProps) {
   return (
-    <div className="relative w-full md:w-48 md:shrink-0">
+    <div className="relative w-full sm:w-48 sm:shrink-0">
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value ? userRoleSchema.parse(e.target.value) : undefined)}

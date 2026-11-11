@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import PageTitle from "@/src/features/dashboard/components/atoms/page-title";
+import StaffDetailModal from "../components/organisms/staff-detail-modal";
 import StaffFilterBar from "../components/organisms/staff-filter-bar";
 import StaffPagination from "../components/molecules/staff-pagination";
 import StaffTable from "../components/organisms/staff-table";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { USERS_PAGE_SIZE, useUsers } from "../hooks/useUsers";
 import type { UserRole } from "../schemas/userSchema";
-import { toStaffMember, type StaffStatusFilter } from "../utils/staff";
+import { toStaffMember, type StaffMember, type StaffStatusFilter } from "../utils/staff";
 
 const NO_COUNTS: Record<StaffStatusFilter, number> = { all: 0, active: 0, inactive: 0 };
 
@@ -17,6 +18,10 @@ export default function StaffAccounts() {
   const [status, setStatus] = useState<StaffStatusFilter>("all");
   const [role, setRole] = useState<UserRole | undefined>();
   const search = useDebouncedValue(query.trim());
+
+  // Kept after closing so the modal's content doesn't vanish mid exit animation.
+  const [viewing, setViewing] = useState<StaffMember | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // The page belongs to one status + role + search combination; changing any
   // of them (including when the debounced search settles) goes back to page 1.
@@ -51,6 +56,10 @@ export default function StaffAccounts() {
 
       <StaffTable
         staff={staff}
+        onView={(member) => {
+          setViewing(member);
+          setModalOpen(true);
+        }}
         loading={isPending || isPlaceholderData}
         skeletonRows={staff.length || USERS_PAGE_SIZE}
         emptyMessage={emptyMessage}
@@ -66,6 +75,8 @@ export default function StaffAccounts() {
           ) : null
         }
       />
+
+      <StaffDetailModal member={viewing} open={modalOpen} onOpenChange={setModalOpen} />
     </section>
   );
 }

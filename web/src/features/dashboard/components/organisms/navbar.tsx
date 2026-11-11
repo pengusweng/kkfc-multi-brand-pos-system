@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import NavSection from "./molecules/nav-section";
-import NavHighlight from "./molecules/nav-highlight";
-import NavUser, { type NavUserProps } from "./molecules/nav-user";
-import NavThemeToggle from "./molecules/nav-theme-toggle";
-import { railFade } from "../utils/railFade";
-import { NAV_GROUPS } from "../utils/navItems";
 import { useLogout } from "@/src/features/auth/hooks/useLogout";
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
+import NavUser, { NavUserProps } from "../molecules/nav-user";
+import { railFade } from "../../utils/railFade";
+import { NAV_GROUPS } from "../../utils/navItems";
+import NavSection from "../molecules/nav-section";
+import NavHighlight from "../molecules/nav-highlight";
+import NavThemeToggle from "../molecules/nav-theme-toggle";
 
 const DESKTOP_QUERY = "(min-width: 64rem)";
 
@@ -23,9 +23,6 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
   const close = () => setOpen(false);
   const logout = useLogout();
 
-  // The clicked link becomes active immediately, before the route finishes
-  // loading. It's tied to the pathname it was clicked from, so it lapses on its
-  // own once the navigation lands (or if some other navigation happens).
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
   const activeHref = pending && pending.from === pathname ? pending.href : pathname;
   const navigate = (href: string) => {
@@ -33,11 +30,7 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
     setPending({ href, from: pathname });
   };
 
-  // Clip the highlight to the active link's box; the clip's transition is the
-  // pill sliding. Left and right match the nav's padding, and the bottom is
-  // measured from the end so the highlight's own height never matters. The
-  // rail's labels keep the same height when collapsed, so offsets only change
-  // when the active link does.
+
   const navRef = useRef<HTMLElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const placedRef = useRef(false);
@@ -61,12 +54,6 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
       return;
     }
 
-    // First placement (a fresh load or refresh): instead of popping in, the pill
-    // draws itself across the active link from the left, uncovering the dark
-    // label as it goes. Start as a zero-width sliver at the link's left edge,
-    // wait for that to paint (one frame can share a style pass with this one,
-    // which would skip the start state), then switch the transition on and
-    // open the clip to full width.
     placedRef.current = true;
     highlight.style.clipPath = box("calc(100% - 0.75rem)");
     requestAnimationFrame(() =>

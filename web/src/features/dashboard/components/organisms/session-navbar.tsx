@@ -4,8 +4,7 @@ import { validateCookie } from "@/src/features/auth/services/auth.service";
 import { WEB_ROLES } from "@/src/features/auth/utils/webRoles";
 import Navbar from "./navbar";
 
-// Reads the session once for the whole dashboard and redirects anyone who
-// shouldn't be here. Lives in the layout, so it doesn't rerun between pages.
+
 export default async function SessionNavbar() {
   const token = (await cookies()).get("kkfc_session")?.value;
   if (!token) redirect("/login");

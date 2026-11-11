@@ -1,5 +1,5 @@
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
-import { NAV_GROUPS } from "../utils/navItems";
+import { NAV_GROUPS } from "../../utils/navItems";
 
 // Placeholder rail at the navbar's exact size, shown while the session is checked.
 // It carries the rail transition name, so the login panel can morph straight into it.

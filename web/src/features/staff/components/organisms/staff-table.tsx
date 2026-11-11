@@ -7,6 +7,7 @@ import StaffSkeletonRow from "../molecules/staff-skeleton-row";
 
 type StaffTableProps = {
   staff: StaffMember[];
+  onView: (member: StaffMember) => void;
   loading?: boolean;
   skeletonRows?: number;
   emptyMessage?: string;
@@ -15,6 +16,7 @@ type StaffTableProps = {
 
 export default function StaffTable({
   staff,
+  onView,
   loading = false,
   skeletonRows = 8,
   emptyMessage = "No staff accounts yet.",
@@ -49,7 +51,7 @@ export default function StaffTable({
               </TableCell>
             </TableRow>
           ) : (
-            staff.map((member) => <StaffRow key={member.id} member={member} />)
+            staff.map((member) => <StaffRow key={member.id} member={member} onView={onView} />)
           )}
         </TableBody>
       </Table>

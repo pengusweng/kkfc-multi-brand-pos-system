@@ -4,7 +4,12 @@ import { CLUSTER } from "../../utils/table-columns";
 import StatusBadge from "../atoms/status-badge";
 import ViewButton from "../atoms/view-button";
 
-export default function StaffRow({ member }: { member: StaffMember }) {
+type StaffRowProps = {
+  member: StaffMember;
+  onView: (member: StaffMember) => void;
+};
+
+export default function StaffRow({ member, onView }: StaffRowProps) {
   return (
     <TableRow className="border-hairline hover:bg-surface-hover/50">
       <TableCell className="px-3 py-3 whitespace-normal md:px-4 md:whitespace-nowrap xl:whitespace-normal">
@@ -25,7 +30,7 @@ export default function StaffRow({ member }: { member: StaffMember }) {
         <StatusBadge status={member.status} />
       </TableCell>
       <TableCell className="py-3 pr-1.5 pl-1 text-right md:pr-2 md:pl-4">
-        <ViewButton label={`View ${member.name}`} />
+        <ViewButton label={`View ${member.name}`} onClick={() => onView(member)} />
       </TableCell>
     </TableRow>
   );

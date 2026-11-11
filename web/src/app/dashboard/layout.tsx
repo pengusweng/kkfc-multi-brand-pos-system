@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import PageBackground from "@/src/components/layout/page-background";
-import NavbarSkeleton from "@/src/features/dashboard/components/navbar-skeleton";
-import SessionNavbar from "@/src/features/dashboard/components/session-navbar";
+import SessionNavbar from "@/src/features/dashboard/components/organisms/session-navbar";
+import NavbarSkeleton from "@/src/features/dashboard/components/organisms/navbar-skeleton";
 
 export const instant = false;
 
@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/dashboard">)
       <Suspense fallback={<NavbarSkeleton />}>
         <SessionNavbar />
       </Suspense>
-      <PageBackground className="flex-col justify-start p-4 sm:p-8 lg:items-stretch">
+      <PageBackground className="flex-col items-stretch justify-start p-4 sm:p-8 lg:items-stretch">
         {children}
       </PageBackground>
     </div>
