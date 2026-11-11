@@ -13,7 +13,6 @@ import { Roles } from '../../../shared/decorators/roles.decorator';
 import { PaginationDTO } from '../../../shared/dto/pagination.dto';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Authenticated } from '../../auth/auth.guard';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   CreateMenuCatalogDocs,
   FindAllMenuCatalogDocs,
@@ -31,7 +30,6 @@ export class MenuCatalogController {
   @Post()
   @CreateMenuCatalogDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(PinGuard)
   async create(@Body() dto: MenuCatalogSetupDTO) {
     return this.menuCatalogService.create(dto);
   }

@@ -1,4 +1,3 @@
-import { PinGuard } from '../../../pin/pin.guard';
 import {
   INestApplication,
   ConflictException,
@@ -125,8 +124,6 @@ describe('Menu item modifiers HTTP endpoints', () => {
         { provide: MenuItemModifiersService, useValue: service },
       ],
     })
-      .overrideGuard(PinGuard)
-      .useValue({ canActivate: () => true })
       .compile();
     app = module.createNestApplication();
     app.useLogger(false);
