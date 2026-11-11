@@ -8,6 +8,7 @@ import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/availability/providers/availability_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/workspace_switcher.dart';
 
 void main() {
@@ -126,6 +127,28 @@ void main() {
     expect(
       router.routeInformationProvider.value.uri.path,
       AppRoutes.kitchenTickets,
+    );
+  });
+
+  testWidgets('AppHeaderRoleChip displays role text without dropdown icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppHeaderRoleChip(role: 'Supervisor'),
+        ),
+      ),
+    );
+
+    expect(find.text('Supervisor'), findsOneWidget);
+    // Role pill must not have dropdown icon
+    expect(
+      find.descendant(
+        of: find.byType(AppHeaderRoleChip),
+        matching: find.byIcon(Icons.keyboard_arrow_down_rounded),
+      ),
+      findsNothing,
     );
   });
 }

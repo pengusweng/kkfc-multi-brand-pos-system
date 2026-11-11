@@ -153,6 +153,23 @@ void main() {
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.color, KkfcColors.statusPreparingSolid);
     });
+
+    testWidgets('does not render Payment: Paid text on ticket card', (
+      tester,
+    ) async {
+      final ticket = makeTicket(status: KkfcStatus.preparing);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: KitchenTicketCard.board(ticket: ticket),
+          ),
+        ),
+      );
+
+      expect(find.textContaining('Payment:'), findsNothing);
+      expect(find.text('Payment: Paid'), findsNothing);
+    });
   });
 
   group('KitchenTicketDialogHeader status badge coloring', () {

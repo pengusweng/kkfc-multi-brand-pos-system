@@ -292,18 +292,7 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                 ],
                 const SizedBox(height: 16),
 
-                // 5. Payment status
-                Text(
-                  'Payment: ${widget.ticket.paymentStatus}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: KkfcColors.ticketMuted,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // 6. Action buttons footer (Details and Action)
+                // 5. Action buttons footer (Details and Action)
                 if (hideDetailsForFullWidthAction && showAction)
                   _buildPrimaryActionButton(resolvedLabel)
                 else

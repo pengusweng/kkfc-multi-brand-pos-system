@@ -280,12 +280,6 @@ class AppHeaderRoleChip extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: Colors.white,
-              ),
             ],
           ),
         ),

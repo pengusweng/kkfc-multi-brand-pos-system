@@ -33,21 +33,33 @@ class BrandPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'KKFC',
-                  style: KkfcTypography.textLg.copyWith(
-                    color: Colors.white,
-                    fontWeight: KkfcFontWeights.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Staff POS',
-                  style: KkfcTypography.textSm.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontWeight: KkfcFontWeights.regular,
-                  ),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: KkfcSpace.space3,
+                  runSpacing: KkfcSpace.space1,
+                  children: [
+                    Text(
+                      'KKFC',
+                      style: (compact
+                              ? KkfcTypography.text2xl
+                              : KkfcTypography.text3xl)
+                          .copyWith(
+                        color: Colors.white,
+                        fontWeight: KkfcFontWeights.bold,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    Text(
+                      'Staff POS',
+                      style: (compact
+                              ? KkfcTypography.textBase
+                              : KkfcTypography.textLg)
+                          .copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: KkfcFontWeights.regular,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 _buildBrands(context),
