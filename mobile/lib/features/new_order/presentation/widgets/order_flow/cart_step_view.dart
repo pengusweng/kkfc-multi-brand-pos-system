@@ -35,209 +35,202 @@ class CartStepView extends ConsumerWidget {
       children: [
         // Scrollable content area
         Expanded(
-          child: Container(
-            color: const Color(0xFFF7F3EC), // Warm Sand canvas ground
-            child: lines.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 48,
-                            color: Color(0xFF76849A),
+          child: lines.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 48,
+                          color: Color(0xFF76849A),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Your cart is empty',
+                          style: TextStyle(
+                            fontFamily: KkfcFonts.ibmPlexSans,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF19293E),
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Your cart is empty',
-                            style: TextStyle(
-                              fontFamily: KkfcFonts.ibmPlexSans,
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF19293E),
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Choose delicious items from the menu.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: KkfcFonts.text,
+                            fontSize: 14.0,
+                            color: Color(0xFF586579),
                           ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Choose delicious items from the menu.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: KkfcFonts.text,
-                              fontSize: 14.0,
-                              color: Color(0xFF586579),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          if (onReturnToMenu != null)
-                            OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF19293E),
-                                side: const BorderSide(
-                                  color: Color(0xFF76849A),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
+                        ),
+                        const SizedBox(height: 20),
+                        if (onReturnToMenu != null)
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF19293E),
+                              side: const BorderSide(color: Color(0xFF76849A)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
-                              onPressed: onReturnToMenu,
-                              child: const Text('Back to Menu'),
                             ),
-                        ],
+                            onPressed: onReturnToMenu,
+                            child: const Text('Back to Menu'),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+                  children: [
+                    // Subtitle: "1 line · 2 items · Dine-in"
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.text,
+                        fontSize: 13.5,
+                        color: Color(0xFF586579),
                       ),
                     ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-                    children: [
-                      // Subtitle: "1 line · 2 items · Dine-in"
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontFamily: KkfcFonts.text,
-                          fontSize: 13.5,
-                          color: Color(0xFF586579),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                      // Cart item cards
-                      for (final line in lines) ...[
-                        CartItemCard(
-                          line: line,
+                    // Cart item cards
+                    for (final line in lines) ...[
+                      CartItemCard(
+                        line: line,
+                        channel: channel,
+                        brandName: brand.name,
+                        onIncrement: () => ref
+                            .read(cartProvider.notifier)
+                            .incrementLine(line.id),
+                        onDecrement: () => ref
+                            .read(cartProvider.notifier)
+                            .decrementLine(line.id),
+                        onEdit: () => showItemCustomizationDialog(
+                          context,
+                          item: line.item,
                           channel: channel,
                           brandName: brand.name,
-                          onIncrement: () => ref
-                              .read(cartProvider.notifier)
-                              .incrementLine(line.id),
-                          onDecrement: () => ref
-                              .read(cartProvider.notifier)
-                              .decrementLine(line.id),
-                          onEdit: () => showItemCustomizationDialog(
-                            context,
-                            item: line.item,
-                            channel: channel,
-                            brandName: brand.name,
-                            editing: line,
-                          ),
-                          onRemove: () => ref
-                              .read(cartProvider.notifier)
-                              .removeLine(line.id),
+                          editing: line,
                         ),
-                        const SizedBox(height: 12),
-                      ],
+                        onRemove: () =>
+                            ref.read(cartProvider.notifier).removeLine(line.id),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
-                      // Subtotal & Total Summary Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12.0),
-                          border: Border.all(
-                            color: const Color(0xFFDDD6C9),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                    // Subtotal & Total Summary Card
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(
+                          color: const Color(0xFFDDD6C9),
+                          width: 1.0,
                         ),
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            // Subtotal row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Subtotal',
-                                  style: TextStyle(
-                                    fontFamily: KkfcFonts.text,
-                                    fontSize: 14.0,
-                                    color: Color(0xFF586579),
-                                  ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          // Subtotal row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Subtotal',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.text,
+                                  fontSize: 14.0,
+                                  color: Color(0xFF586579),
                                 ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) =>
-                                      FadeTransition(
-                                        opacity: animation,
-                                        child: child,
-                                      ),
-                                  child: Text(
-                                    formatPeso(total),
-                                    key: ValueKey('subtotal-$total'),
-                                    style: const TextStyle(
-                                      fontFamily: KkfcFonts.ibmPlexSans,
-                                      fontSize: 14.0,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF19293E),
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                      opacity: animation,
+                                      child: child,
                                     ),
+                                child: Text(
+                                  formatPeso(total),
+                                  key: ValueKey('subtotal-$total'),
+                                  style: const TextStyle(
+                                    fontFamily: KkfcFonts.ibmPlexSans,
+                                    fontSize: 14.0,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF19293E),
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: Color(0xFFEDE8DF),
-                            ),
-                            const SizedBox(height: 10),
-                            // Total row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Total',
-                                  style: TextStyle(
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFEDE8DF),
+                          ),
+                          const SizedBox(height: 10),
+                          // Total row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  fontSize: 18.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF19293E),
+                                ),
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                transitionBuilder: (child, animation) =>
+                                    FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                child: Text(
+                                  formatPeso(total),
+                                  key: ValueKey('total-$total'),
+                                  style: const TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
                                     fontSize: 18.0,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF19293E),
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
                                   ),
                                 ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  transitionBuilder: (child, animation) =>
-                                      FadeTransition(
-                                        opacity: animation,
-                                        child: child,
-                                      ),
-                                  child: Text(
-                                    formatPeso(total),
-                                    key: ValueKey('total-$total'),
-                                    style: const TextStyle(
-                                      fontFamily: KkfcFonts.ibmPlexSans,
-                                      fontSize: 18.0,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF19293E),
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-          ),
+                    ),
+                  ],
+                ),
         ),
 
         // Bottom Action Bar
         if (lines.isNotEmpty)
-          Container(
-            color: const Color(0xFFF7F3EC),
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: SafeArea(
               top: false,

@@ -21,8 +21,10 @@ class AuthRepository {
   final Dio _dio;
   final TokenStore _store;
   UserRole? _cachedRole;
+  String? _cachedUserId;
 
   UserRole? get cachedRole => _cachedRole;
+  String? get cachedUserId => _cachedUserId;
 
   /// Signs in and persists the session token.
   ///
@@ -54,6 +56,12 @@ class AuthRepository {
         _cachedRole = UserRole.fromApiValue(roleStr);
         if (roleStr != null && roleStr.isNotEmpty) {
           await _store.writeRole(roleStr);
+        }
+
+        final userId = userMap['user_id'] as String?;
+        if (userId != null && userId.isNotEmpty) {
+          _cachedUserId = userId;
+          await _store.writeUserId(userId);
         }
       }
 
@@ -102,6 +110,29 @@ class AuthRepository {
     }
   }
 
+  /// Returns the signed-in user's UUID.
+  Future<String?> getCurrentUserId() async {
+    if (_cachedUserId != null) return _cachedUserId;
+
+    try {
+      final stored = await _store.readUserId();
+      if (stored != null && stored.isNotEmpty) {
+        _cachedUserId = stored;
+        return _cachedUserId;
+      }
+
+      final response = await _dio.get<Map<String, dynamic>>('/auth/me');
+      final userId = response.data?['user_id'] as String?;
+      if (userId != null && userId.isNotEmpty) {
+        _cachedUserId = userId;
+        await _store.writeUserId(userId);
+      }
+      return _cachedUserId;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   /// Ends the server session and clears the stored token.
   ///
   /// Contract: POST /auth/logout `Authorization: Bearer <token>` -> 204.
@@ -111,6 +142,7 @@ class AuthRepository {
   /// must succeed even when the server is unreachable.
   Future<void> logout(String token) async {
     _cachedRole = null;
+    _cachedUserId = null;
     try {
       await _dio.post<void>(
         '/auth/logout',

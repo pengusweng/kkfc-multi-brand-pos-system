@@ -661,13 +661,11 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                                   onPressed: () {
                                     if (widget.isSheet) {
                                       Navigator.of(context).pop();
-                                      context.push(
-                                        AppRoutes.mobileOrderFlow,
-                                        extra: {'initialStep': 3},
-                                      );
-                                    } else {
-                                      context.go(AppRoutes.orderEntry);
                                     }
+                                    context.push(
+                                      AppRoutes.mobileOrderFlow,
+                                      extra: {'initialStep': 3},
+                                    );
                                   },
                                   child: const Text(
                                     'Continue to order details',

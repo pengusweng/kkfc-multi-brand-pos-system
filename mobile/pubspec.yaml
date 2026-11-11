@@ -40,6 +40,7 @@ dependencies:
   material_symbols_icons: ^4.2960.0
   dio: ^5.11.1
   flutter_secure_storage: ^11.2.0
+  image_picker: ^1.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -68,6 +69,8 @@ flutter:
     - assets/images/gamcheon.png
     - assets/images/king_kungs.png
     - assets/images/aurelia.png
+    - assets/images/logo_light.png
+    - assets/images/logo_dark.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -86,6 +89,11 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+  - family: Schibsted_Grotesk
+    fonts:
+      - asset: assets/fonts/Schibsted_Grotesk/SchibstedGrotesk-VariableFont_wght.ttf
+      - asset: assets/fonts/Schibsted_Grotesk/SchibstedGrotesk-Italic-VariableFont_wght.ttf
+        style: italic
   - family: IBMPlexSansCondensed
     fonts:
       - asset: assets/fonts/IBM_Plex_Sans_Condensed/IBMPlexSansCondensed-Medium.ttf

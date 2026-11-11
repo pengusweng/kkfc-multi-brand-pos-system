@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
 class KitchenTicketItemTile extends StatelessWidget {
@@ -31,7 +32,7 @@ class KitchenTicketItemTile extends StatelessWidget {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF102A43),
+              color: KkfcColors.ticketInk,
               height: 1.1,
             ),
           ),
@@ -46,7 +47,7 @@ class KitchenTicketItemTile extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF102A43),
+                  color: KkfcColors.ticketInk,
                   height: 1.2,
                 ),
               ),
@@ -58,7 +59,7 @@ class KitchenTicketItemTile extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF64748B),
+                      color: KkfcColors.ticketMuted,
                       height: 1.3,
                     ),
                   ),
@@ -67,15 +68,16 @@ class KitchenTicketItemTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: KkfcColors.ticketNoteBg,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0xFFFDE68A),
+                        color: KkfcColors.ticketNoteBorder,
                         width: 1,
                       ),
                     ),
@@ -84,7 +86,7 @@ class KitchenTicketItemTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF102A43),
+                        color: KkfcColors.ticketInk,
                         height: 1.25,
                       ),
                     ),

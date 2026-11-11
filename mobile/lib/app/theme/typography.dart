@@ -2,23 +2,25 @@ import 'package:flutter/material.dart';
 
 /// Font families used in the app.
 ///
-/// IBM Plex Sans (SIL OFL 1.1), self-hosted in the app.
-/// Monospace for codes only: the app uses the system mono stack.
+/// Schibsted Grotesk (SIL OFL 1.1), self-hosted in the app across all roles.
 abstract final class KkfcFonts {
-  /// Self-hosted IBM Plex Sans in the app.
-  static const ibmPlexSans = 'IBMPlexSansCondensed';
+  /// Primary Schibsted Grotesk font family used across the app.
+  static const schibstedGrotesk = 'Schibsted_Grotesk';
+
+  /// Display / UI font family (aliased to Schibsted_Grotesk).
+  static const ibmPlexSans = 'Schibsted_Grotesk';
 
   /// Tabular numerals for money, times, and quantities.
-  static const numeric = 'IBMPlexSansCondensed';
+  static const numeric = 'Schibsted_Grotesk';
 
   /// General text font family.
-  static const text = 'AtkinsonHyperlegibleNext';
+  static const text = 'Schibsted_Grotesk';
 
-  /// Monospace font family for references and codes.
-  static const mono = 'AtkinsonHyperlegibleMono';
+  /// Reference and code font family.
+  static const mono = 'Schibsted_Grotesk';
 
-  /// System monospace stack.
-  static const systemMono = 'monospace';
+  /// System font stack alias.
+  static const systemMono = 'Schibsted_Grotesk';
 }
 
 /// Font weights specified in the design system:

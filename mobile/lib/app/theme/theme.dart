@@ -19,6 +19,7 @@ ThemeData _buildTheme(
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: KkfcFonts.schibstedGrotesk,
     colorScheme: scheme,
     textTheme: kkfcTextTheme,
     scaffoldBackgroundColor: semantic.bgCanvas,

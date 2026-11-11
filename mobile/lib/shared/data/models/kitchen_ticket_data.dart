@@ -10,11 +10,13 @@ class KitchenTicketItem {
     required this.quantity,
     required this.name,
     this.modifiers = const [],
+    this.orderItemId,
   });
 
   final int quantity;
   final String name;
   final List<String> modifiers; // e.g. "EXTRA rice", "NO onions"
+  final String? orderItemId;
 }
 
 @immutable
@@ -40,4 +42,34 @@ class KitchenTicketData {
   final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
   final String paymentStatus;
+
+  /// Whether this ticket is a delivery channel (e.g. GrabFood or foodpanda).
+  bool get isDelivery {
+    final clean = channel.replaceAll(RegExp(r'[\s_\-]'), '').toLowerCase();
+    return clean == 'grabfood' || clean == 'foodpanda';
+  }
+
+  KitchenTicketData copyWith({
+    String? ticketNumber,
+    Duration? elapsed,
+    KitchenTicketAge? age,
+    KkfcStatus? status,
+    String? channel,
+    String? reference,
+    AssignedBrand? brand,
+    List<KitchenTicketItem>? items,
+    String? paymentStatus,
+  }) {
+    return KitchenTicketData(
+      ticketNumber: ticketNumber ?? this.ticketNumber,
+      elapsed: elapsed ?? this.elapsed,
+      age: age ?? this.age,
+      status: status ?? this.status,
+      channel: channel ?? this.channel,
+      reference: reference ?? this.reference,
+      brand: brand ?? this.brand,
+      items: items ?? this.items,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+    );
+  }
 }
