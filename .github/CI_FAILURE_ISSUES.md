@@ -46,7 +46,7 @@ It reads the current attempt's job results while the workflow is still running.
 The final required `CI` job waits for reporting and still fails if any required
 pipeline failed. Reporting problems are visible as failed jobs too.
 
-Only the reporting job receives `issues: write`, with read access to repository,
+The reporting and recovery jobs receive `issues: write`, with read access to repository,
 Actions, and PR metadata. Test jobs retain their existing permissions. The
 reporter uses the built-in `GITHUB_TOKEN`; no personal access token is needed.
 
@@ -72,13 +72,27 @@ attempt creates no duplicate. Existing eligible assignees are retained, and the
 PR author and owners of newly failing areas are added, up to ten users. A previous
 area-specific report is reused when available; historical duplicate issues are
 not automatically closed. Superseded PR
-commits, closed PRs, obsolete reruns, success, and cancellation are ignored.
+commits, closed PRs, obsolete reruns, and cancellation are ignored.
 Reporting jobs are serialized per PR or branch to avoid concurrent duplicates.
 GitHub may replace a pending reporting job when several runs finish quickly.
 
-Passing runs do not close issues automatically. The assigned person verifies
-the cause and fix before closing. A later failure after closure creates a new
-issue. PR and post-merge branch failures have distinct tracking scopes.
+After the required `CI` check passes, `Resolve recovered CI issues` verifies
+that this run belongs to the latest PR head or branch commit and that no newer
+run of this workflow exists for that branch and event. It comments with the
+successful run link and closes the bot-created issue as completed. It does not
+wait for the PR to merge. Fork and Dependabot exclusions also apply to recovery.
+
+Every previously failing area and recorded job must actually pass. Skipped,
+missing, or renamed checks do not count as recovery. Failures from earlier
+attempts remain tracked until verified, even if a later attempt fails in another
+area. Legacy reports use the recorded areas and failed-job table. Issues without
+enough failure evidence remain open for review.
+
+A later failure reopens the same issue and retains its eligible assignees.
+Repeated recovery calls do not add duplicate comments after closure. PR and
+post-merge branch failures have distinct tracking scopes. Recovery and failure
+reporting share the same concurrency group. Recovery failures appear as a failed
+Actions job; they do not change the already completed required `CI` check.
 
 ## Verification
 
