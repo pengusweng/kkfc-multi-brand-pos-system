@@ -9,6 +9,7 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
+import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 @immutable
@@ -124,13 +125,33 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         if (prev != null) {
           final returnedReason = t.qcReturnedReason ?? prev.qcReturnedReason;
           final notes = t.reworkNotes ?? prev.reworkNotes;
-          if (returnedReason != null || notes != null) {
+          final mergedItems = t.data.items.map((item) {
+            final prevItem = prev.data.items
+                .cast<KitchenTicketItem?>()
+                .firstWhere(
+                  (p) =>
+                      p != null &&
+                      ((item.orderItemId != null &&
+                              item.orderItemId == p.orderItemId) ||
+                          p.name == item.name),
+                  orElse: () => null,
+                );
+            if (item.failReason == null && prevItem?.failReason != null) {
+              return item.copyWith(failReason: prevItem!.failReason);
+            }
+            return item;
+          }).toList();
+
+          if (returnedReason != null ||
+              notes != null ||
+              mergedItems != t.data.items) {
             return t.copyWith(
               qcReturnedReason: returnedReason,
               reworkNotes: notes,
               data: t.data.copyWith(
                 qcReturnedReason: returnedReason,
                 reworkNotes: notes,
+                items: mergedItems,
               ),
             );
           }
@@ -307,6 +328,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
                 t.rawStatus.toUpperCase() == 'REWORKING' ||
                 t.data.status == KkfcStatus.preparing ||
                 t.data.status == KkfcStatus.reworking)) {
+          final clearedItems = t.data.items
+              .map((it) => it.copyWith(clearFailReason: true))
+              .toList();
           return t.copyWith(
             rawStatus: 'FOR_CHECKING',
             lane: KitchenBoardLane.qcCheck,
@@ -317,6 +341,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
               status: KkfcStatus.checking,
               qcReturnedReason: effectiveQcReturnedReason,
               reworkNotes: effectiveReworkNotes,
+              items: clearedItems,
             ),
           );
         }
@@ -440,6 +465,30 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
       final updatedTickets = tickets.map((t) {
         if (t.kitchenTicketId == kitchenTicketId) {
+          final updatedItems = t.data.items.map((item) {
+            QcItemRejection? matching;
+            if (rejections != null && rejections.isNotEmpty) {
+              matching = rejections.cast<QcItemRejection?>().firstWhere(
+                (r) =>
+                    r != null &&
+                    ((item.orderItemId != null &&
+                            item.orderItemId == r.orderItemId) ||
+                        (r.itemName != null && r.itemName == item.name)),
+                orElse: () => null,
+              );
+            }
+            if (matching != null && matching.reason.trim().isNotEmpty) {
+              final reasonText = matching.portionNumber > 0 && item.quantity > 1
+                  ? 'Portion ${matching.portionNumber}: ${matching.reason.trim()}'
+                  : matching.reason.trim();
+              return item.copyWith(failReason: reasonText);
+            } else if (rejections != null && rejections.isNotEmpty) {
+              return item.copyWith(clearFailReason: true);
+            } else {
+              return item.copyWith(failReason: effectiveReason);
+            }
+          }).toList();
+
           return t.copyWith(
             rawStatus: 'REWORKING',
             lane: KitchenBoardLane.preparing,
@@ -448,6 +497,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
             data: t.data.copyWith(
               status: KkfcStatus.reworking,
               qcReturnedReason: effectiveReason,
+              items: updatedItems,
             ),
           );
         }

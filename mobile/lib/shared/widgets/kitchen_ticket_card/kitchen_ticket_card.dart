@@ -185,47 +185,6 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Container(
-                    key: const ValueKey('kitchen-ticket-qc-returned-box'),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: KkfcColors.ticketNoteBg,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: KkfcColors.ticketNoteBorder,
-                        width: 1,
-                      ),
-                    ),
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(
-                            text: 'QC returned: ',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: KkfcColors.ticketInk,
-                            ),
-                          ),
-                          TextSpan(
-                            text: widget.ticket.qcReturnedReason?.trim().isNotEmpty == true
-                                ? widget.ticket.qcReturnedReason!
-                                : 'Rice portion short; plate again',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: KkfcColors.ticketInk,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
                 if (widget.ticket.status == KkfcStatus.checking &&
                     widget.ticket.reworkNotes != null &&
@@ -275,7 +234,9 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                 // 4. Ticket items list
                 for (var i = 0; i < widget.ticket.items.length; i++) ...[
                   if (i > 0) const SizedBox(height: 14),
-                  KitchenTicketItemTile(item: widget.ticket.items[i]),
+                  KitchenTicketItemTile(
+                    item: _resolveItemWithFailReason(widget.ticket.items[i], i),
+                  ),
                 ],
                 const SizedBox(height: 16),
 
@@ -334,6 +295,27 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
         ),
       ),
     );
+  }
+
+  KitchenTicketItem _resolveItemWithFailReason(
+    KitchenTicketItem item,
+    int index,
+  ) {
+    if (item.failReason != null && item.failReason!.trim().isNotEmpty) {
+      return item;
+    }
+    if (widget.ticket.status == KkfcStatus.reworking) {
+      final anyItemHasFailReason = widget.ticket.items.any(
+        (it) => it.failReason != null && it.failReason!.trim().isNotEmpty,
+      );
+      if (!anyItemHasFailReason) {
+        final reason = widget.ticket.qcReturnedReason?.trim().isNotEmpty == true
+            ? widget.ticket.qcReturnedReason!
+            : 'Rice portion short; plate again';
+        return item.copyWith(failReason: reason);
+      }
+    }
+    return item;
   }
 
   Widget _buildPrimaryActionButton(String resolvedLabel) {

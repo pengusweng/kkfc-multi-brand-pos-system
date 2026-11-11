@@ -11,12 +11,31 @@ class KitchenTicketItem {
     required this.name,
     this.modifiers = const [],
     this.orderItemId,
+    this.failReason,
   });
 
   final int quantity;
   final String name;
   final List<String> modifiers; // e.g. "EXTRA rice", "NO onions"
   final String? orderItemId;
+  final String? failReason;
+
+  KitchenTicketItem copyWith({
+    int? quantity,
+    String? name,
+    List<String>? modifiers,
+    String? orderItemId,
+    String? failReason,
+    bool clearFailReason = false,
+  }) {
+    return KitchenTicketItem(
+      quantity: quantity ?? this.quantity,
+      name: name ?? this.name,
+      modifiers: modifiers ?? this.modifiers,
+      orderItemId: orderItemId ?? this.orderItemId,
+      failReason: clearFailReason ? null : (failReason ?? this.failReason),
+    );
+  }
 }
 
 @immutable

@@ -68,6 +68,22 @@ class KitchenBoardTicket {
         reworkNotes: reworkNotes ?? effectiveData.reworkNotes,
       );
     }
+    final effectiveRawStatus = rawStatus ?? this.rawStatus;
+    if (effectiveRawStatus.toUpperCase() == 'REWORKING' ||
+        effectiveData.status == KkfcStatus.reworking) {
+      final reason = qcReturnedReason ?? effectiveData.qcReturnedReason;
+      if (reason != null && reason.trim().isNotEmpty) {
+        final anyItemHasFailReason = effectiveData.items.any(
+          (it) => it.failReason != null && it.failReason!.trim().isNotEmpty,
+        );
+        if (!anyItemHasFailReason) {
+          final updatedItems = effectiveData.items
+              .map((it) => it.copyWith(failReason: reason))
+              .toList();
+          effectiveData = effectiveData.copyWith(items: updatedItems);
+        }
+      }
+    }
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
       orderId: orderId ?? this.orderId,
@@ -115,7 +131,6 @@ class KitchenBoardTicket {
     final channel = _parseChannel(json, orderMap);
     final reference = _parseReference(json, orderMap, channel, orderCode);
     final paymentStatus = _parsePaymentStatus(json, orderMap);
-    final items = _parseItems(json, orderMap, orderCode);
     final sentToKitchenLabel = _parseTimeLabel(
       json['created_at'] as String?,
       fallback: '—',
@@ -147,6 +162,38 @@ class KitchenBoardTicket {
                 ? (latestAttemptMap?['qc_attempt_id'] as String?)?.trim()
                 : null));
 
+    final itemRejectionsMap = <String, String>{};
+    void extractItemRejections(dynamic obj) {
+      if (obj is List) {
+        for (final entry in obj) {
+          extractItemRejections(entry);
+        }
+      } else if (obj is Map<String, dynamic>) {
+        final orderItemId = (obj['order_item_id'] as String?)?.trim();
+        final desc = (obj['description'] as String?)?.trim() ??
+            (obj['rejection_reason'] as String?)?.trim() ??
+            (obj['reason'] as String?)?.trim();
+        final portion = (obj['portion_number'] as num?)?.toInt();
+        if (orderItemId != null &&
+            orderItemId.isNotEmpty &&
+            desc != null &&
+            desc.isNotEmpty) {
+          final text = portion != null && portion > 0
+              ? 'Portion $portion: $desc'
+              : desc;
+          itemRejectionsMap[orderItemId] = text;
+        }
+        if (obj['rejections'] != null) extractItemRejections(obj['rejections']);
+        if (obj['order_item_qc_rejections'] != null) {
+          extractItemRejections(obj['order_item_qc_rejections']);
+        }
+      }
+    }
+
+    extractItemRejections(json['qc_attempts']);
+    extractItemRejections(json['rejections']);
+    extractItemRejections(json['order_item_qc_rejections']);
+
     final qcReturnedReason =
         (json['qc_returned_reason'] as String?)?.trim() ??
         (json['rejection_reason'] as String?)?.trim() ??
@@ -156,6 +203,16 @@ class KitchenBoardTicket {
     final reworkNotes =
         (json['rework_notes'] as String?)?.trim() ??
         (json['rework_note'] as String?)?.trim();
+
+    final isRework = rawStatus == 'REWORKING' || kkfcStatus == KkfcStatus.reworking;
+    final items = _parseItems(
+      json,
+      orderMap,
+      orderCode,
+      itemRejectionsMap: itemRejectionsMap,
+      qcReturnedReason: qcReturnedReason,
+      isRework: isRework,
+    );
 
     return KitchenBoardTicket(
       kitchenTicketId: ticketId.isNotEmpty ? ticketId : ticketNumber,
@@ -399,8 +456,11 @@ class KitchenBoardTicket {
   static List<KitchenTicketItem> _parseItems(
     Map<String, dynamic> json,
     Map<String, dynamic>? orderMap,
-    String orderCode,
-  ) {
+    String orderCode, {
+    Map<String, String> itemRejectionsMap = const {},
+    String? qcReturnedReason,
+    bool isRework = false,
+  }) {
     final rawItems =
         json['items'] ??
         json['order_items'] ??
@@ -449,6 +509,8 @@ class KitchenBoardTicket {
 
           final orderItemId =
               (entry['order_item_id'] as String?) ?? (entry['id'] as String?);
+          final failReason =
+              orderItemId != null ? itemRejectionsMap[orderItemId] : null;
 
           parsed.add(
             KitchenTicketItem(
@@ -456,6 +518,7 @@ class KitchenBoardTicket {
               name: name,
               modifiers: mods,
               orderItemId: orderItemId,
+              failReason: failReason,
             ),
           );
         }
@@ -463,17 +526,27 @@ class KitchenBoardTicket {
     }
 
     if (parsed.isNotEmpty) {
+      if (isRework &&
+          qcReturnedReason != null &&
+          qcReturnedReason.isNotEmpty &&
+          itemRejectionsMap.isEmpty) {
+        if (parsed.length == 1) {
+          parsed[0] = parsed[0].copyWith(failReason: qcReturnedReason);
+        } else {
+          for (var i = 0; i < parsed.length; i++) {
+            parsed[i] = parsed[i].copyWith(failReason: qcReturnedReason);
+          }
+        }
+      }
+
       if (ticketNote != null && ticketNote.isNotEmpty) {
         final formattedNote = ticketNote.toLowerCase().startsWith('note:')
             ? ticketNote
             : 'Note: $ticketNote';
         final first = parsed.first;
         if (!first.modifiers.contains(formattedNote)) {
-          parsed[0] = KitchenTicketItem(
-            quantity: first.quantity,
-            name: first.name,
+          parsed[0] = parsed[0].copyWith(
             modifiers: [...first.modifiers, formattedNote],
-            orderItemId: first.orderItemId,
           );
         }
       }

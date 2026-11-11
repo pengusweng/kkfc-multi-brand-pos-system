@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_item_tile.dart';
 
 /// Modal view for inspecting a rejected ticket in the rework state and
@@ -39,6 +40,25 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
   void dispose() {
     _notesController.dispose();
     super.dispose();
+  }
+
+  KitchenTicketItem _resolveItemWithFailReason(
+    KitchenTicketItem item,
+    int index,
+  ) {
+    if (item.failReason != null && item.failReason!.trim().isNotEmpty) {
+      return item;
+    }
+    final anyItemHasFailReason = widget.ticket.data.items.any(
+      (it) => it.failReason != null && it.failReason!.trim().isNotEmpty,
+    );
+    if (!anyItemHasFailReason) {
+      final reason = widget.ticket.qcReturnedReason?.trim().isNotEmpty == true
+          ? widget.ticket.qcReturnedReason!
+          : 'Rice portion short; plate again';
+      return item.copyWith(failReason: reason);
+    }
+    return item;
   }
 
   Future<void> _handleSubmit() async {
@@ -229,7 +249,10 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                             i++) ...[
                           if (i > 0) const SizedBox(height: 14),
                           KitchenTicketItemTile(
-                            item: widget.ticket.data.items[i],
+                            item: _resolveItemWithFailReason(
+                              widget.ticket.data.items[i],
+                              i,
+                            ),
                           ),
                         ],
                       ],

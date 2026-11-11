@@ -30,6 +30,7 @@ import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_pr
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/button/button.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
+import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_item_tile.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/wave_accents.dart';
@@ -2525,6 +2526,115 @@ void main() {
           find.descendant(
             of: find.byKey(const ValueKey('qc-dialog-rework-note-banner')),
             matching: find.textContaining('Rework note: Replated with a full portion.'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'In rework state, fail reason displays directly under each item in KitchenTicketItemTile for multi-item tickets',
+      (tester) async {
+        final multiItemReworkTicket = sampleKitchenBoardTickets[1].copyWith(
+          kitchenTicketId: 'rework-multi-item-ticket',
+          rawStatus: 'REWORKING',
+          qcReturnedReason: 'Rice portion short; plate again',
+          data: sampleKitchenBoardTickets[1].data.copyWith(
+            ticketNumber: 'T-077',
+            status: KkfcStatus.reworking,
+            qcReturnedReason: 'Rice portion short; plate again',
+            items: const [
+              KitchenTicketItem(
+                quantity: 1,
+                name: "Aurelia's Chicken Inasal Pecho",
+                orderItemId: 'item-pecho-1',
+                modifiers: ['Toasted Garlic Inasal Rice'],
+                failReason: 'Rice portion short; plate again',
+              ),
+              KitchenTicketItem(
+                quantity: 2,
+                name: 'Calamansi Juice',
+                orderItemId: 'item-juice-2',
+                modifiers: ['Less Ice'],
+                failReason: null,
+              ),
+            ],
+          ),
+        );
+
+        final repo = _FakeKitchenBoardRepository(
+          () async => [multiItemReworkTicket],
+        );
+        await pumpBoard(tester, repository: repo);
+
+        final card = find.byKey(const ValueKey('kitchen-ticket-card-T-077'));
+        expect(card, findsOneWidget);
+
+        // 1. Rework badge at the top
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.byKey(const ValueKey('kitchen-ticket-rework-badge')),
+          ),
+          findsOneWidget,
+        );
+
+        // 2. Failed item displays QC returned reason under it
+        final pechoTile = find.ancestor(
+          of: find.text("Aurelia's Chicken Inasal Pecho"),
+          matching: find.byType(KitchenTicketItemTile),
+        );
+        expect(pechoTile, findsOneWidget);
+        expect(
+          find.descendant(
+            of: pechoTile,
+            matching: find.byKey(const ValueKey('kitchen-ticket-qc-returned-box')),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: pechoTile,
+            matching: find.textContaining('QC returned: Rice portion short; plate again'),
+          ),
+          findsOneWidget,
+        );
+
+        // 3. Passed item does NOT display any QC returned box under it
+        final juiceTile = find.ancestor(
+          of: find.text('Calamansi Juice'),
+          matching: find.byType(KitchenTicketItemTile),
+        );
+        expect(juiceTile, findsOneWidget);
+        expect(
+          find.descendant(
+            of: juiceTile,
+            matching: find.byKey(const ValueKey('kitchen-ticket-qc-returned-box')),
+          ),
+          findsNothing,
+        );
+
+        // 4. In the rework modal dialog, fail reason also appears under the item
+        final openReworkButton = find.descendant(
+          of: card,
+          matching: find.widgetWithText(FilledButton, 'Open rework'),
+        );
+        await tester.tap(openReworkButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KitchenTicketReworkView), findsOneWidget);
+        final reworkPechoTile = find.descendant(
+          of: find.byType(KitchenTicketReworkView),
+          matching: find.ancestor(
+            of: find.text("Aurelia's Chicken Inasal Pecho"),
+            matching: find.byType(KitchenTicketItemTile),
+          ),
+        );
+        expect(reworkPechoTile, findsOneWidget);
+        expect(
+          find.descendant(
+            of: reworkPechoTile,
+            matching: find.textContaining('QC returned: Rice portion short; plate again'),
           ),
           findsOneWidget,
         );
