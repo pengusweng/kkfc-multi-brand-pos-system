@@ -307,6 +307,7 @@ class KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
     List<String>? orderItemIds,
+    List<Map<String, dynamic>>? rejections,
   }) async {
     var resolvedAttemptId = attemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
@@ -324,8 +325,14 @@ class KitchenBoardRepository {
         ?.where((id) => id.trim().isNotEmpty)
         .toList();
 
-    // If no orderItemIds were provided, query the ticket directly to resolve them.
-    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+    // If no orderItemIds were provided and rejections need resolution, query the ticket.
+    final needsItemIds = effectiveItemIds == null ||
+        effectiveItemIds.isEmpty ||
+        (rejections != null &&
+            rejections.any((r) =>
+                (r['order_item_id'] as String?)?.trim().isEmpty ?? true));
+
+    if (needsItemIds) {
       try {
         final res = await _dio.get<Object?>(
           _endpoint('/kitchen-ticket/$kitchenTicketId'),
@@ -359,24 +366,40 @@ class KitchenBoardRepository {
       }
     }
 
-    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
-      throw const KitchenBoardException(
-        'Cannot fail QC: no valid order items found for this ticket.',
-      );
+    final List<Map<String, dynamic>> finalRejections;
+    if (rejections != null && rejections.isNotEmpty) {
+      finalRejections = rejections.map((rej) {
+        final map = Map<String, dynamic>.from(rej);
+        final rawId = (map['order_item_id'] as String?)?.trim();
+        if (rawId == null || rawId.isEmpty) {
+          if (effectiveItemIds != null && effectiveItemIds.isNotEmpty) {
+            map['order_item_id'] = effectiveItemIds.first;
+          } else {
+            map['order_item_id'] = kitchenTicketId;
+          }
+        }
+        return map;
+      }).toList();
+    } else {
+      if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+        throw const KitchenBoardException(
+          'Cannot fail QC: no valid order items found for this ticket.',
+        );
+      }
+
+      finalRejections = effectiveItemIds
+          .map(
+            (id) => {
+              'order_item_id': id,
+              'portion_number': 1,
+              'rejection_reason': 'INCOMPLETE',
+              'description': reason,
+            },
+          )
+          .toList();
     }
 
-    final List<Map<String, dynamic>> rejections = effectiveItemIds
-        .map(
-          (id) => {
-            'order_item_id': id,
-            'portion_number': 1,
-            'rejection_reason': 'INCOMPLETE',
-            'description': reason,
-          },
-        )
-        .toList();
-
-    await rejectQcAttempt(resolvedAttemptId, rejections: rejections);
+    await rejectQcAttempt(resolvedAttemptId, rejections: finalRejections);
   }
 
   /// Hands over a ready ticket via

@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/repositories/kitchen_board_repository.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 @immutable
@@ -361,9 +362,10 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
   Future<bool> rejectQc({
     required String kitchenTicketId,
-    required String reason,
+    String? reason,
     String? attemptId,
     List<String>? orderItemIds,
+    List<QcItemRejection>? rejections,
   }) async {
     final userRole = ref.read(userRoleProvider);
     if (userRole != null && !userRole.canPassQc) return false;
@@ -378,12 +380,19 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
+      final effectiveReason = reason ??
+          (rejections != null && rejections.isNotEmpty
+              ? rejections.first.reason
+              : 'QC failed');
+      final rejectionsPayload = rejections?.map((r) => r.toJson()).toList();
+
       await repo.rejectQcForTicket(
         kitchenTicketId: kitchenTicketId,
-        reason: reason,
+        reason: effectiveReason,
         attemptId: attemptId,
         checkerId: userId,
         orderItemIds: orderItemIds,
+        rejections: rejectionsPayload,
       );
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)

@@ -31,6 +31,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.isActionEnabled = true,
     this.onAction,
     this.onFail,
+    this.onReject,
     this.onCancelTicket,
     this.onClose,
     this.imagePicker,
@@ -46,6 +47,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final bool isActionEnabled;
   final VoidCallback? onAction;
   final VoidCallback? onFail;
+  final Future<void> Function(List<QcItemRejection> rejections)? onReject;
   final VoidCallback? onCancelTicket;
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
@@ -143,6 +145,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     isActionEnabled: isActionEnabled,
                     onPass: onAction,
                     onFail: onFail,
+                    onReject: onReject,
                   ),
                 )
               else if (isHandover)
@@ -401,14 +404,37 @@ Future<void> showKitchenTicketStatusDialog(
                     }
                   }
                 : null,
+            onReject: effectiveActionEnabled
+                ? (rejections) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .rejectQc(
+                          kitchenTicketId: currentTicket.kitchenTicketId,
+                          attemptId: currentTicket.qcAttemptId,
+                          rejections: rejections,
+                        );
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
             onFail: effectiveActionEnabled
                 ? () async {
                     final rejected = await showFailQcSendToReworkDialog(
                       dialogContext,
                       ticket: currentTicket,
                     );
-                    if (rejected == true && dialogContext.mounted) {
-                      Navigator.of(dialogContext).maybePop();
+                    if (rejected != null && dialogContext.mounted) {
+                      final success = await ref
+                          .read(kitchenBoardProvider.notifier)
+                          .rejectQc(
+                            kitchenTicketId: currentTicket.kitchenTicketId,
+                            attemptId: currentTicket.qcAttemptId,
+                            rejections: [rejected],
+                          );
+                      if (success && dialogContext.mounted) {
+                        Navigator.of(dialogContext).maybePop();
+                      }
                     }
                   }
                 : null,

@@ -166,28 +166,31 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
     List<String>? orderItemIds,
+    List<Map<String, dynamic>>? rejections,
   }) async {
     final targetAttempt = attemptId ?? kitchenTicketId;
-    final rejections = (orderItemIds != null && orderItemIds.isNotEmpty)
-        ? orderItemIds
-              .map(
-                (id) => {
-                  'order_item_id': id,
+    final finalRejections = (rejections != null && rejections.isNotEmpty)
+        ? rejections
+        : (orderItemIds != null && orderItemIds.isNotEmpty)
+            ? orderItemIds
+                .map(
+                  (id) => {
+                    'order_item_id': id,
+                    'portion_number': 1,
+                    'rejection_reason': 'INCOMPLETE',
+                    'description': reason,
+                  },
+                )
+                .toList()
+            : [
+                {
+                  'order_item_id': kitchenTicketId,
                   'portion_number': 1,
                   'rejection_reason': 'INCOMPLETE',
                   'description': reason,
                 },
-              )
-              .toList()
-        : [
-            {
-              'order_item_id': kitchenTicketId,
-              'portion_number': 1,
-              'rejection_reason': 'INCOMPLETE',
-              'description': reason,
-            },
-          ];
-    await rejectQcAttempt(targetAttempt, rejections: rejections);
+              ];
+    await rejectQcAttempt(targetAttempt, rejections: finalRejections);
   }
 
   @override
@@ -1232,8 +1235,11 @@ void main() {
           isNull,
         );
 
-        // Tapping Fail toggles item decision - button remains muted
+        // Tapping Fail opens fail dialog - cancelling leaves button muted
         await tester.tap(find.text('Fail'));
+        await tester.pumpAndSettle();
+        expect(find.byType(FailQcSendToReworkDialog), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('fail-qc-cancel-button')));
         await tester.pumpAndSettle();
         expect(
           tester.widget<FilledButton>(allItemsPassedFinder).onPressed,
@@ -1353,11 +1359,14 @@ void main() {
           isNull,
         );
 
-        // 3. Click Fail on Item Beta -> button remains MUTED
+        // 3. Click Fail on Item Beta -> opens dialog, cancelling leaves button MUTED
         final failButtons = find.text('Fail');
         expect(failButtons, findsNWidgets(2));
 
         await tester.tap(failButtons.last);
+        await tester.pumpAndSettle();
+        expect(find.byType(FailQcSendToReworkDialog), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('fail-qc-cancel-button')));
         await tester.pumpAndSettle();
 
         expect(
@@ -1504,7 +1513,7 @@ void main() {
     });
 
     testWidgets(
-      'QC Fail flow: opens dialog, validates empty reason banner, and confirming with reason statically closes dialogs without changing ticket',
+      'QC Fail flow: Fail QC button disabled when no failed items, item Fail button opens dialog with portion number, and Fail QC and rework dispatches rejections to API',
       (tester) async {
         final qcTicket = sampleKitchenBoardTickets
             .firstWhere((t) => t.lane == KitchenBoardLane.ready)
@@ -1516,6 +1525,13 @@ void main() {
               data: sampleKitchenBoardTickets.first.data.copyWith(
                 ticketNumber: 'T-QC-777',
                 status: KkfcStatus.checking,
+                items: [
+                  const KitchenTicketItem(
+                    quantity: 2,
+                    name: 'Iced Sea Salt Cream Latte',
+                    orderItemId: 'item-uuid-1',
+                  ),
+                ],
               ),
             );
 
@@ -1535,21 +1551,24 @@ void main() {
         );
         expect(failQcButton, findsOneWidget);
 
-        // 2. Click "Fail QC and rework" opens FailQcSendToReworkDialog
-        await tester.tap(failQcButton);
+        // 2. Fail QC and rework button is disabled and muted when no items failed
+        final outlinedButton = tester.widget<OutlinedButton>(failQcButton);
+        expect(outlinedButton.onPressed, isNull);
+
+        // 3. Click "Fail" on the item card opens FailQcSendToReworkDialog
+        final itemFailButton = find.widgetWithText(InkWell, 'Fail');
+        expect(itemFailButton, findsOneWidget);
+        await tester.tap(itemFailButton);
         await tester.pumpAndSettle();
 
         expect(find.byType(FailQcSendToReworkDialog), findsOneWidget);
         expect(find.text('Fail QC and send to rework'), findsOneWidget);
-        expect(
-          find.text(
-            'Say what the kitchen needs to correct. The ticket moves to Rework in the Preparing lane.',
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('Portion number'), findsOneWidget);
         expect(find.text('Reason'), findsOneWidget);
+        expect(find.byKey(const ValueKey('fail-qc-portion-field')), findsOneWidget);
+        expect(find.byKey(const ValueKey('fail-qc-reason-field')), findsOneWidget);
 
-        // 3. Click "Confirm QC failure" with empty reason -> shows error banner
+        // 4. Click "Confirm QC failure" with empty reason -> shows error banner
         final confirmButton = find.byKey(
           const ValueKey('fail-qc-confirm-button'),
         );
@@ -1567,7 +1586,11 @@ void main() {
         );
         expect(repo.rejectedQcAttemptIds, isEmpty);
 
-        // 4. Enter valid reason and confirm
+        // 5. Enter portion number and valid reason and confirm
+        await tester.enterText(
+          find.byKey(const ValueKey('fail-qc-portion-field')),
+          '2',
+        );
         await tester.enterText(
           find.byKey(const ValueKey('fail-qc-reason-field')),
           'under-cooked, missing sauce',
@@ -1577,16 +1600,34 @@ void main() {
         await tester.tap(confirmButton);
         await tester.pumpAndSettle();
 
-        // 5. Static flow: confirm closes popups and does nothing to the ticket (no API call)
-        expect(repo.rejectedQcAttemptIds, isEmpty);
-
-        // 6. Both dialogs are closed, ticket remains on board in QC check lane
+        // 6. FailQcSendToReworkDialog is closed; item shows rejection note and Fail is selected
         expect(find.byType(FailQcSendToReworkDialog), findsNothing);
-        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
-        expect(
-          find.byKey(const ValueKey('kitchen-ticket-card-T-QC-777')),
-          findsOneWidget,
+        expect(find.text('Portion 2: under-cooked, missing sauce'), findsOneWidget);
+
+        // 7. Fail QC and rework button is now enabled
+        final enabledFailQcButton = tester.widget<OutlinedButton>(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-fail-qc-button')),
         );
+        expect(enabledFailQcButton.onPressed, isNotNull);
+
+        // 8. Clicking "Fail QC and rework" calls the API and moves ticket to rework
+        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-fail-qc-button')));
+        await tester.pumpAndSettle();
+
+        expect(repo.rejectedQcAttemptIds, contains('attempt-uuid-777'));
+        expect(repo.rejectedQcAttempts.length, 1);
+        expect(repo.rejectedQcAttempts.first.attemptId, 'attempt-uuid-777');
+        expect(repo.rejectedQcAttempts.first.rejections, [
+          {
+            'order_item_id': 'item-uuid-1',
+            'portion_number': 2,
+            'rejection_reason': 'INCOMPLETE',
+            'description': 'under-cooked, missing sauce',
+          },
+        ]);
+
+        // 9. Status dialog closed
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
       },
     );
 
