@@ -25,6 +25,10 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
   const logout = useLogout();
 
   const [pending, setPending] = useState<{ href: string; from: string } | null>(null);
+  // Once the route has changed (the click landed, or back/forward moved us), the
+  // click is no longer pending. Left set, it would win again whenever we return to
+  // `from` — e.g. the dashboard restored on the next sign-in, or the back button.
+  if (pending && pending.from !== pathname) setPending(null);
   const activeHref = pending && pending.from === pathname ? pending.href : pathname;
   const navigate = (href: string) => {
     close();
@@ -68,8 +72,15 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
     );
   }, [activeHref]);
 
-  // Close the mobile menu when the page is hidden so it isn't open on return.
-  useLayoutEffect(() => () => setOpen(false), []);
+  // Close the mobile menu and drop any pending click when the page is hidden
+  // (e.g. on sign-out), so neither comes back when the dashboard is restored.
+  useLayoutEffect(
+    () => () => {
+      setOpen(false);
+      setPending(null);
+    },
+    [],
+  );
 
   // Mobile: the burger opens the dropdown menu. Desktop: it collapses the sidebar to icons.
   const toggle = () => {
