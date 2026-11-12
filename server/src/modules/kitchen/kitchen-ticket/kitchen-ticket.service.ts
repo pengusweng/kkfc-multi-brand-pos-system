@@ -12,7 +12,20 @@ import { OrdersRepository } from '../../orders/orders/orders.repository';
 import { CreateKitchenTicketDTO } from './dto/create-kitchen-ticket.dto';
 import { KitchenTicketChanges } from './kitchen-ticket-changes.service';
 import { KitchenTicketRepository } from './kitchen-ticket.repository';
-import { from, map, merge, Observable, of, switchMap } from 'rxjs';
+import {
+  catchError,
+  EMPTY,
+  from,
+  interval,
+  map,
+  merge,
+  Observable,
+  of,
+  switchMap,
+} from 'rxjs';
+
+/** Keeps idle SSE connections alive (mobile Dio times out after 20s). */
+const STREAM_HEARTBEAT_MS = 15_000;
 
 @Injectable()
 export class KitchenTicketService {
@@ -82,10 +95,27 @@ export class KitchenTicketService {
   }
 
   stream(): Observable<MessageEvent> {
-    return merge(of(null), this.changes.changes$).pipe(
-      switchMap(() => from(this.findMany())),
-      map((tickets) => ({ data: tickets })),
+    const tickets$ = merge(of(null), this.changes.changes$).pipe(
+      switchMap(() =>
+        from(this.findMany()).pipe(
+          map((tickets): MessageEvent => ({ data: tickets })),
+          // Drop only this update; erroring would close the client's stream.
+          catchError((error: unknown) => {
+            this.logger.error(
+              'Failed to load kitchen tickets for the stream',
+              error instanceof Error ? error.stack : String(error),
+            );
+            return EMPTY;
+          }),
+        ),
+      ),
     );
+    // SSE comment (": ping"); clients ignore it, but it keeps the socket busy.
+    const heartbeat$ = interval(STREAM_HEARTBEAT_MS).pipe(
+      map((): MessageEvent => ({ comment: 'ping' })),
+    );
+
+    return merge(tickets$, heartbeat$);
   }
 
   async findManyByPreparer(

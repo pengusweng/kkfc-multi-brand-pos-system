@@ -197,6 +197,7 @@ export function StreamTodaysKitchenTicketsDocs() {
         'Keeps the connection open and pushes the full list from GET /kitchen-ticket/today as an unnamed SSE message (`data: <JSON array>`).',
         'The first message is sent immediately on connect. After that, a new message is sent whenever a ticket is created (order confirmed), claimed (preparer/checker assigned), or changes status through kitchen fulfillment.',
         'Each message replaces the previous list; clients should not merge. Events missed while disconnected are not replayed, but reconnecting delivers the current list again.',
+        'While idle, the server sends an SSE comment (`: ping`) every 15 seconds to keep the connection open; SSE clients ignore it. If a refresh query fails, that update is skipped and the stream stays open.',
         'Requires the same bearer session and roles as the other kitchen ticket reads, so a browser EventSource (which cannot send headers) will not work; use a client that can set Authorization. Swagger UI cannot display a stream; use curl -N to try it.',
       ].join('\n\n'),
     }),

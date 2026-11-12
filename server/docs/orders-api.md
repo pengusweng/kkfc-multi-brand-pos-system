@@ -326,6 +326,11 @@ data: [{"kitchen_ticket_id":"…","status":"QUEUED","order_items":[…]}, …]
   fulfillment step (acknowledge through hand-over or cancel).
 - Each message replaces the previous list. Missed messages are not replayed;
   reconnecting sends the current list again.
+- Every 15 seconds the server also sends an SSE comment line, `: ping`, so idle
+  connections are not dropped by client timeouts or proxies. SSE clients ignore
+  comments; hand-written parsers should skip lines starting with `:`.
+- If loading the list fails, that update is skipped (and logged) and the stream
+  stays open; the next change sends the current list.
 - Because the endpoint needs an `Authorization` header, a browser
   `EventSource` cannot use it. Use a client that can set headers (Dio, curl,
   `fetch` with a stream reader). Disable client receive timeouts for this
@@ -345,6 +350,11 @@ outside the kitchen ticket module) only **after** the write's transaction has
 committed, or subscribers will reload the pre-commit state. Status transition
 methods that accept a `tx` do not notify; their callers do. The subject is
 in-memory, so this only works with a single API instance.
+
+Known limits: the session is only checked when the stream connects, so a
+logged-out session keeps receiving updates until it disconnects; and "today"
+is evaluated per refresh, so if nothing changes after midnight (Asia/Manila)
+the last list stays on screen until the next change or reconnect.
 
 ### Errors
 
