@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
+import 'package:mobile/features/availability/presentation/pages/kitchen_availability_screen.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lanes_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_toolbar.dart';
@@ -20,12 +23,14 @@ class KitchenBoardScreen extends ConsumerStatefulWidget {
     super.key,
     this.showLogout = true,
     this.onTicketDetails,
+    this.onAvailability,
     this.imagePicker,
     this.onPickImage,
   });
 
   final bool showLogout;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
+  final VoidCallback? onAvailability;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
 
@@ -154,6 +159,17 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
                   isReadOnly: userRole?.isKitchenReadOnlyExceptQc ?? false,
                   onRefresh: () =>
                       ref.read(kitchenBoardProvider.notifier).refresh(),
+                  onAvailability: widget.onAvailability ?? () {
+                    if (GoRouter.maybeOf(context) != null) {
+                      context.push(AppRoutes.availability);
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const KitchenAvailabilityScreen(),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
             ),
