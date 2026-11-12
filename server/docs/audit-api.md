@@ -135,3 +135,6 @@ Actions are added module by module as auditing is rolled out.
 | `USER_VIEWED` | `users` | `GET /api/users/:id`. Entity is the viewed user, also when looked up by username. |
 | `PIN_CREATED` | `user_pin_credentials` | `POST /api/pin`. Entity is the PIN owner (the actor). An existing PIN is `FAILED` (`EXISTING_PIN_FOUND`). |
 | `PIN_UPDATED` | `user_pin_credentials` | `PATCH /api/pin`. A wrong current password is `DENIED` (`INVALID_CREDENTIALS`). PINs and passwords are never stored. |
+| `BRAND_CREATED` | `brands` | `POST /api/brands`. Entity is the new brand. A duplicate code is `FAILED` (`DUPLICATE_RESOURCE`). |
+| `BRAND_UPDATED` | `brands` | `PATCH /api/brands/:brandId`. |
+| `BRAND_DEACTIVATED` | `brands` | `DELETE /api/brands/:brandId` (soft delete: sets `is_active` to false). |
