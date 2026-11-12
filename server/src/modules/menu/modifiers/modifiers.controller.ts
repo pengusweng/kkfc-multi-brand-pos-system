@@ -1,3 +1,8 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import {
@@ -40,6 +45,11 @@ export class ModifiersController {
   constructor(private readonly modifiersService: ModifiersService) {}
 
   @Post()
+  @Audit({
+    action: 'MODIFIER_CREATED',
+    entity: 'modifiers',
+    id: fromResult('modifier_id'),
+  })
   @CreateModifierDocs()
   async create(@Body() dto: CreateModifierDTO) {
     return this.modifiersService.create(dto);
@@ -61,6 +71,11 @@ export class ModifiersController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'MODIFIER_UPDATED',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @UpdateModifierDocs()
   async update(
     @Param('id', ParseUUIDPipe) modifierId: string,
@@ -70,12 +85,22 @@ export class ModifiersController {
   }
 
   @Patch('reactivate/:id')
+  @Audit({
+    action: 'MODIFIER_REACTIVATED',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @ReactivateModifierDocs()
   async reactivate(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.reactivate(modifierId);
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'MODIFIER_DEACTIVATED',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @DeleteModifierDocs()
   async delete(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.delete(modifierId);

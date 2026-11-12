@@ -160,3 +160,28 @@ Kitchen actions:
 | `ORDER_CANCELLED` | `orders` | `POST /api/kitchen-fulfillment/brands/:brandId/orders/:orderId/cancel` (confirmed orders; also cancels the kitchen ticket). Uses the same action as the draft cancel, so `action=ORDER_CANCELLED` lists every cancellation. |
 
 Status conflicts are `FAILED` (for example `KITCHEN_TICKET_INVALID_STATUS`), and acting on a ticket assigned to someone else is `DENIED` (for example `KITCHEN_TICKET_PREPARER_MISMATCH`). Kitchen ticket and QC reads, including the ticket stream, are not audited.
+
+Menu actions:
+
+| Action | Entity | Endpoint |
+| --- | --- | --- |
+| `MENU_CATALOG_ENTRY_CREATED` | `menu_items` | `POST /api/menu-catalog`. Entity is the new menu item. |
+| `MENU_ITEM_CREATED` | `menu_items` | `POST /api/menu-items`. Entity is the new record. |
+| `MENU_ITEM_UPDATED` | `menu_items` | `PATCH /api/menu-items/:id`. |
+| `MENU_ITEM_REACTIVATED` | `menu_items` | `PATCH /api/menu-items/reactivate/:id`. |
+| `MENU_ITEM_DEACTIVATED` | `menu_items` | `DELETE /api/menu-items/:id` (soft delete). |
+| `MENU_ITEM_AVAILABILITY_CHANGED` | `menu_items` | `PATCH /api/menu-items/availability/:id`. Kitchen and inventory staff may use it, so the row records who marked an item sold out. |
+| `MENU_ITEM_CHANNEL_CREATED` | `menu_item_channels` | `POST /api/menu-channels`. Entity is the new record. |
+| `MENU_ITEM_CHANNEL_UPDATED` | `menu_item_channels` | `PATCH /api/menu-channels/:id`. |
+| `MENU_ITEM_CHANNEL_REACTIVATED` | `menu_item_channels` | `PATCH /api/menu-channels/reactivate/:id`. |
+| `MENU_ITEM_CHANNEL_DEACTIVATED` | `menu_item_channels` | `DELETE /api/menu-channels/:id` (soft delete). |
+| `MODIFIER_CREATED` | `modifiers` | `POST /api/modifiers`. Entity is the new record. |
+| `MODIFIER_UPDATED` | `modifiers` | `PATCH /api/modifiers/:id`. |
+| `MODIFIER_REACTIVATED` | `modifiers` | `PATCH /api/modifiers/reactivate/:id`. |
+| `MODIFIER_DEACTIVATED` | `modifiers` | `DELETE /api/modifiers/:id` (soft delete). |
+| `MENU_ITEM_MODIFIER_CREATED` | `menu_item_modifiers` | `POST /api/menu-item-modifiers`. Entity is the new record. |
+| `MENU_ITEM_MODIFIER_UPDATED` | `menu_item_modifiers` | `PATCH /api/menu-item-modifiers/:id`. |
+| `MENU_ITEM_MODIFIER_REACTIVATED` | `menu_item_modifiers` | `PATCH /api/menu-item-modifiers/reactivate/:id`. |
+| `MENU_ITEM_MODIFIER_DEACTIVATED` | `menu_item_modifiers` | `DELETE /api/menu-item-modifiers/:id` (soft delete). |
+
+A duplicate code is `FAILED` (`DUPLICATE_RESOURCE`). Deactivating an already inactive record is a `404` and is not audited. Menu reads are not audited.
