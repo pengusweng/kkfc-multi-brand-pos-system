@@ -21,9 +21,9 @@ Feature: Audit pipeline unit coverage
   @UT-AUDIT-006
   Scenario: Classify denied and failed requests
     Test Case ID: UT-AUDIT-006
-    Given a 401, 403, 409, 5xx or non-HTTP error
+    Given a 401, 403, 429, 409, 5xx or non-HTTP error
     When the failure is classified
-    Then 401 and 403 are DENIED, 409 and 5xx are FAILED, and only well-formed error codes become the reason
+    Then 401, 403 and 429 are DENIED, 409 and 5xx are FAILED, and only well-formed error codes become the reason
 
   # Jest: server/src/shared/audit/tests/audit-pipeline.spec.ts
   # Context: classifyFailure

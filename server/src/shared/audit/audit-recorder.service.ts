@@ -8,8 +8,9 @@ import { logAudit } from './log-audit';
 const CODE_PATTERN = /^[A-Z0-9_]{1,100}$/;
 
 /**
- * Maps a thrown error to an audit outcome. 401/403 are DENIED, 409 and 5xx
- * are FAILED, and everything else (400 validation, 404) is not audited.
+ * Maps a thrown error to an audit outcome. 401/403 and 429 (PIN lockout) are
+ * DENIED, 409 and 5xx are FAILED, and everything else (400 validation, 404) is
+ * not audited.
  */
 export function classifyFailure(
   exception: unknown,
@@ -20,7 +21,7 @@ export function classifyFailure(
 
   const status = exception.getStatus();
   const outcome =
-    status === 401 || status === 403
+    status === 401 || status === 403 || status === 429
       ? AuditOutcome.DENIED
       : status === 409 || status >= 500
         ? AuditOutcome.FAILED

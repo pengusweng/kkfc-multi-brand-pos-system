@@ -88,7 +88,7 @@ opts out explicitly with `@NoAudit(reason)`.
 | Outcome | Written when |
 | --- | --- |
 | `SUCCESS` | The handler completed. Written after its transaction commits, before the response is sent. |
-| `DENIED` | The request was rejected with `401` or `403`, including rejections by the authentication, role, PIN and recipe-access guards, which happen before any service code runs. |
+| `DENIED` | The request was rejected with `401`, `403` or `429` (PIN lockout), including rejections by the authentication, role, PIN and recipe-access guards, which happen before any service code runs. |
 | `FAILED` | The handler threw a `409` conflict or a `5xx` error. |
 
 `400` validation errors and `404` not-found errors are not audited.
@@ -128,3 +128,8 @@ Actions are added module by module as auditing is rolled out.
 | `AUTH_LOGIN` | `users` | `POST /api/auth/login`. Actor and entity are the logged-in user. A wrong username or password is `DENIED` (`INVALID_CREDENTIALS`) with a null actor; usernames are not stored. |
 | `AUTH_LOGOUT` | `user_sessions` | `POST /api/auth/logout`. Entity is the ended session. |
 | `AUTH_LOGOUT_ALL` | `users` | `POST /api/auth/logout-all`. Entity is the user whose sessions were ended. |
+| `USER_CREATED` | `users` | `POST /api/users`. Entity is the new user. PIN failures are `DENIED` (`INVALID_PIN`, `PIN_NOT_CONFIGURED`, `PIN_LOCKED`). |
+| `USER_UPDATED` | `users` | `PATCH /api/users/:id`. |
+| `USER_DEACTIVATED` | `users` | `DELETE /api/users/:id` (deactivates the account). |
+| `USERS_LISTED` | `users` | `GET /api/users` (sensitive read; entity is null). |
+| `USER_VIEWED` | `users` | `GET /api/users/:id`. Entity is the viewed user, also when looked up by username. |

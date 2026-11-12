@@ -3,6 +3,8 @@ import {
   ConflictException,
   ExecutionContext,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   InternalServerErrorException,
   Logger,
   NotFoundException,
@@ -105,6 +107,11 @@ describe('Audit pipeline', () => {
       new ForbiddenException({ code: 'ACCESS_DENIED' }),
       'DENIED',
       'ACCESS_DENIED',
+    ],
+    [
+      new HttpException({ code: 'PIN_LOCKED' }, HttpStatus.TOO_MANY_REQUESTS),
+      'DENIED',
+      'PIN_LOCKED',
     ],
     [
       new ConflictException({ code: 'KITCHEN_TICKET_INVALID_STATUS' }),
