@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 export const instant = false;
 
 export const metadata: Metadata = {
-  title: "Access restricted | KKFC Management",
+  title: "Access restricted | KitchenFlow",
 };
 
 // The page renders immediately; the session check streams in behind it and

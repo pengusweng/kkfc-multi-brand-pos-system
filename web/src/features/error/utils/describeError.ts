@@ -17,7 +17,7 @@ const COPY: Record<ErrorKind, Pick<ErrorDescription, "title" | "body">> = {
   },
   unreachable: {
     title: "Can't reach the server",
-    body: "KKFC Web Management couldn't connect to the server. It may be restarting. Try again in a moment.",
+    body: "KitchenFlow Web Management couldn't connect to the server. It may be restarting. Try again in a moment.",
   },
   unexpected: {
     title: "This page didn't load",

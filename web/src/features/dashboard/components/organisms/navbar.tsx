@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { useLogout } from "@/src/features/auth/hooks/useLogout";
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
+import { Logo } from "@/src/components/ui/atoms/logo";
 import NavUser, { NavUserProps } from "../molecules/nav-user";
 import { railFade } from "../../utils/railFade";
 import { navGroupsFor } from "../../utils/navItems";
@@ -100,13 +101,8 @@ export default function Navbar({ user }: { user: Pick<NavUserProps, "name" | "ro
           in the 64px collapsed rail, so it rides the edge instead of jumping. */}
       <div className="relative flex h-16 shrink-0 items-center justify-end px-3.5">
         <WordmarkTransition>
-          <span
-            className={cn(
-              "absolute top-1/2 left-4 inline-block -translate-y-1/2 text-xl font-bold tracking-[0.12em]",
-              railFade(collapsed),
-            )}
-          >
-            KKFC
+          <span className={cn("absolute top-1/2 left-4 inline-block -translate-y-1/2", railFade(collapsed))}>
+            <Logo height={28} eager className="h-7" />
           </span>
         </WordmarkTransition>
         <Button

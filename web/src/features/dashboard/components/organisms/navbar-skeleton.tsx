@@ -1,4 +1,5 @@
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
+import { Logo } from "@/src/components/ui/atoms/logo";
 import { NAV_GROUPS } from "../../utils/navItems";
 
 // Placeholder rail at the navbar's exact size, shown while the session is checked.
@@ -12,7 +13,9 @@ export default function NavbarSkeleton() {
       >
         <div className="flex h-16 items-center justify-between px-4">
           <WordmarkTransition>
-            <span className="inline-block text-xl font-bold tracking-[0.12em]">KKFC</span>
+            <span className="inline-block">
+              <Logo height={28} eager className="h-7" />
+            </span>
           </WordmarkTransition>
           <span className="size-9" />
         </div>

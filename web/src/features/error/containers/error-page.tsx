@@ -39,7 +39,7 @@ export default function ErrorPage({ error, retry }: ErrorPageProps) {
 
   return (
     <PageBackground>
-      <title>{`${title} | KKFC Management`}</title>
+      <title>{`${title} | KitchenFlow`}</title>
       <ThemeToggle className="absolute top-3 right-3 z-10 sm:top-5 sm:right-5" />
       <section
         aria-labelledby="error-title"

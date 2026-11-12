@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
+import { Logo } from "@/src/components/ui/atoms/logo";
 
 const BRANDS = ["Gamcheon", "Aurelia's Inasal", "King Kung's Kafé"];
 
@@ -14,7 +15,7 @@ export default function LoginSide({ className }: { className?: string }) {
   return (
     <RailTransition>
     <aside
-      aria-label="KKFC Web Management"
+      aria-label="KitchenFlow Web Management"
       className={cn(
         "relative isolate flex flex-col gap-4 overflow-hidden bg-rail px-6 py-5 text-white sm:px-8 lg:justify-between lg:gap-0 lg:py-12",
         className,
@@ -42,12 +43,14 @@ export default function LoginSide({ className }: { className?: string }) {
         ))}
       </svg>
 
-      <p className="motion-safe:animate-rise">
+      <div className="flex items-center gap-3 motion-safe:animate-rise lg:block">
         <WordmarkTransition>
-          <span className="inline-block text-xl font-bold tracking-[0.12em] lg:text-3xl">KKFC</span>
-        </WordmarkTransition>{" "}
-        <span className="text-base text-rail-muted lg:mt-2 lg:block lg:text-lg">Web Management</span>
-      </p>
+          <span className="inline-block">
+            <Logo height={40} eager className="h-7 lg:h-10" />
+          </span>
+        </WordmarkTransition>
+        <p className="text-base text-rail-muted lg:mt-3 lg:text-lg">Web Management</p>
+      </div>
 
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-rail-muted lg:block lg:text-base lg:text-white">
         {BRANDS.map((brand, index) => (

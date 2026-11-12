@@ -26,7 +26,7 @@ export default function UnauthorizedPage() {
             Web access restricted
           </h1>
           <p className="mt-3 text-base leading-7 text-ink-muted">
-            Your role doesn&apos;t include access to KKFC Web Management.
+            Your role doesn&apos;t include access to KitchenFlow Web Management.
             Please sign in with an authorized account.
           </p>
 
