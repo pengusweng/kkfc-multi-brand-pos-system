@@ -19,7 +19,8 @@ class KitchenTicketHandoverView extends StatefulWidget {
     required this.ticket,
     required this.isActionLoading,
     this.isActionEnabled = true,
-    required this.onHandover,
+    this.onHandover,
+    this.onHandoverWithPhotos,
     this.imagePicker,
     this.onPickImage,
     this.initialPhotos,
@@ -29,6 +30,8 @@ class KitchenTicketHandoverView extends StatefulWidget {
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onHandover;
+  final Future<void> Function(List<HandoverPhotoEvidence> photos)?
+  onHandoverWithPhotos;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
   final List<HandoverPhotoEvidence>? initialPhotos;
@@ -82,11 +85,17 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
       final file = await widget.onPickImage!(ImageSource.camera);
       if (file != null && mounted) {
         final bytes = await file.readAsBytes();
+        final rawName = file.name.trim();
+        final resolvedName = rawName.isNotEmpty
+            ? rawName
+            : (file.path.trim().isNotEmpty
+                  ? file.path.trim().split('/').last.split(r'\').last
+                  : 'evidence.png');
         setState(() {
           _photos.add(
             HandoverPhotoEvidence(
-              name: file.name,
-              path: file.path,
+              name: resolvedName,
+              path: file.path.isNotEmpty ? file.path : null,
               bytes: bytes,
             ),
           );
@@ -159,11 +168,17 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
       );
       if (picked != null && mounted) {
         final bytes = await picked.readAsBytes();
+        final rawName = picked.name.trim();
+        final resolvedName = rawName.isNotEmpty
+            ? rawName
+            : (picked.path.trim().isNotEmpty
+                  ? picked.path.trim().split('/').last.split(r'\').last
+                  : 'evidence.jpg');
         setState(() {
           _photos.add(
             HandoverPhotoEvidence(
-              name: picked.name,
-              path: picked.path,
+              name: resolvedName,
+              path: picked.path.isNotEmpty ? picked.path : null,
               bytes: bytes,
             ),
           );
@@ -177,6 +192,15 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
       setState(() {
         _photos.removeAt(index);
       });
+    }
+  }
+
+  void _handleConfirmHandover() {
+    if (!_canHandover) return;
+    if (widget.onHandoverWithPhotos != null) {
+      widget.onHandoverWithPhotos!(List.unmodifiable(_photos));
+    } else {
+      widget.onHandover?.call();
     }
   }
 
@@ -203,7 +227,7 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
           isDelivery: _isDelivery,
           isPhotoAttached: _photos.isNotEmpty,
           isActionLoading: widget.isActionLoading,
-          onConfirmHandover: _canHandover ? widget.onHandover : null,
+          onConfirmHandover: _canHandover ? _handleConfirmHandover : null,
         ),
       ],
     );

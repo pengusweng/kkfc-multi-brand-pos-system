@@ -1,4 +1,3 @@
-import { PinGuard } from '../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -22,6 +21,11 @@ import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../shared/audit/audit.decorator';
 import {
   BrandsDocs,
   CreateBrandDocs,
@@ -47,7 +51,13 @@ export class BrandsController {
   ) {}
 
   @Post()
-  @UseGuards(RolesGuard, PinGuard)
+  @Audit({
+    action: 'BRAND_CREATED',
+    snapshot: 'create',
+    entity: 'brands',
+    id: fromResult('brand_id'),
+  })
+  @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -85,7 +95,13 @@ export class BrandsController {
   }
 
   @Patch(':brandId')
-  @UseGuards(RolesGuard, PinGuard)
+  @Audit({
+    action: 'BRAND_UPDATED',
+    snapshot: 'update',
+    entity: 'brands',
+    id: fromParam('brandId'),
+  })
+  @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -111,7 +127,13 @@ export class BrandsController {
   }
 
   @Delete(':brandId')
-  @UseGuards(RolesGuard, PinGuard)
+  @Audit({
+    action: 'BRAND_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'brands',
+    id: fromParam('brandId'),
+  })
+  @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {

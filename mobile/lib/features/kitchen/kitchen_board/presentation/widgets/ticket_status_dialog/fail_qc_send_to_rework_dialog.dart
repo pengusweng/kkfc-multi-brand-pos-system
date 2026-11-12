@@ -3,23 +3,53 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
-/// Modal dialog presented when a QC checker clicks "Fail QC and rework".
+/// Represents a structured QC item failure to be submitted as part of
+/// `POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/reject`.
+@immutable
+class QcItemRejection {
+  const QcItemRejection({
+    required this.orderItemId,
+    required this.portionNumber,
+    required this.reason,
+    this.itemName,
+  });
+
+  final String orderItemId;
+  final int portionNumber;
+  final String reason;
+  final String? itemName;
+
+  Map<String, dynamic> toJson() => {
+    'order_item_id': orderItemId,
+    'portion_number': portionNumber,
+    'rejection_reason': 'INCOMPLETE',
+    'description': reason,
+  };
+}
+
+/// Modal dialog presented when a QC checker fails an item to send the ticket to rework.
 ///
-/// Collects a mandatory rejection reason (up to 280 characters), sends it to
-/// `POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/reject`, and moves
-/// the ticket back to the Preparing lane under `REWORKING` status at the top
-/// of the column.
+/// Collects the portion number (up to item quantity) and mandatory rejection reason
+/// (up to 280 characters), returning a [QcItemRejection] to be attached to the
+/// `POST /api/kitchen-fulfillment/qc-attempts/{attemptId}/reject` request.
 class FailQcSendToReworkDialog extends ConsumerStatefulWidget {
   const FailQcSendToReworkDialog({
     super.key,
     required this.ticket,
+    this.item,
+    this.initialPortionNumber,
+    this.initialReason,
     this.onConfirm,
     this.onCancel,
   });
 
   final KitchenBoardTicket ticket;
-  final Future<bool> Function(String reason)? onConfirm;
+  final KitchenTicketItem? item;
+  final int? initialPortionNumber;
+  final String? initialReason;
+  final dynamic onConfirm;
   final VoidCallback? onCancel;
 
   static const double maxDialogWidth = 480.0;
@@ -32,61 +62,112 @@ class FailQcSendToReworkDialog extends ConsumerStatefulWidget {
 
 class _FailQcSendToReworkDialogState
     extends ConsumerState<FailQcSendToReworkDialog> {
-  late final TextEditingController _controller;
-  bool _showError = false;
+  late final TextEditingController _reasonController;
+  late final TextEditingController _portionController;
+  String? _errorMessage;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _reasonController = TextEditingController(text: widget.initialReason ?? '');
+    _portionController = TextEditingController(
+      text: widget.initialPortionNumber?.toString() ?? '1',
+    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _reasonController.dispose();
+    _portionController.dispose();
     super.dispose();
   }
 
   void _handleTextChanged(String value) {
-    if (_showError) {
-      final trimmed = value.trim();
+    if (_errorMessage != null) {
+      final trimmed = _reasonController.text.trim();
+      final portion = int.tryParse(_portionController.text.trim());
       if (trimmed.isNotEmpty &&
-          trimmed.length <= FailQcSendToReworkDialog.maxReasonLength) {
+          trimmed.length <= FailQcSendToReworkDialog.maxReasonLength &&
+          portion != null &&
+          portion >= 1) {
         setState(() {
-          _showError = false;
+          _errorMessage = null;
         });
       }
     }
   }
 
   Future<void> _handleSubmit() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty ||
-        text.length > FailQcSendToReworkDialog.maxReasonLength) {
+    final portionText = _portionController.text.trim();
+    final portion = int.tryParse(portionText);
+
+    if (portion == null || portion < 1) {
       setState(() {
-        _showError = true;
+        _errorMessage = 'Enter a valid portion number (at least 1).';
+      });
+      return;
+    }
+
+    if (widget.item != null && portion > widget.item!.quantity) {
+      setState(() {
+        _errorMessage =
+            'Portion number must not exceed item quantity (${widget.item!.quantity}).';
+      });
+      return;
+    }
+
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() {
+        _errorMessage = 'Enter a reason (up to 280 characters).';
+      });
+      return;
+    }
+
+    if (reason.length > FailQcSendToReworkDialog.maxReasonLength) {
+      setState(() {
+        _errorMessage =
+            'Reason must not exceed ${FailQcSendToReworkDialog.maxReasonLength} characters.';
       });
       return;
     }
 
     setState(() {
-      _showError = false;
+      _errorMessage = null;
       _isSubmitting = true;
     });
 
+    final rejection = QcItemRejection(
+      orderItemId: widget.item?.orderItemId ?? '',
+      portionNumber: portion,
+      reason: reason,
+      itemName: widget.item?.name,
+    );
+
     final bool success;
     if (widget.onConfirm != null) {
-      success = await widget.onConfirm!(text);
+      if (widget.onConfirm is Future<bool> Function(QcItemRejection)) {
+        success =
+            await (widget.onConfirm as Future<bool> Function(QcItemRejection))(
+              rejection,
+            );
+      } else if (widget.onConfirm is Future<bool> Function(String)) {
+        success = await (widget.onConfirm as Future<bool> Function(String))(
+          reason,
+        );
+      } else {
+        final dynamic res = (widget.onConfirm as dynamic)(rejection);
+        success = res is Future ? await res : (res == true);
+      }
     } else {
-      // Static behavior: do nothing to the ticket and simply close the dialog.
       success = true;
     }
 
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(rejection);
     } else {
       setState(() {
         _isSubmitting = false;
@@ -96,7 +177,7 @@ class _FailQcSendToReworkDialogState
 
   @override
   Widget build(BuildContext context) {
-    final hasError = _showError;
+    final hasError = _errorMessage != null;
 
     return Dialog(
       backgroundColor: KkfcColors.surface,
@@ -132,9 +213,11 @@ class _FailQcSendToReworkDialogState
               const SizedBox(height: KkfcSpace.s8),
 
               // 2. Subtitle
-              const Text(
-                'Say what the kitchen needs to correct. The ticket moves to Rework in the Preparing lane.',
-                style: TextStyle(
+              Text(
+                widget.item != null
+                    ? 'Specify the portion number and correction for ${widget.item!.name}. The ticket moves to Rework in the Preparing lane.'
+                    : 'Say what the kitchen needs to correct. The ticket moves to Rework in the Preparing lane.',
+                style: const TextStyle(
                   fontFamily: KkfcFonts.ibmPlexSans,
                   fontSize: KkfcTextSizes.textBase,
                   fontWeight: KkfcFontWeights.regular,
@@ -160,18 +243,18 @@ class _FailQcSendToReworkDialogState
                     ),
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.warning_amber_rounded,
                         size: 18,
                         color: KkfcColors.danger,
                       ),
-                      SizedBox(width: KkfcSpace.s8),
+                      const SizedBox(width: KkfcSpace.s8),
                       Expanded(
                         child: Text(
-                          'Enter a reason (up to 280 characters).',
-                          style: TextStyle(
+                          _errorMessage!,
+                          style: const TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
                             fontSize: KkfcTextSizes.textSm,
                             fontWeight: KkfcFontWeights.medium,
@@ -186,7 +269,84 @@ class _FailQcSendToReworkDialogState
 
               const SizedBox(height: KkfcSpace.s16),
 
-              // 4. Reason Label
+              // 4. Portion Number Field
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Portion number',
+                    style: TextStyle(
+                      fontFamily: KkfcFonts.ibmPlexSans,
+                      fontSize: KkfcTextSizes.textSm,
+                      fontWeight: KkfcFontWeights.semiBold,
+                      color: KkfcColors.ink,
+                    ),
+                  ),
+                  if (widget.item != null)
+                    Text(
+                      'Max: ${widget.item!.quantity}',
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textSm,
+                        fontWeight: KkfcFontWeights.regular,
+                        color: KkfcColors.ink2,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: KkfcSpace.s8),
+              TextField(
+                key: const ValueKey('fail-qc-portion-field'),
+                controller: _portionController,
+                keyboardType: TextInputType.number,
+                onChanged: _handleTextChanged,
+                style: const TextStyle(
+                  fontFamily: KkfcFonts.ibmPlexSans,
+                  fontSize: KkfcTextSizes.textBase,
+                  color: KkfcColors.ink,
+                ),
+                decoration: InputDecoration(
+                  hintText: '1',
+                  hintStyle: const TextStyle(
+                    fontFamily: KkfcFonts.ibmPlexSans,
+                    fontSize: KkfcTextSizes.textBase,
+                    fontWeight: KkfcFontWeights.regular,
+                    color: KkfcColors.ink3,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: KkfcSpace.s12,
+                    vertical: KkfcSpace.s8,
+                  ),
+                  filled: true,
+                  fillColor: KkfcColors.surface,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                    borderSide: BorderSide(
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('portion') ?? false)
+                          ? KkfcColors.dangerBorder
+                          : KkfcColors.border,
+                      width: KkfcBorderWidth.thin,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                    borderSide: BorderSide(
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('portion') ?? false)
+                          ? KkfcColors.danger
+                          : KkfcColors.focus,
+                      width: KkfcBorderWidth.thick,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: KkfcSpace.s16),
+
+              // 5. Reason Label
               const Text(
                 'Reason',
                 style: TextStyle(
@@ -198,10 +358,10 @@ class _FailQcSendToReworkDialogState
               ),
               const SizedBox(height: KkfcSpace.s8),
 
-              // 5. Multi-line Text Area
+              // 6. Multi-line Text Area
               TextField(
                 key: const ValueKey('fail-qc-reason-field'),
-                controller: _controller,
+                controller: _reasonController,
                 onChanged: _handleTextChanged,
                 minLines: 4,
                 maxLines: 5,
@@ -231,7 +391,9 @@ class _FailQcSendToReworkDialogState
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('reason') ?? false)
                           ? KkfcColors.dangerBorder
                           : KkfcColors.border,
                       width: KkfcBorderWidth.thin,
@@ -240,7 +402,11 @@ class _FailQcSendToReworkDialogState
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError ? KkfcColors.danger : KkfcColors.focus,
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('reason') ?? false)
+                          ? KkfcColors.danger
+                          : KkfcColors.focus,
                       width: KkfcBorderWidth.thick,
                     ),
                   ),
@@ -249,7 +415,7 @@ class _FailQcSendToReworkDialogState
 
               const SizedBox(height: KkfcSpace.s20),
 
-              // 6. Action buttons: Cancel and Confirm QC failure
+              // 7. Action buttons: Cancel and Confirm QC failure
               Row(
                 children: [
                   Expanded(
@@ -260,7 +426,7 @@ class _FailQcSendToReworkDialogState
                         onPressed: _isSubmitting
                             ? null
                             : (widget.onCancel ??
-                                  () => Navigator.of(context).pop(false)),
+                                  () => Navigator.of(context).pop(null)),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: KkfcColors.surface,
                           foregroundColor: KkfcColors.ink,
@@ -335,20 +501,26 @@ class _FailQcSendToReworkDialogState
 }
 
 /// Helper function to display [FailQcSendToReworkDialog].
-/// Returns `true` if the failure was confirmed and processed successfully.
-Future<bool?> showFailQcSendToReworkDialog(
+/// Returns the confirmed [QcItemRejection], or `null` if cancelled.
+Future<QcItemRejection?> showFailQcSendToReworkDialog(
   BuildContext context, {
   required KitchenBoardTicket ticket,
-  Future<bool> Function(String reason)? onConfirm,
+  KitchenTicketItem? item,
+  int? initialPortionNumber,
+  String? initialReason,
+  dynamic onConfirm,
 }) {
-  return showDialog<bool>(
+  return showDialog<QcItemRejection>(
     context: context,
     barrierColor: KkfcColors.ink.withValues(alpha: KkfcOpacity.scrim),
     builder: (dialogContext) {
       return FailQcSendToReworkDialog(
         ticket: ticket,
+        item: item,
+        initialPortionNumber: initialPortionNumber,
+        initialReason: initialReason,
         onConfirm: onConfirm,
-        onCancel: () => Navigator.of(dialogContext).pop(false),
+        onCancel: () => Navigator.of(dialogContext).pop(null),
       );
     },
   );

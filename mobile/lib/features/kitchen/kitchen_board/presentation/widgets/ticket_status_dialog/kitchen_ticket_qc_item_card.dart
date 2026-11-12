@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/fail_qc_send_to_rework_dialog.dart';
 import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
 /// Card item widget for Quality Check dialog, displaying an item's details,
-/// special request note, and interactive Pass / Fail toggle buttons.
+/// special request note, interactive Pass / Fail toggle buttons, and any
+/// recorded rejection note.
 class KitchenTicketQcItemCard extends StatelessWidget {
   const KitchenTicketQcItemCard({
     super.key,
     required this.item,
     this.isPassed,
+    this.rejection,
     this.onPassedChanged,
+    this.onFailTap,
   });
 
   final KitchenTicketItem item;
   final bool? isPassed;
+  final QcItemRejection? rejection;
   final ValueChanged<bool>? onPassedChanged;
+  final VoidCallback? onFailTap;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +39,9 @@ class KitchenTicketQcItemCard extends StatelessWidget {
         color: KkfcColors.surface,
         borderRadius: BorderRadius.circular(KkfcRadius.md),
         border: Border.all(
-          color: KkfcColors.border,
+          color: isPassed == false
+              ? KkfcColors.dangerBorder
+              : KkfcColors.border,
           width: KkfcBorderWidth.thin,
         ),
       ),
@@ -112,6 +120,48 @@ class KitchenTicketQcItemCard extends StatelessWidget {
               ),
           ],
 
+          // Rejection reason banner if this item failed QC
+          if (rejection != null) ...[
+            const SizedBox(height: KkfcSpace.s8),
+            Container(
+              key: ValueKey('qc-item-rejection-note-${item.name}'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KkfcSpace.s12,
+                vertical: KkfcSpace.s8,
+              ),
+              decoration: BoxDecoration(
+                color: KkfcColors.dangerBg,
+                borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                border: Border.all(
+                  color: KkfcColors.dangerBorder,
+                  width: KkfcBorderWidth.thin,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: KkfcColors.danger,
+                  ),
+                  const SizedBox(width: KkfcSpace.s8),
+                  Expanded(
+                    child: Text(
+                      'Portion ${rejection!.portionNumber}: ${rejection!.reason}',
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textSm,
+                        fontWeight: KkfcFontWeights.medium,
+                        color: KkfcColors.danger,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: KkfcSpace.s12),
 
           // Pass / Fail toggle buttons
@@ -131,7 +181,13 @@ class KitchenTicketQcItemCard extends StatelessWidget {
                 icon: Icons.close_rounded,
                 isSelected: isPassed == false,
                 activeColor: KkfcColors.dangerSolid,
-                onPressed: () => onPassedChanged?.call(false),
+                onPressed: () {
+                  if (onFailTap != null) {
+                    onFailTap!();
+                  } else {
+                    onPassedChanged?.call(false);
+                  }
+                },
               ),
             ],
           ),

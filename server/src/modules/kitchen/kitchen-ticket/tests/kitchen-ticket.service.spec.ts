@@ -1,8 +1,9 @@
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger, MessageEvent, NotFoundException } from '@nestjs/common';
 import { KitchenTicketStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { OrdersRepository } from '../../../orders/orders/orders.repository';
 import { KitchenTicketRepository } from '../kitchen-ticket.repository';
+import { KitchenTicketChanges } from '../kitchen-ticket-changes.service';
 import { KitchenTicketService } from '../kitchen-ticket.service';
 
 const now = new Date('2026-10-30T04:00:00Z');
@@ -86,6 +87,7 @@ function setup(status: KitchenTicketStatus = KitchenTicketStatus.QUEUED) {
     service: new KitchenTicketService(
       repository,
       new OrdersRepository(client as unknown as PrismaService),
+      new KitchenTicketChanges(),
     ),
   };
 }
@@ -325,4 +327,91 @@ describe('KitchenTicketService', () => {
       expect(client.kitchenTicket.update).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('KitchenTicketService stream', () => {
+  const initial = [{ kitchen_ticket_id: 'first' }];
+  const updated = [
+    { kitchen_ticket_id: 'first' },
+    { kitchen_ticket_id: 'second' },
+  ];
+  let findMany: jest.Mock;
+  let changes: KitchenTicketChanges;
+  let service: KitchenTicketService;
+  let errorLog: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    jest.useFakeTimers();
+    findMany = jest.fn();
+    changes = new KitchenTicketChanges();
+    service = new KitchenTicketService(
+      { findMany } as unknown as KitchenTicketRepository,
+      {} as OrdersRepository,
+      changes,
+    );
+  });
+
+  afterEach(() => {
+    changes.onModuleDestroy();
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  function subscribe() {
+    const events: MessageEvent[] = [];
+    let completed = false;
+    const subscription = service.stream().subscribe({
+      next: (event) => events.push(event),
+      error: () => (completed = true),
+      complete: () => (completed = true),
+    });
+    return { events, subscription, isClosed: () => completed };
+  }
+
+  it("UT-KT-020: Given a subscriber, When the stream opens and a change is signalled, Then send today's tickets each time", async () => {
+    findMany.mockResolvedValueOnce(initial).mockResolvedValueOnce(updated);
+    const { events, subscription } = subscribe();
+
+    await jest.advanceTimersByTimeAsync(0);
+    changes.notify();
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(events).toEqual([{ data: initial }, { data: updated }]);
+    expect(findMany).toHaveBeenCalledTimes(2);
+    subscription.unsubscribe();
+  });
+
+  it('UT-KT-021: Given a failed ticket query, When the stream refreshes, Then skip that update and keep the stream open', async () => {
+    findMany
+      .mockRejectedValueOnce(new Error('database unavailable'))
+      .mockResolvedValueOnce(updated);
+    const { events, subscription, isClosed } = subscribe();
+
+    await jest.advanceTimersByTimeAsync(0);
+    expect(events).toEqual([]);
+    expect(errorLog).toHaveBeenCalledTimes(1);
+
+    changes.notify();
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(events).toEqual([{ data: updated }]);
+    expect(isClosed()).toBe(false);
+    subscription.unsubscribe();
+  });
+
+  it('UT-KT-022: Given an idle stream, When 15 seconds pass without changes, Then send a ping comment', async () => {
+    findMany.mockResolvedValue(initial);
+    const { events, subscription } = subscribe();
+
+    await jest.advanceTimersByTimeAsync(14_999);
+    expect(events).toEqual([{ data: initial }]);
+
+    await jest.advanceTimersByTimeAsync(1);
+    expect(events).toEqual([{ data: initial }, { comment: 'ping' }]);
+    expect(findMany).toHaveBeenCalledTimes(1);
+    subscription.unsubscribe();
+  });
 });

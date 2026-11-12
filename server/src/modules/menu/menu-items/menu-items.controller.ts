@@ -1,6 +1,10 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -59,6 +63,12 @@ export class MenuItemsController {
   ) {}
 
   @Post()
+  @Audit({
+    action: 'MENU_ITEM_CREATED',
+    snapshot: 'create',
+    entity: 'menu_items',
+    id: fromResult('menu_item_id'),
+  })
   @CreateMenuItemDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseInterceptors(
@@ -66,7 +76,6 @@ export class MenuItemsController {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
     }),
   )
-  @UseGuards(PinGuard)
   async create(
     @Body() dto: CreateMenuItemDTO,
     @UploadedFile() file: AssetUpload,
@@ -111,8 +120,13 @@ export class MenuItemsController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'MENU_ITEM_UPDATED',
+    snapshot: 'update',
+    entity: 'menu_items',
+    id: fromParam('id'),
+  })
   @UpdateMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -137,6 +151,12 @@ export class MenuItemsController {
   }
 
   @Patch('availability/:id')
+  @Audit({
+    action: 'MENU_ITEM_AVAILABILITY_CHANGED',
+    snapshot: 'update',
+    entity: 'menu_items',
+    id: fromParam('id'),
+  })
   @UpdateMenuItemAvailabilityDocs()
   @Roles(
     UserRole.SUPERADMIN,
@@ -155,16 +175,26 @@ export class MenuItemsController {
   }
 
   @Patch('reactivate/:id')
+  @Audit({
+    action: 'MENU_ITEM_REACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_items',
+    id: fromParam('id'),
+  })
   @ReactivateMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.reactivateMenuItem(menuItemId);
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'MENU_ITEM_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_items',
+    id: fromParam('id'),
+  })
   @DeleteMenuItemDocs()
-  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.deleteMenuItem(menuItemId);

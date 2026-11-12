@@ -1,4 +1,3 @@
-import { PinRequiredDocs } from '../../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -102,7 +101,6 @@ export function MenuItemsDocs() {
 
 export function CreateMenuItemDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a menu item (manager or superadmin).',
       description:
@@ -195,7 +193,6 @@ export function FindMenuItemsByBrandDocs() {
 
 export function UpdateMenuItemDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiExtraModels(UpdateMenuItemDTO),
     ApiConsumes('application/json', 'multipart/form-data'),
     ApiBody({
@@ -243,7 +240,6 @@ export function UpdateMenuItemDocs() {
 
 export function ReactivateMenuItemDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Reactivate a menu item (manager or superadmin).',
       description:
@@ -278,7 +274,6 @@ export function ReactivateMenuItemDocs() {
 
 export function DeleteMenuItemDocs() {
   return applyDecorators(
-    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a menu item (manager or superadmin).',
       description:

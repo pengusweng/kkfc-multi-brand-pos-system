@@ -1,9 +1,17 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
+
+export 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart'
+    show HandoverPhotoEvidence;
 
 class KitchenBoardException implements Exception {
   const KitchenBoardException(this.message, {this.statusCode});
@@ -17,7 +25,8 @@ class KitchenBoardException implements Exception {
 
 /// Repository for fetching and updating kitchen board tickets.
 ///
-/// Primary endpoint: `GET /api/kitchen-ticket/today`.
+/// Primary endpoint: `GET /api/kitchen-ticket/today/stream` (SSE).
+/// Fallback endpoint: `GET /api/kitchen-ticket/today`.
 class KitchenBoardRepository {
   KitchenBoardRepository(this._dio);
 
@@ -34,43 +43,369 @@ class KitchenBoardRepository {
     return '/api$pathWithoutApiPrefix';
   }
 
-  /// Fetches today's kitchen tickets from `GET /api/kitchen-ticket/today`.
+  /// Streams today's kitchen tickets from `GET /api/kitchen-ticket/today/stream`
+  /// (Server-Sent Events).
+  ///
+  /// Ignores SSE heartbeat comments (e.g. `: ping`) and yields an updated
+  /// `List<KitchenBoardTicket>` whenever a `data:` event arrives.
+  Stream<List<KitchenBoardTicket>> streamTodaysTickets({
+    DateTime? now,
+    CancelToken? cancelToken,
+  }) {
+    late final StreamController<List<KitchenBoardTicket>> controller;
+    StreamSubscription<Uint8List>? bodySub;
+    final effectiveCancelToken = CancelToken();
+
+    void cancelInner([String reason = 'Stream cancelled']) {
+      if (!effectiveCancelToken.isCancelled) {
+        effectiveCancelToken.cancel(reason);
+      }
+      final sub = bodySub;
+      bodySub = null;
+      if (sub != null) {
+        unawaited(sub.cancel());
+      }
+    }
+
+    if (cancelToken != null) {
+      if (cancelToken.isCancelled) {
+        return const Stream<List<KitchenBoardTicket>>.empty();
+      }
+      cancelToken.whenCancel.then((_) {
+        cancelInner('Caller cancelToken cancelled');
+        if (!controller.isClosed) {
+          unawaited(controller.close());
+        }
+      });
+    }
+
+    List<KitchenBoardTicket> decodePayload(String payload) {
+      final decoded = jsonDecode(payload);
+      final rawList = _extractTicketList(decoded);
+      return _parseTicketList(rawList, now: now);
+    }
+
+    controller = StreamController<List<KitchenBoardTicket>>(
+      onListen: () async {
+        if (_dio.options.baseUrl.trim().isEmpty) {
+          controller.addError(
+            const KitchenBoardException(
+              'Stream endpoint requires a configured baseUrl.',
+            ),
+          );
+          await controller.close();
+          return;
+        }
+
+        final Response<ResponseBody> response;
+        try {
+          response = await _dio.get<ResponseBody>(
+            _endpoint('/kitchen-ticket/today/stream'),
+            cancelToken: effectiveCancelToken,
+            options: Options(
+              responseType: ResponseType.stream,
+              headers: const {'Accept': 'text/event-stream'},
+              receiveTimeout: Duration.zero,
+            ),
+          );
+        } on DioException catch (error) {
+          if (effectiveCancelToken.isCancelled || controller.isClosed) {
+            if (!controller.isClosed) await controller.close();
+            return;
+          }
+          controller.addError(
+            KitchenBoardException(
+              _errorMessage(error),
+              statusCode: error.response?.statusCode,
+            ),
+          );
+          await controller.close();
+          return;
+        } catch (error, stackTrace) {
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+            await controller.close();
+          }
+          return;
+        }
+
+        if (effectiveCancelToken.isCancelled || controller.isClosed) {
+          if (!controller.isClosed) await controller.close();
+          return;
+        }
+
+        final responseBody = response.data;
+        if (responseBody == null) {
+          controller.addError(
+            const FormatException(
+              'Invalid kitchen-ticket/today/stream response.',
+            ),
+          );
+          await controller.close();
+          return;
+        }
+
+        final statusCode = response.statusCode ?? responseBody.statusCode;
+        if (statusCode < 200 || statusCode >= 300) {
+          controller.addError(
+            KitchenBoardException(
+              'Failed to load kitchen tickets.',
+              statusCode: statusCode,
+            ),
+          );
+          await controller.close();
+          return;
+        }
+
+        var emittedAny = false;
+        var carryOver = '';
+        final dataLines = <String>[];
+        final rawLines = <String>[];
+
+        void processLine(String rawLine) {
+          if (effectiveCancelToken.isCancelled || controller.isClosed) return;
+          final line = rawLine.endsWith('\r')
+              ? rawLine.substring(0, rawLine.length - 1)
+              : rawLine;
+
+          if (line.isEmpty) {
+            if (dataLines.isNotEmpty) {
+              final payload = dataLines.join('\n').trim();
+              dataLines.clear();
+              if (payload.isNotEmpty) {
+                final tickets = decodePayload(payload);
+                emittedAny = true;
+                if (!controller.isClosed) {
+                  controller.add(tickets);
+                }
+              }
+            }
+            return;
+          }
+
+          if (line.startsWith(':')) {
+            // SSE heartbeat comment (": ping") — ignore.
+            return;
+          }
+
+          if (line.startsWith('data:')) {
+            var value = line.substring(5);
+            if (value.startsWith(' ')) {
+              value = value.substring(1);
+            }
+            dataLines.add(value);
+            return;
+          }
+
+          if (line.startsWith('event:') ||
+              line.startsWith('id:') ||
+              line.startsWith('retry:')) {
+            return;
+          }
+
+          rawLines.add(line);
+        }
+
+        bodySub = responseBody.stream.listen(
+          (chunk) {
+            if (effectiveCancelToken.isCancelled || controller.isClosed) return;
+            try {
+              final decodedChunk = utf8.decode(chunk, allowMalformed: true);
+              final combined = carryOver + decodedChunk;
+              final parts = combined.split('\n');
+              carryOver = parts.removeLast();
+              for (final part in parts) {
+                processLine(part);
+              }
+            } catch (error, stackTrace) {
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+              cancelInner('Decode error');
+              if (!controller.isClosed) {
+                unawaited(controller.close());
+              }
+            }
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            if (effectiveCancelToken.isCancelled || controller.isClosed) return;
+            if (error is DioException) {
+              controller.addError(
+                KitchenBoardException(
+                  _errorMessage(error),
+                  statusCode: error.response?.statusCode,
+                ),
+                stackTrace,
+              );
+            } else {
+              controller.addError(error, stackTrace);
+            }
+            cancelInner('Stream error');
+            if (!controller.isClosed) {
+              unawaited(controller.close());
+            }
+          },
+          onDone: () {
+            if (effectiveCancelToken.isCancelled || controller.isClosed) return;
+            try {
+              if (carryOver.isNotEmpty) {
+                processLine(carryOver);
+                carryOver = '';
+              }
+              if (dataLines.isNotEmpty) {
+                final payload = dataLines.join('\n').trim();
+                dataLines.clear();
+                if (payload.isNotEmpty) {
+                  final tickets = decodePayload(payload);
+                  emittedAny = true;
+                  if (!controller.isClosed) {
+                    controller.add(tickets);
+                  }
+                }
+              } else if (!emittedAny && rawLines.isNotEmpty) {
+                final payload = rawLines.join('\n').trim();
+                rawLines.clear();
+                if (payload.isNotEmpty) {
+                  final tickets = decodePayload(payload);
+                  emittedAny = true;
+                  if (!controller.isClosed) {
+                    controller.add(tickets);
+                  }
+                }
+              }
+
+              if (!emittedAny && !controller.isClosed) {
+                controller.addError(
+                  const FormatException(
+                    'Invalid kitchen-ticket/today/stream response.',
+                  ),
+                );
+              }
+            } catch (error, stackTrace) {
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+            } finally {
+              cancelInner('Stream done');
+              if (!controller.isClosed) {
+                unawaited(controller.close());
+              }
+            }
+          },
+          cancelOnError: true,
+        );
+      },
+      onCancel: () {
+        cancelInner('Subscription cancelled');
+      },
+    );
+
+    return controller.stream;
+  }
+
+  /// Watches today's kitchen tickets via `GET /api/kitchen-ticket/today/stream`,
+  /// falling back to `GET /api/kitchen-ticket/today` if the stream fails.
+  Stream<List<KitchenBoardTicket>> watchTodaysTickets({
+    DateTime? now,
+    CancelToken? cancelToken,
+  }) async* {
+    var emittedAny = false;
+    try {
+      await for (final tickets in streamTodaysTickets(
+        now: now,
+        cancelToken: cancelToken,
+      )) {
+        emittedAny = true;
+        yield tickets;
+      }
+    } catch (_) {
+      if (cancelToken?.isCancelled ?? false) return;
+      try {
+        if (runtimeType != KitchenBoardRepository) {
+          yield await fetchTodaysTickets(now: now);
+        } else {
+          yield await fetchTodaysTicketsFallback(now: now);
+        }
+      } catch (_) {
+        if (!emittedAny) rethrow;
+      }
+      return;
+    }
+
+    if (!emittedAny && !(cancelToken?.isCancelled ?? false)) {
+      if (runtimeType != KitchenBoardRepository) {
+        yield await fetchTodaysTickets(now: now);
+      } else {
+        yield await fetchTodaysTicketsFallback(now: now);
+      }
+    }
+  }
+
+  /// Fetches today's kitchen tickets using `GET /api/kitchen-ticket/today/stream`
+  /// first, with `GET /api/kitchen-ticket/today` as fallback.
   Future<List<KitchenBoardTicket>> fetchTodaysTickets({DateTime? now}) async {
+    final cancelToken = CancelToken();
+    try {
+      final tickets = await streamTodaysTickets(
+        now: now,
+        cancelToken: cancelToken,
+      ).first;
+      return tickets;
+    } catch (_) {
+      return fetchTodaysTicketsFallback(now: now);
+    } finally {
+      if (!cancelToken.isCancelled) {
+        cancelToken.cancel('Snapshot completed');
+      }
+    }
+  }
+
+  /// Fetches today's kitchen tickets from the fallback REST endpoint
+  /// `GET /api/kitchen-ticket/today`.
+  Future<List<KitchenBoardTicket>> fetchTodaysTicketsFallback({
+    DateTime? now,
+  }) async {
     try {
       final response = await _dio.get<Object?>(
         _endpoint('/kitchen-ticket/today'),
       );
       final body = response.data;
       final rawList = _extractTicketList(body);
-
-      final referenceTime = now ?? DateTime.now();
-      final tickets = <KitchenBoardTicket>[];
-      for (final item in rawList) {
-        if (item is Map<String, dynamic>) {
-          final parsed = KitchenBoardTicket.tryFromApiJson(
-            item,
-            now: referenceTime,
-          );
-          if (parsed != null) {
-            tickets.add(parsed);
-          }
-        } else if (item is Map) {
-          final parsed = KitchenBoardTicket.tryFromApiJson(
-            Map<String, dynamic>.from(item),
-            now: referenceTime,
-          );
-          if (parsed != null) {
-            tickets.add(parsed);
-          }
-        }
-      }
-      return tickets;
+      return _parseTicketList(rawList, now: now);
     } on DioException catch (error) {
       throw KitchenBoardException(
         _errorMessage(error),
         statusCode: error.response?.statusCode,
       );
     }
+  }
+
+  List<KitchenBoardTicket> _parseTicketList(
+    List<Object?> rawList, {
+    DateTime? now,
+  }) {
+    final referenceTime = now ?? DateTime.now();
+    final tickets = <KitchenBoardTicket>[];
+    for (final item in rawList) {
+      if (item is Map<String, dynamic>) {
+        final parsed = KitchenBoardTicket.tryFromApiJson(
+          item,
+          now: referenceTime,
+        );
+        if (parsed != null) {
+          tickets.add(parsed);
+        }
+      } else if (item is Map) {
+        final parsed = KitchenBoardTicket.tryFromApiJson(
+          Map<String, dynamic>.from(item),
+          now: referenceTime,
+        );
+        if (parsed != null) {
+          tickets.add(parsed);
+        }
+      }
+    }
+    return tickets;
   }
 
   /// Assigns the given [preparerId] to the ticket via
@@ -227,16 +562,24 @@ class KitchenBoardRepository {
     return null;
   }
 
-  /// Fetches the latest QC attempt ID for a ticket via
+  /// Fetches the latest in-progress QC attempt ID for a ticket via
   /// `GET /api/kitchen-qc/ticket/{kitchenTicketId}/latest`.
+  /// Returns `null` if no attempt exists or if the latest attempt has already
+  /// ended (`FAILED` or `PASSED`).
   Future<String?> fetchLatestQcAttemptId(String kitchenTicketId) async {
     try {
       final response = await _dio.get<dynamic>(
         _endpoint('/kitchen-qc/ticket/$kitchenTicketId/latest'),
       );
       final data = response.data;
-      if (data is Map && data['qc_attempt_id'] is String) {
-        return data['qc_attempt_id'] as String;
+      if (data is Map) {
+        final status = (data['status'] as String?)?.toUpperCase();
+        if (status != null && status != 'IN_PROGRESS') {
+          return null;
+        }
+        if (data['qc_attempt_id'] is String) {
+          return data['qc_attempt_id'] as String;
+        }
       }
     } catch (_) {
       // Ignore lookup failure; caller can fall back to checking or ticket ID.
@@ -265,17 +608,16 @@ class KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
   }) async {
-    var resolvedAttemptId = attemptId;
-    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
-      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
-    }
+    final inProgressAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
+
+    var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
       resolvedAttemptId = await checkTicket(
         kitchenTicketId,
         checkerId: checkerId,
       );
     }
-    resolvedAttemptId ??= kitchenTicketId;
+    resolvedAttemptId ??= attemptId ?? kitchenTicketId;
 
     await passQcAttempt(resolvedAttemptId);
   }
@@ -307,25 +649,33 @@ class KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
     List<String>? orderItemIds,
+    List<Map<String, dynamic>>? rejections,
   }) async {
-    var resolvedAttemptId = attemptId;
-    if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
-      resolvedAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
-    }
+    final inProgressAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
+
+    var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
       resolvedAttemptId = await checkTicket(
         kitchenTicketId,
         checkerId: checkerId,
       );
     }
-    resolvedAttemptId ??= kitchenTicketId;
+    resolvedAttemptId ??= attemptId ?? kitchenTicketId;
 
     var effectiveItemIds = orderItemIds
         ?.where((id) => id.trim().isNotEmpty)
         .toList();
 
-    // If no orderItemIds were provided, query the ticket directly to resolve them.
-    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+    // If no orderItemIds were provided and rejections need resolution, query the ticket.
+    final needsItemIds =
+        effectiveItemIds == null ||
+        effectiveItemIds.isEmpty ||
+        (rejections != null &&
+            rejections.any(
+              (r) => (r['order_item_id'] as String?)?.trim().isEmpty ?? true,
+            ));
+
+    if (needsItemIds) {
       try {
         final res = await _dio.get<Object?>(
           _endpoint('/kitchen-ticket/$kitchenTicketId'),
@@ -359,32 +709,110 @@ class KitchenBoardRepository {
       }
     }
 
-    if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
-      throw const KitchenBoardException(
-        'Cannot fail QC: no valid order items found for this ticket.',
-      );
+    final List<Map<String, dynamic>> finalRejections;
+    if (rejections != null && rejections.isNotEmpty) {
+      finalRejections = rejections.map((rej) {
+        final map = Map<String, dynamic>.from(rej);
+        final rawId = (map['order_item_id'] as String?)?.trim();
+        if (rawId == null || rawId.isEmpty) {
+          if (effectiveItemIds != null && effectiveItemIds.isNotEmpty) {
+            map['order_item_id'] = effectiveItemIds.first;
+          } else {
+            map['order_item_id'] = kitchenTicketId;
+          }
+        }
+        return map;
+      }).toList();
+    } else {
+      if (effectiveItemIds == null || effectiveItemIds.isEmpty) {
+        throw const KitchenBoardException(
+          'Cannot fail QC: no valid order items found for this ticket.',
+        );
+      }
+
+      finalRejections = effectiveItemIds
+          .map(
+            (id) => {
+              'order_item_id': id,
+              'portion_number': 1,
+              'rejection_reason': 'INCOMPLETE',
+              'description': reason,
+            },
+          )
+          .toList();
     }
 
-    final List<Map<String, dynamic>> rejections = effectiveItemIds
-        .map(
-          (id) => {
-            'order_item_id': id,
-            'portion_number': 1,
-            'rejection_reason': 'INCOMPLETE',
-            'description': reason,
-          },
-        )
-        .toList();
-
-    await rejectQcAttempt(resolvedAttemptId, rejections: rejections);
+    await rejectQcAttempt(resolvedAttemptId, rejections: finalRejections);
   }
 
   /// Hands over a ready ticket via
   /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over`.
-  Future<void> handOverTicket(String kitchenTicketId) async {
+  ///
+  /// For delivery orders (foodpanda / GrabFood), photo evidence files are
+  /// uploaded via multipart/form-data under the field name `'files'`.
+  Future<void> handOverTicket(
+    String kitchenTicketId, {
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
+  }) async {
     try {
+      dynamic data;
+      if (photos != null && photos.isNotEmpty) {
+        final formData = FormData();
+        for (final photo in photos) {
+          var filename = photo.name.trim();
+          if (filename.isEmpty) {
+            filename = 'handover_evidence.jpg';
+          }
+          final lower = filename.toLowerCase();
+          final isPng = lower.endsWith('.png');
+          final isJpg = lower.endsWith('.jpg') || lower.endsWith('.jpeg');
+          if (!isPng && !isJpg) {
+            filename = '$filename.jpg';
+          }
+          final contentType = filename.toLowerCase().endsWith('.png')
+              ? DioMediaType('image', 'png')
+              : DioMediaType('image', 'jpeg');
+
+          if (photo.bytes != null && photo.bytes!.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'files',
+                MultipartFile.fromBytes(
+                  photo.bytes!,
+                  filename: filename,
+                  contentType: contentType,
+                ),
+              ),
+            );
+          } else if (photo.path != null && photo.path!.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'files',
+                await MultipartFile.fromFile(
+                  photo.path!,
+                  filename: filename,
+                  contentType: contentType,
+                ),
+              ),
+            );
+          }
+        }
+        if (imgKeys != null && imgKeys.isNotEmpty) {
+          for (final key in imgKeys) {
+            formData.fields.add(MapEntry('img_keys[]', key));
+          }
+        }
+        if (formData.files.isNotEmpty || formData.fields.isNotEmpty) {
+          data = formData;
+        }
+      } else if (imgKeys != null && imgKeys.isNotEmpty) {
+        data = {'img_keys': imgKeys};
+      }
+
       await _dio.post<Object?>(
         _endpoint('/kitchen-fulfillment/$kitchenTicketId/hand-over'),
+        data: data,
       );
     } on DioException catch (error) {
       throw KitchenBoardException(
@@ -398,6 +826,8 @@ class KitchenBoardRepository {
   Future<void> advanceTicket(
     KitchenBoardTicket ticket, {
     String? preparerId,
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
   }) async {
     final id = ticket.kitchenTicketId;
     final raw = ticket.rawStatus.toUpperCase();
@@ -435,20 +865,54 @@ class KitchenBoardRepository {
       return;
     }
 
-    final actionPath = switch (raw) {
-      'READY' => '/kitchen-fulfillment/$id/hand-over',
-      _ => null,
-    };
-    if (actionPath == null) return;
+    if (raw == 'READY' || ticket.data.status == KkfcStatus.ready) {
+      await handOverTicket(id, photos: photos, imgKeys: imgKeys);
+      return;
+    }
+  }
 
+  /// Cancels an order and its associated kitchen ticket via
+  /// `POST /api/kitchen-fulfillment/brands/{brandId}/orders/{orderId}/cancel`.
+  Future<void> cancelTicket({
+    required String brandId,
+    required String orderId,
+    required String reason,
+  }) async {
     try {
-      await _dio.post<Object?>(_endpoint(actionPath));
+      await _dio.post<Object?>(
+        _endpoint(
+          '/kitchen-fulfillment/brands/$brandId/orders/$orderId/cancel',
+        ),
+        data: {'cancellation_reason': reason.trim()},
+      );
     } on DioException catch (error) {
       throw KitchenBoardException(
         _errorMessage(error),
         statusCode: error.response?.statusCode,
       );
     }
+  }
+
+  /// Fetches an order by [brandId] and [orderId] via
+  /// `GET /api/brands/{brandId}/orders/{orderId}`.
+  Future<Map<String, dynamic>?> fetchOrder({
+    required String brandId,
+    required String orderId,
+  }) async {
+    try {
+      final response = await _dio.get<Object?>(
+        _endpoint('/brands/$brandId/orders/$orderId'),
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      } else if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+    } catch (_) {
+      // Fallback: return null if order fetch fails or unauthorized
+    }
+    return null;
   }
 
   List<Object?> _extractTicketList(Object? body) {

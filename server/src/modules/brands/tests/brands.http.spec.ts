@@ -1,4 +1,3 @@
-import { PinGuard } from '../../pin/pin.guard';
 import {
   ExecutionContext,
   INestApplication,
@@ -69,8 +68,6 @@ describe('Brands HTTP endpoints', () => {
           return true;
         },
       })
-      .overrideGuard(PinGuard)
-      .useValue({ canActivate: () => true })
       .compile();
     app = module.createNestApplication();
     app.useLogger(false);

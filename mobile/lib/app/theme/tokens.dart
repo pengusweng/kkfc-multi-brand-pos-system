@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 export 'color_tokens.dart';
+export 'status_colors.dart';
 
 /// 4-based spacing scale matching the design system:
 /// space-1 (4) to space-16 (64).

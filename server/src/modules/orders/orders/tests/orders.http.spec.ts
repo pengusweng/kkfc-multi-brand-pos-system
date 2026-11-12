@@ -21,6 +21,7 @@ import { OrdersRepository } from '../orders.repository';
 import { OrdersService } from '../orders.service';
 import { AuthService } from '../../../auth/auth.service';
 import { OrdersController } from '../orders.controller';
+import { KitchenTicketChanges } from '../../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 
 describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   let app: INestApplication;
@@ -1462,6 +1463,7 @@ describe('Draft cancellation HTTP API', () => {
     const module = await Test.createTestingModule({
       controllers: [OrdersController],
       providers: [
+        KitchenTicketChanges,
         { provide: OrdersService, useValue: service },
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
@@ -1592,6 +1594,118 @@ describe('Draft cancellation HTTP API', () => {
     async (brand, order) => {
       expect((await cancel(undefined, true, brand, order)).status).toBe(400);
       expect(cancelMethod).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('Order detail HTTP API', () => {
+  const brandId = '11111111-1111-4111-8111-111111111111';
+  const orderId = '22222222-2222-4222-8222-222222222222';
+  const actorId = '33333333-3333-4333-8333-333333333333';
+  const allowedRoles: UserRole[] = [
+    UserRole.CASHIER_STAFF,
+    UserRole.MANAGER,
+    UserRole.SUPERADMIN,
+    UserRole.KITCHEN_HEAD,
+    UserRole.KITCHEN_STAFF,
+  ];
+  const auth = { validateSession: jest.fn() };
+  const prisma = { order: { findUnique: jest.fn() } };
+  const service = { findOne: jest.fn() };
+  const findOneMethod = service.findOne;
+  let app: INestApplication;
+  let url: string;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      controllers: [OrdersController],
+      providers: [
+        KitchenTicketChanges,
+        { provide: OrdersService, useValue: service },
+        { provide: AuthService, useValue: auth },
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    app = module.createNestApplication();
+    app.useLogger(false);
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.listen(0, '127.0.0.1');
+    url = await app.getUrl();
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    signInAs(UserRole.CASHIER_STAFF);
+    prisma.order.findUnique.mockResolvedValue({ brand_id: brandId });
+    findOneMethod.mockResolvedValue({ order_id: orderId, status: 'QUEUED' });
+  });
+
+  afterAll(async () => app?.close());
+
+  function signInAs(role: UserRole) {
+    auth.validateSession.mockResolvedValue({
+      user: {
+        user_id: actorId,
+        role,
+        brand_id: role === UserRole.SUPERADMIN ? null : brandId,
+      },
+    });
+  }
+
+  function getOrder(token = true, brand = brandId, order = orderId) {
+    return fetch(`${url}/api/brands/${brand}/orders/${order}`, {
+      headers: token ? { Authorization: 'Bearer test-session' } : {},
+    });
+  }
+
+  it.each(allowedRoles)(
+    'IT-ORD-035: allows %s to read an order',
+    async (role) => {
+      signInAs(role);
+      const response = await getOrder();
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        order_id: orderId,
+        status: 'QUEUED',
+      });
+      expect(findOneMethod).toHaveBeenCalledWith(brandId, orderId);
+    },
+  );
+
+  it('IT-ORD-036: requires authentication', async () => {
+    expect((await getOrder(false)).status).toBe(401);
+    expect(findOneMethod).not.toHaveBeenCalled();
+  });
+
+  it.each(
+    Object.values(UserRole).filter((role) => !allowedRoles.includes(role)),
+  )('IT-ORD-037: rejects other role %s', async (role) => {
+    signInAs(role);
+    expect((await getOrder()).status).toBe(403);
+    expect(findOneMethod).not.toHaveBeenCalled();
+  });
+
+  it('IT-ORD-038: returns 404 for a missing order', async () => {
+    findOneMethod.mockRejectedValueOnce(new NotFoundException());
+    expect((await getOrder()).status).toBe(404);
+    expect(findOneMethod).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['invalid', orderId],
+    [brandId, 'invalid'],
+  ])(
+    'IT-ORD-039: rejects malformed brand or order IDs %s / %s',
+    async (brand, order) => {
+      expect((await getOrder(true, brand, order)).status).toBe(400);
+      expect(findOneMethod).not.toHaveBeenCalled();
     },
   );
 });

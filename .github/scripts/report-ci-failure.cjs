@@ -7,6 +7,31 @@ const failures = new Set([
   "action_required",
 ]);
 const bot = "github-actions[bot]";
+const areaFor = (name) =>
+  name.startsWith("Backend /")
+    ? "Backend"
+    : name.startsWith("Flutter /")
+      ? "Flutter"
+      : name.startsWith("Web /")
+        ? "Web"
+        : "CI";
+const trackingFor = (issue) => {
+  try {
+    const data = JSON.parse(
+      issue?.body?.match(/<!-- ci-tracking:(.*?) -->/)?.[1] ?? "null",
+    );
+    if (data && Array.isArray(data.areas) && Array.isArray(data.jobs))
+      return data;
+  } catch {
+    /* Older reports have no machine-readable tracking. */
+  }
+  const areas =
+    issue?.body?.match(/^## (.+) CI failure$/m)?.[1].split(", ") ?? [];
+  const jobs = [
+    ...(issue?.body ?? "").matchAll(/^\| \[(.*?)\]\([^\n]*?\) \|/gm),
+  ].map((match) => match[1]);
+  return { areas, jobs, runNumber: 0 };
+};
 const safe = (value) =>
   String(value ?? "")
     .replace(/[\r\n]+/g, " ")
@@ -30,12 +55,24 @@ module.exports = async function report({
   core,
   env = process.env,
   dependencyResults,
+  recover = false,
 }) {
   const repo = context.repo;
+  if (
+    recover &&
+    (dependencyResults?.ci?.result !== "success" ||
+      dependencyResults?.["automation-tests"]?.result !== "success" ||
+      dependencyResults?.["detect-changes"]?.result !== "success" ||
+      !["backend", "frontend", "web"].every((name) =>
+        ["success", "skipped"].includes(dependencyResults?.[name]?.result),
+      ))
+  )
+    return;
   let run;
   if (dependencyResults !== undefined) {
     // Reporting runs inside CI, after its dependencies but before CI completes.
     if (
+      !recover &&
       !Object.values(dependencyResults).some((job) => job.result === "failure")
     )
       return;
@@ -59,13 +96,16 @@ module.exports = async function report({
     if (
       current.run_attempt !== runAttempt ||
       !["in_progress", "completed"].includes(current.status) ||
-      (current.status === "completed" && !failures.has(current.conclusion))
+      (current.status === "completed" &&
+        !(recover
+          ? current.conclusion === "success"
+          : failures.has(current.conclusion)))
     )
       return;
     run = {
       ...current,
       event: context.eventName,
-      conclusion: "failure",
+      conclusion: recover ? "success" : "failure",
       // PR CI executes a merge ref; issue tracking must use the actual head SHA.
       head_sha: context.payload.pull_request?.head.sha ?? current.head_sha,
       pull_requests: context.payload.pull_request
@@ -122,7 +162,23 @@ module.exports = async function report({
     if (!pr) return;
   } else if (!["main", "development"].includes(run.head_branch)) {
     return;
+  } else {
+    const { data: branch } = await github.rest.repos.getBranch({
+      ...repo,
+      branch: run.head_branch,
+    });
+    if (branch.commit.sha !== run.head_sha) return;
   }
+
+  // A delayed run for the same head must not overwrite a newer result.
+  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+    ...repo,
+    workflow_id: run.workflow_id,
+    branch: run.head_branch,
+    event: run.event,
+    per_page: 100,
+  });
+  if (runs.some((other) => other.run_number > run.run_number)) return;
 
   const jobs = await github.paginate(
     github.rest.actions.listJobsForWorkflowRunAttempt,
@@ -143,13 +199,7 @@ module.exports = async function report({
       )
     )
       continue;
-    const category = job.name.startsWith("Backend /")
-      ? "Backend"
-      : job.name.startsWith("Flutter /")
-        ? "Flutter"
-        : job.name.startsWith("Web /")
-          ? "Web"
-          : "CI";
+    const category = areaFor(job.name);
     if (!groups.has(category)) groups.set(category, []);
     groups.get(category).push(job);
   }
@@ -176,9 +226,9 @@ module.exports = async function report({
       per_page: 100,
     },
   );
-  const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+  const issues = await github.paginate(github.rest.issues.listForRepo, {
     ...repo,
-    state: "open",
+    state: "all",
     creator: bot,
     per_page: 100,
   });
@@ -190,10 +240,8 @@ module.exports = async function report({
   const isReport = (issue) => !issue.pull_request && issue.user?.login === bot;
   // Reuse a previous area report when upgrading to consolidated reporting.
   const existing =
-    openIssues.find(
-      (issue) => isReport(issue) && issue.body?.includes(marker),
-    ) ??
-    openIssues.find(
+    issues.find((issue) => isReport(issue) && issue.body?.includes(marker)) ??
+    issues.find(
       (issue) =>
         isReport(issue) &&
         ["Backend", "Flutter", "Web", "CI"].some((area) =>
@@ -201,7 +249,56 @@ module.exports = async function report({
         ),
     );
   const attemptMarker = `<!-- ci-run:${run.id}:${run.run_attempt} -->`;
-  if (existing?.body?.includes(attemptMarker)) {
+  if (recover) {
+    if (!existing || existing.state === "closed") return;
+    const tracking = trackingFor(existing);
+    const areaJobs = {
+      Backend: "backend",
+      Flutter: "frontend",
+      Web: "web",
+      CI: "ci",
+    };
+    if (
+      !tracking.areas.length ||
+      tracking.runNumber > run.run_number ||
+      !tracking.areas.every(
+        (area) => dependencyResults[areaJobs[area]]?.result === "success",
+      ) ||
+      !tracking.jobs.every((name) =>
+        jobs.some(
+          (job) => safe(job.name) === name && job.conclusion === "success",
+        ),
+      ) ||
+      jobs.some((job) => failures.has(job.conclusion))
+    )
+      return;
+    // Require actual successful checks in each previously failing area, even for legacy reports.
+    if (
+      !tracking.areas.every((area) =>
+        jobs.some(
+          (job) => areaFor(job.name) === area && job.conclusion === "success",
+        ),
+      )
+    )
+      return;
+    await github.rest.issues.createComment({
+      ...repo,
+      issue_number: existing.number,
+      body: `All required CI checks and the previously failing checks passed on the latest commit ${run.head_sha}. Automatically closing as completed.\n\n[Successful run, attempt ${run.run_attempt}](${run.html_url})`,
+    });
+    await github.rest.issues.update({
+      ...repo,
+      issue_number: existing.number,
+      state: "closed",
+      state_reason: "completed",
+    });
+    await core.summary
+      .addHeading("Resolved CI failure issue")
+      .addList([existing.html_url])
+      .write();
+    return;
+  }
+  if (existing?.state !== "closed" && existing?.body?.includes(attemptMarker)) {
     links.push(existing.html_url);
     await core.summary.addHeading("CI failure issues").addList(links).write();
     return;
@@ -270,6 +367,21 @@ module.exports = async function report({
   const body = [
     marker,
     attemptMarker,
+    `<!-- ci-tracking:${JSON.stringify({
+      areas: [
+        ...new Set([
+          ...(existing?.state === "closed" ? [] : trackingFor(existing).areas),
+          ...groups.keys(),
+        ]),
+      ],
+      jobs: [
+        ...new Set([
+          ...(existing?.state === "closed" ? [] : trackingFor(existing).jobs),
+          ...failedJobs.map((job) => safe(job.name)),
+        ]),
+      ],
+      runNumber: run.run_number,
+    })} -->`,
     `## ${category} CI failure`,
     "",
     "A CI check failed and needs investigation. This is not yet a confirmed application bug.",
@@ -323,6 +435,7 @@ module.exports = async function report({
       title,
       body,
       assignees,
+      state: "open",
     });
     links.push(existing.html_url);
   } else {

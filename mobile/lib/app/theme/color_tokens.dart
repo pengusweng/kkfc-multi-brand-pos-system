@@ -238,6 +238,90 @@ abstract final class KkfcColors {
 
   /// QC Fail button border / text (#B3261E)
   static const Color qcFailBorder = danger;
+
+  // --- Kitchen Ticket Status color tokens ---
+
+  // Acknowledged: darker shade of blue
+  /// Background for acknowledged status badge/tint (#D8E6F5)
+  static const Color statusAcknowledgedBg = Color(0xFFD8E6F5);
+
+  /// Border for acknowledged status badge (#8EB5E0)
+  static const Color statusAcknowledgedBorder = Color(0xFF8EB5E0);
+
+  /// Foreground ink / text for acknowledged status (darker blue, #0D3B66)
+  static const Color statusAcknowledgedFg = Color(0xFF0D3B66);
+
+  /// Solid / accent color for acknowledged ticket (#104477)
+  static const Color statusAcknowledgedSolid = Color(0xFF104477);
+
+  /// Card border for acknowledged status (#8EB5E0)
+  static const Color statusAcknowledgedCardBorder = Color(0xFF8EB5E0);
+
+  // Preparing: lighter shade of blue
+  /// Background for preparing status badge/tint (#EDF7FF)
+  static const Color statusPreparingBg = Color(0xFFEDF7FF);
+
+  /// Border for preparing status badge (#BAE6FD)
+  static const Color statusPreparingBorder = Color(0xFFBAE6FD);
+
+  /// Foreground ink / text for preparing status (lighter blue, #0369A1)
+  static const Color statusPreparingFg = Color(0xFF0369A1);
+
+  /// Solid / accent color for preparing ticket (#0284C7)
+  static const Color statusPreparingSolid = Color(0xFF0284C7);
+
+  /// Card border for preparing status (#BAE6FD)
+  static const Color statusPreparingCardBorder = Color(0xFFBAE6FD);
+
+  // Rework: copper / amber status
+  /// Background for rework badge/box (#FBF6EF)
+  static const Color reworkBg = Color(0xFFFBF6EF);
+
+  /// Border for rework badge/box (#DCBFA9)
+  static const Color reworkBorder = Color(0xFFDCBFA9);
+
+  /// Foreground ink / text for rework (#8A4621)
+  static const Color reworkText = Color(0xFF8A4621);
+
+  /// Solid / accent fill for rework (#8A4621)
+  static const Color reworkSolid = Color(0xFF8A4621);
+
+  /// Card border for rework status (#DCBFA9)
+  static const Color reworkCardBorder = Color(0xFFDCBFA9);
+
+  // Queued: slate status
+  static const Color statusQueuedBg = neutralBg;
+  static const Color statusQueuedBorder = neutralBorder;
+  static const Color statusQueuedFg = neutral;
+  static const Color statusQueuedSolid = neutralSolid;
+  static const Color statusQueuedCardBorder = ticketBorder;
+
+  // Checking (QC Check): violet status
+  static const Color statusCheckingBg = reviewBg;
+  static const Color statusCheckingBorder = reviewBorder;
+  static const Color statusCheckingFg = review;
+  static const Color statusCheckingSolid = reviewSolid;
+  static const Color statusCheckingCardBorder = reviewBorder;
+
+  // Ready: green status
+  static const Color statusReadyBg = successBg;
+  static const Color statusReadyBorder = successBorder;
+  static const Color statusReadyFg = success;
+  static const Color statusReadySolid = successSolid;
+  static const Color statusReadyCardBorder = successBorder;
+
+  // --- Availability tokens ---
+  /// Status text color for unavailable menu item on availability cards (#8C3A27)
+  static const Color availabilityUnavailableText = Color(0xFF8C3A27);
+
+  /// Warning badge fill on availability confirmation dialog (#FEF3C7)
+  static const Color availabilityWarningBg = Color(0xFFFEF3C7);
+
+  /// Warning badge icon color on availability confirmation dialog (#8A6D1C)
+  static const Color availabilityWarningIcon = Color(0xFF8A6D1C);
+
+  /// Subtle gold card border on availability confirmation dialog (#EAC775)
+  static const Color availabilityCardBorder = Color(0xFFEAC775);
 }
 
 /// Representation of a verified WCAG 2.2 AA contrast pair.

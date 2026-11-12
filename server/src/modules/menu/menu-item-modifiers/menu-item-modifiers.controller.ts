@@ -1,6 +1,10 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -43,8 +47,13 @@ export class MenuItemModifiersController {
   ) {}
 
   @Post()
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_CREATED',
+    snapshot: 'create',
+    entity: 'menu_item_modifiers',
+    id: fromResult('menu_item_modifier_id'),
+  })
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
     return this.menuItemModifiersService.create(dto);
@@ -83,9 +92,14 @@ export class MenuItemModifiersController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_UPDATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @UpdateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
     @Body() dto: UpdateMenuItemModifierDTO,
@@ -94,17 +108,27 @@ export class MenuItemModifiersController {
   }
 
   @Patch('reactivate/:id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_REACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @ReactivateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.reactivate(menuItemModifierId);
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @DeleteMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(PinGuard)
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.delete(menuItemModifierId);
   }

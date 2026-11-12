@@ -9,7 +9,7 @@ export default function PageBackground({
   className?: string;
 }) {
   return (
-    <main className={cn("relative isolate flex min-h-dvh min-w-0 flex-1 items-start justify-center overflow-x-clip bg-[radial-gradient(ellipse_at_center,var(--page-from),var(--page-to))] px-4 py-8 text-page-text sm:p-8 lg:items-center", className)}>
+    <main className={cn("relative isolate flex min-h-dvh min-w-0 flex-1 items-start justify-center overflow-x-clip page-surface px-4 py-8 text-page-text sm:p-8 lg:items-center", className)}>
       <svg
         aria-hidden="true"
         viewBox="0 0 217 129"

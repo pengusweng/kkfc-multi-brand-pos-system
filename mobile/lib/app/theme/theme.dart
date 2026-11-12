@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'color_schemes.dart';
 import 'semantic_colors.dart';
-import 'status_colors.dart';
 import 'typography.dart';
 import 'tokens.dart';
 

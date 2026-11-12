@@ -7,6 +7,17 @@ class KitchenTicketItemTile extends StatelessWidget {
 
   final KitchenTicketItem item;
 
+  static String _formatFailReason(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.toLowerCase().startsWith('qc returned:')) {
+      return trimmed.substring(12).trim();
+    }
+    if (trimmed.toLowerCase().startsWith('qc returned')) {
+      return trimmed.substring(11).trim();
+    }
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final notes = <String>[];
@@ -88,6 +99,49 @@ class KitchenTicketItemTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: KkfcColors.ticketInk,
                         height: 1.25,
+                      ),
+                    ),
+                  ),
+                ),
+              if (item.failReason != null && item.failReason!.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    key: const ValueKey('kitchen-ticket-qc-returned-box'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.ticketNoteBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: KkfcColors.ticketNoteBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'QC returned: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                          TextSpan(
+                            text: _formatFailReason(item.failReason!),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: KkfcColors.ticketInk,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

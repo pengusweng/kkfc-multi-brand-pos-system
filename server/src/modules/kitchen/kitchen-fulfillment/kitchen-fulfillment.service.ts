@@ -45,11 +45,13 @@ export class KitchenFulfillmentService {
   ) {}
 
   async acknowledge(kitchenTicketId: string) {
-    return this.kitchenTicketService.acknowledge(kitchenTicketId);
+    const ticket = await this.kitchenTicketService.acknowledge(kitchenTicketId);
+    this.kitchenTicketService.notifyChange();
+    return ticket;
   }
 
   async prepare(kitchenTicketId: string, callerId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const ticket = await this.kitchenTicketService.prepare(
         kitchenTicketId,
         callerId,
@@ -60,14 +62,22 @@ export class KitchenFulfillmentService {
 
       return { ticket, order };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   async forChecking(kitchenTicketId: string, callerId: string) {
-    return this.kitchenTicketService.forChecking(kitchenTicketId, callerId);
+    const ticket = await this.kitchenTicketService.forChecking(
+      kitchenTicketId,
+      callerId,
+    );
+    this.kitchenTicketService.notifyChange();
+    return ticket;
   }
 
   async check(kitchenTicketId: string, callerId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const attempt = await this.kitchenQcService.create(
         callerId,
         kitchenTicketId,
@@ -82,10 +92,13 @@ export class KitchenFulfillmentService {
 
       return { ticket, attempt };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   async passQCAttempt(attemptId: string, callerId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const attempt = await this.kitchenQcService.passAttempt(
         callerId,
         attemptId,
@@ -100,6 +113,9 @@ export class KitchenFulfillmentService {
 
       return { ticket, attempt };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   async rejectQcAttempt(
@@ -107,7 +123,7 @@ export class KitchenFulfillmentService {
     callerId: string,
     dto: RejectQcAttemptDTO,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const rejections: OrderItemQcRejection[] = [];
 
       for (const rejection of dto.rejections) {
@@ -137,6 +153,9 @@ export class KitchenFulfillmentService {
 
       return { ticket, attempt, rejections };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   async handOver(
@@ -144,7 +163,7 @@ export class KitchenFulfillmentService {
     actorId: string,
     dto?: CreateHandoffDTO,
   ) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const ticket = await this.kitchenTicketService.findOne(
         kitchenTicketId,
         tx,
@@ -173,6 +192,9 @@ export class KitchenFulfillmentService {
         handedOverTicket,
       };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   async cancel(
@@ -181,7 +203,7 @@ export class KitchenFulfillmentService {
     actorId: string,
     dto: CancelOrderDTO,
   ) {
-    return this.ordersRepository.transaction(async (tx) => {
+    const result = await this.ordersRepository.transaction(async (tx) => {
       const existing = await this.ordersRepository.findByBrand(
         brandId,
         orderId,
@@ -210,6 +232,9 @@ export class KitchenFulfillmentService {
 
       return { order, ticket };
     });
+
+    this.kitchenTicketService.notifyChange();
+    return result;
   }
 
   private isDelivery(channel: OrderChannel) {

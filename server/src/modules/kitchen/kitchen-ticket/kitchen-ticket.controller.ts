@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  MessageEvent,
   Param,
   ParseUUIDPipe,
   Patch,
   Query,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -22,9 +24,12 @@ import {
   FindOneKitchenTicketDocs,
   FindTodaysKitchenTicketsDocs,
   KitchenTicketDocs,
+  StreamTodaysKitchenTicketsDocs,
 } from './docs/kitchen-ticket.docs';
 import { FindKitchenTicketsDTO } from './dto/find-kitchen-tickets.dto';
 import { KitchenTicketService } from './kitchen-ticket.service';
+import { Audit, fromParam } from '../../../shared/audit/audit.decorator';
+import { Observable } from 'rxjs';
 
 @Controller('kitchen-ticket')
 @KitchenTicketDocs()
@@ -60,6 +65,12 @@ export class KitchenTicketController {
     return this.kitchenTicketService.findMany();
   }
 
+  @Sse('today/stream')
+  @StreamTodaysKitchenTicketsDocs()
+  stream(): Observable<MessageEvent> {
+    return this.kitchenTicketService.stream();
+  }
+
   @Get('preparer/:preparerId')
   @FindKitchenTicketsByPreparerDocs()
   async findManyByPreparer(
@@ -93,6 +104,12 @@ export class KitchenTicketController {
   }
 
   @Patch(':id/preparer')
+  @Audit({
+    action: 'KITCHEN_TICKET_PREPARER_ASSIGNED',
+    snapshot: 'update',
+    entity: 'kitchen_tickets',
+    id: fromParam('id'),
+  })
   @AssignKitchenTicketPreparerDocs()
   async claimPerparer(
     @Param('id', ParseUUIDPipe) kitchenTicketId: string,
@@ -105,6 +122,12 @@ export class KitchenTicketController {
   }
 
   @Patch(':id/checker')
+  @Audit({
+    action: 'KITCHEN_TICKET_CHECKER_ASSIGNED',
+    snapshot: 'update',
+    entity: 'kitchen_tickets',
+    id: fromParam('id'),
+  })
   @AssignKitchenTicketCheckerDocs()
   @Roles(
     UserRole.MANAGER,

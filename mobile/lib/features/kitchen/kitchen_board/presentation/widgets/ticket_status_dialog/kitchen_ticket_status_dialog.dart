@@ -11,8 +11,10 @@ import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticke
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_qc_view.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_rework_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
@@ -30,11 +32,16 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.isActionLoading = false,
     this.isActionEnabled = true,
     this.onAction,
+    this.onHandover,
     this.onFail,
+    this.onReject,
+    this.onReworkDone,
     this.onCancelTicket,
+    this.showCancelTicketButton,
     this.onClose,
     this.imagePicker,
     this.onPickImage,
+    this.initialPhotos,
   });
 
   final KitchenBoardTicket ticket;
@@ -45,11 +52,16 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onAction;
+  final Future<void> Function(List<HandoverPhotoEvidence> photos)? onHandover;
   final VoidCallback? onFail;
+  final Future<void> Function(List<QcItemRejection> rejections)? onReject;
+  final Future<void> Function(String? reworkNotes)? onReworkDone;
   final VoidCallback? onCancelTicket;
+  final bool? showCancelTicketButton;
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
+  final List<HandoverPhotoEvidence>? initialPhotos;
 
   static const double _maxDialogWidth = 480.0;
 
@@ -70,6 +82,10 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         ticket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
         ticket.rawStatus.toUpperCase() == 'CHECKING';
 
+    final isRework =
+        ticket.data.status == KkfcStatus.reworking ||
+        ticket.rawStatus.toUpperCase() == 'REWORKING';
+
     final isHandover =
         ticket.lane == KitchenBoardLane.ready ||
         ticket.data.status == KkfcStatus.ready ||
@@ -79,32 +95,44 @@ class KitchenTicketStatusDialog extends StatelessWidget {
         actionLabel ??
         (isAcknowledged
             ? 'Start Preparing'
-            : (isQcCheck
-                  ? 'All items passed'
-                  : (isHandover
-                        ? 'Confirm handover'
-                        : ticket.lane.actionLabelFor(ticket.data.status))));
+            : (isRework
+                  ? 'Open rework'
+                  : (isQcCheck
+                        ? 'All items passed'
+                        : (isHandover
+                              ? 'Confirm handover'
+                              : ticket.lane.actionLabelFor(
+                                  ticket.data.status,
+                                )))));
     final resolvedStatusLabel =
         statusLabel ??
         (isAcknowledged
             ? 'Acknowledged'
-            : (isHandover ? 'Ready' : ticket.lane.title));
+            : (isRework
+                  ? 'Rework'
+                  : (isHandover ? 'Ready' : ticket.lane.title)));
     final resolvedActionIcon =
         actionIcon ??
         switch (resolvedActionLabel) {
           'Start Preparing' => Icons.local_fire_department_rounded,
           'Acknowledge' || 'All items passed' => Icons.check_rounded,
           'Send to QC' || 'QC check' => Icons.search_rounded,
+          'Open rework' => Icons.sync_rounded,
           _ =>
             isAcknowledged
                 ? Icons.local_fire_department_rounded
-                : (ticket.lane == KitchenBoardLane.queued ||
-                          ticket.data.status == KkfcStatus.queued
-                      ? Icons.check_rounded
-                      : null),
+                : (isRework
+                      ? Icons.sync_rounded
+                      : (ticket.lane == KitchenBoardLane.queued ||
+                                ticket.data.status == KkfcStatus.queued
+                            ? Icons.check_rounded
+                            : null)),
         };
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    final resolvedShowCancelTicketButton =
+        isQueued && (showCancelTicketButton ?? (onCancelTicket != null));
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: reduceMotion ? 1.0 : 0.96, end: 1.0),
@@ -143,6 +171,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     isActionEnabled: isActionEnabled,
                     onPass: onAction,
                     onFail: onFail,
+                    onReject: onReject,
                   ),
                 )
               else if (isHandover)
@@ -152,8 +181,23 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     isActionLoading: isActionLoading,
                     isActionEnabled: isActionEnabled,
                     onHandover: onAction,
+                    onHandoverWithPhotos: onHandover,
                     imagePicker: imagePicker,
                     onPickImage: onPickImage,
+                    initialPhotos: initialPhotos,
+                  ),
+                )
+              else if (isRework)
+                Flexible(
+                  child: KitchenTicketReworkView(
+                    ticket: ticket,
+                    isActionLoading: isActionLoading,
+                    isActionEnabled: isActionEnabled,
+                    onReworkDone:
+                        onReworkDone ??
+                        (reworkNotes) async {
+                          onAction?.call();
+                        },
                   ),
                 )
               else ...[
@@ -164,8 +208,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                   isActionLoading: isActionLoading,
                   isActionEnabled: isActionEnabled,
                   onAction: onAction,
-                  showCancelTicketButton: isQueued,
-                  onCancelTicket: isQueued
+                  showCancelTicketButton: resolvedShowCancelTicketButton,
+                  onCancelTicket: resolvedShowCancelTicketButton
                       ? (onCancelTicket ??
                             (isActionEnabled
                                 ? () => showCancelKitchenTicketDialog(
@@ -350,6 +394,7 @@ Future<void> showKitchenTicketStatusDialog(
   bool? isActionEnabled,
   ImagePicker? imagePicker,
   Future<XFile?> Function(ImageSource source)? onPickImage,
+  List<HandoverPhotoEvidence>? initialPhotos,
 }) {
   return showDialog<void>(
     context: context,
@@ -374,6 +419,7 @@ Future<void> showKitchenTicketStatusDialog(
               currentTicket.rawStatus.toUpperCase() == 'FOR_CHECKING' ||
               currentTicket.rawStatus.toUpperCase() == 'CHECKING';
           final canPass = userRole?.canPassQc ?? false;
+          final canCancel = userRole == null || userRole.canCancelTicket;
           final effectiveActionEnabled =
               isActionEnabled ??
               (userRole != null
@@ -389,14 +435,51 @@ Future<void> showKitchenTicketStatusDialog(
             isActionEnabled: effectiveActionEnabled,
             imagePicker: imagePicker,
             onPickImage: onPickImage,
+            initialPhotos: initialPhotos,
             onClose: () => Navigator.of(dialogContext).maybePop(),
-            onCancelTicket: effectiveActionEnabled
+            showCancelTicketButton: canCancel,
+            onCancelTicket: (effectiveActionEnabled && canCancel)
                 ? () async {
                     final cancelled = await showCancelKitchenTicketDialog(
                       dialogContext,
                       ticket: currentTicket,
+                      onConfirm: (reason) async {
+                        return ref
+                            .read(kitchenBoardProvider.notifier)
+                            .cancelTicket(
+                              ticket: currentTicket,
+                              reason: reason,
+                            );
+                      },
                     );
                     if (cancelled == true && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
+            onReject: effectiveActionEnabled
+                ? (rejections) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .rejectQc(
+                          kitchenTicketId: currentTicket.kitchenTicketId,
+                          attemptId: currentTicket.qcAttemptId,
+                          rejections: rejections,
+                        );
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).maybePop();
+                    }
+                  }
+                : null,
+            onReworkDone: effectiveActionEnabled
+                ? (reworkNotes) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .sendToQc(
+                          currentTicket.kitchenTicketId,
+                          reworkNotes: reworkNotes,
+                        );
+                    if (success && dialogContext.mounted) {
                       Navigator.of(dialogContext).maybePop();
                     }
                   }
@@ -407,8 +490,40 @@ Future<void> showKitchenTicketStatusDialog(
                       dialogContext,
                       ticket: currentTicket,
                     );
-                    if (rejected == true && dialogContext.mounted) {
-                      Navigator.of(dialogContext).maybePop();
+                    if (rejected != null && dialogContext.mounted) {
+                      final success = await ref
+                          .read(kitchenBoardProvider.notifier)
+                          .rejectQc(
+                            kitchenTicketId: currentTicket.kitchenTicketId,
+                            attemptId: currentTicket.qcAttemptId,
+                            rejections: [rejected],
+                          );
+                      if (success && dialogContext.mounted) {
+                        Navigator.of(dialogContext).maybePop();
+                      }
+                    }
+                  }
+                : null,
+            onHandover: effectiveActionEnabled
+                ? (photos) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .handOverTicket(
+                          currentTicket.kitchenTicketId,
+                          photos: photos,
+                        );
+
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                      if (context.mounted) {
+                        final handedOverTime =
+                            KitchenBoardState.formatTimeOfDay(DateTime.now());
+                        await showHandedOverSuccessDialog(
+                          context,
+                          ticket: currentTicket,
+                          handedOverAtLabel: handedOverTime,
+                        );
+                      }
                     }
                   }
                 : null,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
+import 'package:mobile/features/new_order/presentation/widgets/customization_quantity_stepper.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
@@ -119,14 +120,22 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                   ),
                 ],
                 const SizedBox(height: MenuSpace.lg),
-                _QuantityRow(
-                  quantity: _quantity,
-                  onDecrement: _quantity > 1
-                      ? () => setState(() => _quantity--)
-                      : null,
-                  onIncrement: _quantity < _maxQuantity
-                      ? () => setState(() => _quantity++)
-                      : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'QUANTITY',
+                        style: text.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    CustomizationQuantityStepper(
+                      quantity: _quantity,
+                      max: _maxQuantity,
+                      onChanged: (val) => setState(() => _quantity = val),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: MenuSpace.md),
                 DecoratedBox(
@@ -399,68 +408,6 @@ class _OptionRow extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _QuantityRow extends StatelessWidget {
-  const _QuantityRow({
-    required this.quantity,
-    required this.onDecrement,
-    required this.onIncrement,
-  });
-
-  final int quantity;
-  final VoidCallback? onDecrement;
-  final VoidCallback? onIncrement;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'QUANTITY',
-            style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ),
-        IconButton.outlined(
-          tooltip: 'Remove one',
-          onPressed: onDecrement,
-          icon: const Icon(Icons.remove),
-        ),
-        const SizedBox(width: MenuSpace.sm),
-        ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 64, minHeight: 48),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(color: scheme.outlineVariant),
-              borderRadius: BorderRadius.circular(MenuRadius.sm),
-            ),
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: context.motion(MenuMotion.fast),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: Text(
-                  '$quantity',
-                  key: ValueKey(quantity),
-                  style: text.titleMedium,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: MenuSpace.sm),
-        IconButton.outlined(
-          tooltip: 'Add one',
-          onPressed: onIncrement,
-          icon: const Icon(Icons.add),
-        ),
-      ],
     );
   }
 }

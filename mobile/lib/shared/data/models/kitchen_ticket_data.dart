@@ -11,12 +11,31 @@ class KitchenTicketItem {
     required this.name,
     this.modifiers = const [],
     this.orderItemId,
+    this.failReason,
   });
 
   final int quantity;
   final String name;
   final List<String> modifiers; // e.g. "EXTRA rice", "NO onions"
   final String? orderItemId;
+  final String? failReason;
+
+  KitchenTicketItem copyWith({
+    int? quantity,
+    String? name,
+    List<String>? modifiers,
+    String? orderItemId,
+    String? failReason,
+    bool clearFailReason = false,
+  }) {
+    return KitchenTicketItem(
+      quantity: quantity ?? this.quantity,
+      name: name ?? this.name,
+      modifiers: modifiers ?? this.modifiers,
+      orderItemId: orderItemId ?? this.orderItemId,
+      failReason: clearFailReason ? null : (failReason ?? this.failReason),
+    );
+  }
 }
 
 @immutable
@@ -31,6 +50,8 @@ class KitchenTicketData {
     required this.brand,
     required this.items,
     this.paymentStatus = 'Paid',
+    this.qcReturnedReason,
+    this.reworkNotes,
   });
 
   final String ticketNumber; // "T-014"
@@ -42,6 +63,8 @@ class KitchenTicketData {
   final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
   final String paymentStatus;
+  final String? qcReturnedReason;
+  final String? reworkNotes;
 
   /// Whether this ticket is a delivery channel (e.g. GrabFood or foodpanda).
   bool get isDelivery {
@@ -59,6 +82,8 @@ class KitchenTicketData {
     AssignedBrand? brand,
     List<KitchenTicketItem>? items,
     String? paymentStatus,
+    String? qcReturnedReason,
+    String? reworkNotes,
   }) {
     return KitchenTicketData(
       ticketNumber: ticketNumber ?? this.ticketNumber,
@@ -70,6 +95,8 @@ class KitchenTicketData {
       brand: brand ?? this.brand,
       items: items ?? this.items,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      qcReturnedReason: qcReturnedReason ?? this.qcReturnedReason,
+      reworkNotes: reworkNotes ?? this.reworkNotes,
     );
   }
 }

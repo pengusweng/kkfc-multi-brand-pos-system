@@ -1,6 +1,10 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
-import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -41,7 +45,12 @@ export class ModifiersController {
   constructor(private readonly modifiersService: ModifiersService) {}
 
   @Post()
-  @UseGuards(PinGuard)
+  @Audit({
+    action: 'MODIFIER_CREATED',
+    snapshot: 'create',
+    entity: 'modifiers',
+    id: fromResult('modifier_id'),
+  })
   @CreateModifierDocs()
   async create(@Body() dto: CreateModifierDTO) {
     return this.modifiersService.create(dto);
@@ -63,7 +72,12 @@ export class ModifiersController {
   }
 
   @Patch(':id')
-  @UseGuards(PinGuard)
+  @Audit({
+    action: 'MODIFIER_UPDATED',
+    snapshot: 'update',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @UpdateModifierDocs()
   async update(
     @Param('id', ParseUUIDPipe) modifierId: string,
@@ -73,14 +87,24 @@ export class ModifiersController {
   }
 
   @Patch('reactivate/:id')
-  @UseGuards(PinGuard)
+  @Audit({
+    action: 'MODIFIER_REACTIVATED',
+    snapshot: 'update',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @ReactivateModifierDocs()
   async reactivate(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.reactivate(modifierId);
   }
 
   @Delete(':id')
-  @UseGuards(PinGuard)
+  @Audit({
+    action: 'MODIFIER_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'modifiers',
+    id: fromParam('id'),
+  })
   @DeleteModifierDocs()
   async delete(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.delete(modifierId);

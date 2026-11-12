@@ -3,26 +3,31 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 
 /// Bottom action area for the Quality Check popup dialog, providing:
-/// 1. `✕ Fail QC and rework` (secondary outlined danger CTA, opens fail QC modal)
-/// 2. `✓ All items passed` (primary action calling the QC pass endpoint)
+/// 1. `✕ Fail QC and rework` (secondary outlined danger CTA, enabled when at least 1 item failed)
+/// 2. `✓ All items passed` (primary action calling the QC pass endpoint when all items pass)
 class KitchenTicketQcDialogFooter extends StatelessWidget {
   const KitchenTicketQcDialogFooter({
     super.key,
     required this.isActionLoading,
     required this.isActionEnabled,
+    this.isFailEnabled = false,
     required this.onPass,
     this.onFail,
   });
 
   final bool isActionLoading;
   final bool isActionEnabled;
+  final bool isFailEnabled;
   final VoidCallback? onPass;
   final VoidCallback? onFail;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = isActionEnabled
+    final passForeground = isActionEnabled
         ? KkfcColors.onSolid
+        : KkfcColors.ticketMuted;
+    final failForeground = isFailEnabled && !isActionLoading
+        ? KkfcColors.danger
         : KkfcColors.ticketMuted;
 
     return Container(
@@ -41,34 +46,36 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Fail QC and rework button (opens modal to collect reason and call reject endpoint)
+          // 1. Fail QC and rework button (disabled and muted when no failed item)
           SizedBox(
             width: double.infinity,
             height: KkfcSizing.controlMd,
             child: OutlinedButton(
               key: const ValueKey('kitchen-ticket-dialog-fail-qc-button'),
-              onPressed: onFail,
+              onPressed: isFailEnabled && !isActionLoading ? onFail : null,
               style: OutlinedButton.styleFrom(
                 backgroundColor: KkfcColors.surface,
-                foregroundColor: KkfcColors.danger,
-                disabledForegroundColor: KkfcColors.danger.withValues(
-                  alpha: 0.5,
-                ),
-                side: const BorderSide(
-                  color: KkfcColors.qcFailBorder,
-                  width: KkfcBorderWidth.thick,
+                foregroundColor: failForeground,
+                disabledForegroundColor: KkfcColors.ticketMuted,
+                side: BorderSide(
+                  color: isFailEnabled && !isActionLoading
+                      ? KkfcColors.qcFailBorder
+                      : KkfcColors.border,
+                  width: isFailEnabled && !isActionLoading
+                      ? KkfcBorderWidth.thick
+                      : KkfcBorderWidth.thin,
                 ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(KkfcRadius.sm),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.close_rounded, size: 18, color: KkfcColors.danger),
-                  SizedBox(width: KkfcSpace.s8),
+                  Icon(Icons.close_rounded, size: 18, color: failForeground),
+                  const SizedBox(width: KkfcSpace.s8),
                   Flexible(
                     child: Text(
                       'Fail QC and rework',
@@ -77,7 +84,7 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: KkfcTextSizes.textBase,
                         fontWeight: KkfcFontWeights.bold,
-                        color: KkfcColors.danger,
+                        color: failForeground,
                       ),
                     ),
                   ),
@@ -117,7 +124,11 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 18, color: foreground),
+                        Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: passForeground,
+                        ),
                         const SizedBox(width: KkfcSpace.s8),
                         Flexible(
                           child: Text(
@@ -127,7 +138,7 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: KkfcTextSizes.textBase,
                               fontWeight: KkfcFontWeights.bold,
-                              color: foreground,
+                              color: passForeground,
                             ),
                           ),
                         ),

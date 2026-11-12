@@ -32,14 +32,24 @@ import {
   CancelOrderDTO,
 } from './dto/order.dto';
 import { FindOrdersDTO } from './dto/find-orders.dto';
+import { KitchenTicketChanges } from '../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 import { OrdersService } from './orders.service';
+import {
+  Audit,
+  fromParam,
+  fromResult,
+  NoAudit,
+} from '../../../shared/audit/audit.decorator';
 
 @Controller('brands/:brandId/orders')
 @OrdersDocs()
 @UseGuards(Authenticated, RolesGuard)
 @Roles(UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN)
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly kitchenTicketChanges: KitchenTicketChanges,
+  ) {}
 
   @FindOrdersDocs()
   @Get()
@@ -52,6 +62,13 @@ export class OrdersController {
 
   @FindOneOrderDocs()
   @Get(':orderId')
+  @Roles(
+    UserRole.CASHIER_STAFF,
+    UserRole.MANAGER,
+    UserRole.SUPERADMIN,
+    UserRole.KITCHEN_HEAD,
+    UserRole.KITCHEN_STAFF,
+  )
   findOne(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('orderId', ParseUUIDPipe) orderId: string,
@@ -61,6 +78,12 @@ export class OrdersController {
 
   @CreateOrderDocs()
   @Post()
+  @Audit({
+    action: 'ORDER_CREATED',
+    snapshot: 'create',
+    entity: 'orders',
+    id: fromResult('order_id'),
+  })
   create(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: CreateOrderDTO,
@@ -71,6 +94,7 @@ export class OrdersController {
 
   @VerifyOrderDocs()
   @Post(':orderId/verify')
+  @NoAudit('read-only price and availability check; writes nothing')
   @HttpCode(200)
   verify(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -82,18 +106,38 @@ export class OrdersController {
 
   @ConfirmOrderDocs()
   @Post(':orderId/confirm')
+  @Audit({
+    action: 'ORDER_CONFIRMED',
+    snapshot: 'update',
+    entity: 'orders',
+    id: fromParam('orderId'),
+  })
   @HttpCode(200)
-  confirm(
+  async confirm(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('orderId', ParseUUIDPipe) orderId: string,
     @Body() dto: ConfirmOrderDTO,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.orders.confirm(brandId, orderId, req.session.user.user_id, dto);
+    const order = await this.orders.confirm(
+      brandId,
+      orderId,
+      req.session.user.user_id,
+      dto,
+    );
+    // Confirming creates the kitchen ticket; the transaction has committed here.
+    this.kitchenTicketChanges.notify();
+    return order;
   }
 
   @CancelOrderDocs()
   @Post(':orderId/cancel')
+  @Audit({
+    action: 'ORDER_CANCELLED',
+    snapshot: 'update',
+    entity: 'orders',
+    id: fromParam('orderId'),
+  })
   @HttpCode(200)
   cancel(
     @Param('brandId', ParseUUIDPipe) brandId: string,

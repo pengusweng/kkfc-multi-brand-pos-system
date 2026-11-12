@@ -169,3 +169,21 @@ Feature: Kitchen ticket lifecycle and repository rules
     Given no kitchen ticket exists for the requested ID
     When the ticket is read with its items
     Then null is returned
+
+  @UT-KT-020
+  Scenario: Stream today's tickets on connect and after each change
+    Given a client subscribed to the kitchen ticket stream
+    When the stream opens and a ticket change is signalled
+    Then today's tickets are sent on open and again after the change
+
+  @UT-KT-021
+  Scenario: Keep the ticket stream open when a refresh query fails
+    Given the ticket query fails once
+    When the stream refreshes and a later change is signalled
+    Then the failed update is skipped, the error is logged and the next update is sent
+
+  @UT-KT-022
+  Scenario: Send a heartbeat on an idle ticket stream
+    Given a client subscribed to the kitchen ticket stream
+    When 15 seconds pass without ticket changes
+    Then a ping comment is sent without querying tickets again

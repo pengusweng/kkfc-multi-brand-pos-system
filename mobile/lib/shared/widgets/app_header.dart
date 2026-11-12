@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/shared/menu_channel_mapping.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/shared/widgets/wave_accents.dart';
+import 'package:mobile/shared/widgets/workspace_switcher.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
-/// Kept purely stateless: the logo asset wordmark is constant,
-/// while the section title, role badge, and actions vary depending
+/// Section title, role badge, and actions vary depending
 /// on the logged-in user's role.
-class AppHeader extends StatelessWidget implements PreferredSizeWidget {
+class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   const AppHeader({
     super.key,
     this.title = 'Orders',
     this.titleWidget,
-    this.role = 'Cashier Staff',
+    this.role,
     this.onRoleTap,
     this.leading,
     this.trailing,
@@ -91,8 +93,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(height);
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveRole = staffRole ?? role;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userRole = ref.watch(userRoleProvider);
+    final fallbackRole = userRole?.displayName ?? 'Cashier Staff';
+    final effectiveRole = staffRole ?? role ?? fallbackRole;
     final isCompact = compact ?? (MediaQuery.sizeOf(context).width < 600);
     final channelWidget = (channel != null && onChannelChanged != null)
         ? ChannelTabs(
@@ -172,10 +176,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const WorkspaceSwitcher(),
                 ...?actions,
                 if (trailing != null)
                   trailing!
-                else if (effectiveRole != null && effectiveRole.isNotEmpty)
+                else if (effectiveRole.isNotEmpty)
                   Flexible(
                     child: AppHeaderRoleChip(
                       role: effectiveRole,
@@ -274,12 +279,6 @@ class AppHeaderRoleChip extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: Colors.white,
               ),
             ],
           ),

@@ -9,6 +9,7 @@ import { AuthService } from '../../../auth/auth.service';
 import { OrdersRepository } from '../../../orders/orders/orders.repository';
 import { KitchenTicketController } from '../kitchen-ticket.controller';
 import { KitchenTicketRepository } from '../kitchen-ticket.repository';
+import { KitchenTicketChanges } from '../kitchen-ticket-changes.service';
 import { KitchenTicketService } from '../kitchen-ticket.service';
 
 describe('Kitchen ticket HTTP endpoints', () => {
@@ -122,6 +123,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
       controllers: [KitchenTicketController],
       providers: [
         KitchenTicketService,
+        KitchenTicketChanges,
         { provide: KitchenTicketRepository, useValue: repository },
         { provide: OrdersRepository, useValue: {} },
         { provide: AuthService, useValue: auth },
