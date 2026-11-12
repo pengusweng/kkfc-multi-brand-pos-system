@@ -9,7 +9,6 @@ import { AUDIT_KEY, NO_AUDIT_KEY } from '../audit.decorator';
  */
 const PENDING = new Set<string>([
   'RecipesController', // recipe
-  'AssetsController', // assets
   'AuditController', // audit
 ]);
 

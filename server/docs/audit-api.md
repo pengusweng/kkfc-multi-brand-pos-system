@@ -185,3 +185,17 @@ Menu actions:
 | `MENU_ITEM_MODIFIER_DEACTIVATED` | `menu_item_modifiers` | `DELETE /api/menu-item-modifiers/:id` (soft delete). |
 
 A duplicate code is `FAILED` (`DUPLICATE_RESOURCE`). Deactivating an already inactive record is a `404` and is not audited. Menu reads are not audited.
+
+Asset actions:
+
+| Action | Entity | Endpoint |
+| --- | --- | --- |
+| `ASSET_UPLOADED` | `assets` | `POST /api/assets`. |
+| `ASSET_DOWNLOAD_URL_ISSUED` | `assets` | `GET /api/assets/download-url` (sensitive read). |
+
+Assets are S3 objects identified by their key rather than a database row, so
+`entity_type` is `assets` and `entity_id` is null; the key and signed URL are
+not stored. A storage outage is `FAILED` (`HTTP_503`). Rejected files (empty,
+over 5 MiB, wrong type) and unknown keys are not audited. Images uploaded as
+part of another action (brand logos, menu item images, hand-over photos) are
+covered by that action's row.

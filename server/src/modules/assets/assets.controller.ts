@@ -22,6 +22,7 @@ import { Authenticated } from '../auth/auth.guard';
 import type { AuthenticatedRequest } from '../auth/auth.guard';
 import { AssetsService, MAX_ASSET_BYTES } from './assets.service';
 import type { AssetUpload } from './assets.service';
+import { Audit } from '../../shared/audit/audit.decorator';
 
 export class AssetDownloadQuery {
   @IsString({ message: 'Asset key must be a string.' })
@@ -40,6 +41,8 @@ export class AssetsController {
   constructor(private readonly assets: AssetsService) {}
 
   @Post()
+  // Assets are S3 objects keyed by path, not UUID rows, so entity_id is null.
+  @Audit({ action: 'ASSET_UPLOADED', entity: 'assets' })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Upload a JPG/PNG image (maximum 5 MiB, 20 megapixels)',
@@ -65,6 +68,7 @@ export class AssetsController {
   }
 
   @Get('download-url')
+  @Audit({ action: 'ASSET_DOWNLOAD_URL_ISSUED', entity: 'assets' })
   @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: 'Get a fresh download URL for an image you uploaded',
