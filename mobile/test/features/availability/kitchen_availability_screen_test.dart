@@ -9,10 +9,13 @@ import 'package:mobile/features/availability/presentation/pages/kitchen_availabi
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_toolbar.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
+import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/choose_menu_modal.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/app_header.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 
 class _TestUserRoleNotifier extends UserRoleNotifier {
   _TestUserRoleNotifier(this._role);
@@ -110,39 +113,43 @@ void main() {
 
   group('KitchenAvailabilityScreen UI & behavior', () {
     testWidgets(
-      'renders header with role pill, CurrentMenuCard brand picker, search field, and excludes category filter pills',
+      'renders AppHeader reflecting kitchen board app bar with Availability title, role chip, and logout',
       (tester) async {
         await tester.pumpWidget(buildAvailabilityTestWidget());
         await tester.pumpAndSettle();
 
-        // 1. Header & Role Pill
+        // 1. App bar reflecting Kitchen Board's app bar with title 'Availability'
+        expect(find.byType(AppHeader), findsOneWidget);
         expect(find.text('Availability'), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('availability-role-pill')),
-          findsOneWidget,
-        );
+        expect(find.byType(AppHeaderRoleChip), findsOneWidget);
         expect(find.text('Kitchen Staff'), findsOneWidget);
+        expect(find.byType(LogoutButton), findsOneWidget);
+      },
+    );
 
-        // 2. Mirrors menu_screen.dart brand picker (CurrentMenuCard)
+    testWidgets(
+      'renders CurrentMenuCard brand picker and CatalogSearchBar mirroring menu_screen.dart, excluding category filters',
+      (tester) async {
+        await tester.pumpWidget(buildAvailabilityTestWidget());
+        await tester.pumpAndSettle();
+
+        // 1. Mirrors menu_screen.dart brand picker (CurrentMenuCard)
         expect(find.byType(CurrentMenuCard), findsOneWidget);
         expect(find.text('Current menu'), findsOneWidget);
         expect(find.text('Gamcheon · Dine-in'), findsOneWidget);
 
-        // 3. Search Bar with hint
-        expect(
-          find.byKey(const ValueKey('availability-search-field')),
-          findsOneWidget,
-        );
-        expect(find.text('Samgyupsal'), findsOneWidget);
+        // 2. Mirrors menu_screen.dart's search bar (CatalogSearchBar)
+        expect(find.byType(CatalogSearchBar), findsOneWidget);
+        expect(find.widgetWithText(TextField, 'Search'), findsOneWidget);
 
-        // 4. Filters MUST NOT be included (no category filter chips like "All", "Sets", "Snacks")
+        // 3. Category filters MUST NOT be included (no category filter chips like "All", "Sets", "Snacks")
         expect(find.widgetWithText(ActionChip, 'All'), findsNothing);
         expect(find.widgetWithText(FilterChip, 'All'), findsNothing);
         expect(find.widgetWithText(ActionChip, 'Rice bowls'), findsNothing);
         expect(find.widgetWithText(ActionChip, 'Sets'), findsNothing);
         expect(find.widgetWithText(ActionChip, 'Snacks'), findsNothing);
 
-        // 5. Item Card: Gamcheon Samgyupsal Rice Bowl
+        // 4. Item Card: Gamcheon Samgyupsal Rice Bowl
         expect(
           find.byKey(
             const ValueKey('availability-item-card-gamcheon-samgyupsal'),
@@ -153,7 +160,7 @@ void main() {
         expect(find.text('Rice bowls · Gamcheon'), findsOneWidget);
         expect(find.text('Available'), findsWidgets);
 
-        // 6. Change button is static
+        // 5. Change button is static
         final changeButton = find.byKey(
           const ValueKey('availability-change-button-gamcheon-samgyupsal'),
         );
@@ -161,10 +168,9 @@ void main() {
         expect(find.text('Change'), findsWidgets);
         await tester.tap(changeButton);
         await tester.pumpAndSettle();
-        // Still available (static)
         expect(find.text('Available'), findsWidgets);
 
-        // 7. Kitchen Board button
+        // 6. Kitchen Board button
         expect(
           find.byKey(
             const ValueKey('availability-back-to-kitchen-board-button'),
@@ -203,20 +209,23 @@ void main() {
 
       expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsOneWidget);
 
-      final searchField = find.byKey(
-        const ValueKey('availability-search-field'),
+      final searchTextField = find.descendant(
+        of: find.byType(CatalogSearchBar),
+        matching: find.byType(TextField),
       );
-      await tester.enterText(searchField, 'samgyupsal');
+      await tester.enterText(searchTextField, 'samgyupsal');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsOneWidget);
 
       // Search non-existent
-      await tester.enterText(searchField, 'non-existent-xyz');
+      await tester.enterText(searchTextField, 'non-existent-xyz');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
       expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsNothing);
-      expect(find.text('No items matching "non-existent-xyz"'), findsOneWidget);
+      expect(find.text('No items matching search'), findsOneWidget);
     });
 
     testWidgets('Kitchen Board button pops navigator back', (tester) async {
