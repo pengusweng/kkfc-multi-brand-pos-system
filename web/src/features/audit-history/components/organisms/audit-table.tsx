@@ -9,6 +9,7 @@ type AuditTableProps = {
   entries: AuditEntry[];
   onView?: (entry: AuditEntry) => void;
   loading?: boolean;
+  refreshing?: boolean;
   skeletonRows?: number;
   emptyMessage?: string;
   footer?: ReactNode;
@@ -18,6 +19,7 @@ export default function AuditTable({
   entries,
   onView,
   loading = false,
+  refreshing = false,
   skeletonRows,
   emptyMessage = "No audit entries yet.",
   footer,
@@ -26,6 +28,7 @@ export default function AuditTable({
     <DataTable
       columnCount={COLUMN_COUNT}
       loading={loading}
+      refreshing={refreshing}
       loadingLabel="Loading audit history…"
       skeletonRows={skeletonRows}
       skeletonRow={(i) => <AuditSkeletonRow index={i} />}

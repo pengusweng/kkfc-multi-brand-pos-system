@@ -52,7 +52,7 @@ export default function AuditFilterBar({
             <button
               type="button"
               onClick={onClear}
-              className="cursor-pointer rounded-md px-1 text-sm font-semibold text-ink underline decoration-hairline underline-offset-4 outline-none hover:decoration-ink focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="cursor-pointer rounded-md px-1 text-sm font-semibold text-ink underline decoration-hairline underline-offset-4 outline-none hover:decoration-ink focus-visible:ring-2 focus-visible:ring-primary/40 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200"
             >
               Clear filters
             </button>

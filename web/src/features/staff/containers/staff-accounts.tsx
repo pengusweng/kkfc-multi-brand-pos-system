@@ -79,7 +79,8 @@ export default function StaffAccounts() {
           setViewing(member);
           setModalOpen(true);
         }}
-        loading={isPending || isPlaceholderData}
+        loading={isPending}
+        refreshing={isPlaceholderData}
         skeletonRows={staff.length || USERS_PAGE_SIZE}
         emptyMessage={emptyMessage}
         footer={

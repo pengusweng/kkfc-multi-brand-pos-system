@@ -514,6 +514,31 @@ html.theme-animating body *::after {
   }
 }
 
+/* Table rows arriving after a filter or page change: a short rise, cascading
+   down the first rows so the new set reads as one sweep instead of a snap.
+   The cascade caps at the tenth row, so a full page settles in ~0.45s. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rows-in > tr {
+    animation: row-in 280ms var(--ease-out-quart) both;
+  }
+  .rows-in > tr:nth-child(2) { animation-delay: 18ms; }
+  .rows-in > tr:nth-child(3) { animation-delay: 36ms; }
+  .rows-in > tr:nth-child(4) { animation-delay: 54ms; }
+  .rows-in > tr:nth-child(5) { animation-delay: 72ms; }
+  .rows-in > tr:nth-child(6) { animation-delay: 90ms; }
+  .rows-in > tr:nth-child(7) { animation-delay: 108ms; }
+  .rows-in > tr:nth-child(8) { animation-delay: 126ms; }
+  .rows-in > tr:nth-child(9) { animation-delay: 144ms; }
+  .rows-in > tr:nth-child(n + 10) { animation-delay: 162ms; }
+}
+
 /* Route transitions: the navy rail reshapes from the login panel into the
    sidebar while its contents swap; the page underneath crossfades. */
 ::view-transition {

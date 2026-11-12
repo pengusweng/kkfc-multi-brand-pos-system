@@ -55,7 +55,7 @@ export default function DateRangeField({ value, onChange, max }: DateRangeFieldP
           onClick={() => onChange({})}
           aria-label="Clear dates"
           // Phones are too narrow for it; "Clear filters" below covers them.
-          className="hidden size-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-muted outline-none hover:bg-ink/6 hover:text-ink focus-visible:ring-2 focus-visible:ring-primary/40 sm:grid"
+          className="hidden size-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-muted outline-none hover:bg-ink/6 hover:text-ink focus-visible:ring-2 focus-visible:ring-primary/40 sm:grid motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:duration-150"
         >
           <X aria-hidden="true" className="size-4" />
         </button>
