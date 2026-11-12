@@ -36,25 +36,20 @@ class KitchenBoardState {
   int get activeCount => tickets.length;
 
   List<KitchenBoardTicket> ticketsForLane(KitchenBoardLane lane) {
-    final laneTickets = tickets
-        .where((t) => t.lane == lane)
+    return tickets
+        .where((t) {
+          final effectiveLane = switch (t.rawStatus.toUpperCase()) {
+            'QUEUED' => KitchenBoardLane.queued,
+            'ACKNOWLEDGED' => KitchenBoardLane.acknowledged,
+            'PREPARING' => KitchenBoardLane.preparing,
+            'REWORKING' => KitchenBoardLane.rework,
+            'FOR_CHECKING' || 'CHECKING' => KitchenBoardLane.qcCheck,
+            'READY' => KitchenBoardLane.ready,
+            _ => t.lane,
+          };
+          return effectiveLane == lane;
+        })
         .toList(growable: false);
-    if (lane == KitchenBoardLane.preparing) {
-      final reworkTickets = <KitchenBoardTicket>[];
-      final nonReworkTickets = <KitchenBoardTicket>[];
-      for (final ticket in laneTickets) {
-        final isRework =
-            ticket.rawStatus.toUpperCase() == 'REWORKING' ||
-            ticket.data.status == KkfcStatus.reworking;
-        if (isRework) {
-          reworkTickets.add(ticket);
-        } else {
-          nonReworkTickets.add(ticket);
-        }
-      }
-      return [...reworkTickets, ...nonReworkTickets];
-    }
-    return laneTickets;
   }
 
   KitchenBoardState copyWith({
@@ -380,7 +375,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
             t.rawStatus.toUpperCase() == 'QUEUED') {
           return t.copyWith(
             rawStatus: 'ACKNOWLEDGED',
-            lane: KitchenBoardLane.preparing,
+            lane: KitchenBoardLane.acknowledged,
             data: t.data.copyWith(status: KkfcStatus.acknowledged),
           );
         }
@@ -664,7 +659,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
           return t.copyWith(
             rawStatus: 'REWORKING',
-            lane: KitchenBoardLane.preparing,
+            lane: KitchenBoardLane.rework,
             clearQcAttemptId: true,
             qcReturnedReason: effectiveReason,
             data: t.data.copyWith(

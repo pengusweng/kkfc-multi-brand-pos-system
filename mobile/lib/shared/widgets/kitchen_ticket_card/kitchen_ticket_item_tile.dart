@@ -36,15 +36,21 @@ class KitchenTicketItemTile extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 36,
+        ConstrainedBox(
+          key: const ValueKey('kitchen-ticket-item-quantity'),
+          constraints: const BoxConstraints(minWidth: 36),
           child: Text(
             '${item.quantity}×',
-            style: const TextStyle(
-              fontSize: 22,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            style: TextStyle(
+              // Step down for 3+ digit quantities so the badge stays compact.
+              fontSize: item.quantity.toString().length >= 3 ? 18 : 22,
               fontWeight: FontWeight.w900,
               color: KkfcColors.ticketInk,
               height: 1.1,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),

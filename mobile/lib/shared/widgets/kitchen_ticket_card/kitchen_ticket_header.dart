@@ -58,10 +58,49 @@ class KitchenTicketHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        KitchenTicketProgressBar(elapsed: elapsed, age: age),
+        Semantics(
+          label: 'Ticket age $time, ${_ageLabel(age)}',
+          excludeSemantics: true,
+          child: KitchenTicketProgressBar(elapsed: elapsed, age: age),
+        ),
+        if (age != KitchenTicketAge.onTime) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Row(
+              key: const ValueKey('kitchen-ticket-age-cue'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  age == KitchenTicketAge.late
+                      ? Icons.error_outline_rounded
+                      : Icons.schedule_rounded,
+                  size: 14,
+                  color: KkfcColors.ticketInk,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _ageLabel(age).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                    color: KkfcColors.ticketInk,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
+
+  static String _ageLabel(KitchenTicketAge age) => switch (age) {
+    KitchenTicketAge.onTime => 'On time',
+    KitchenTicketAge.dueSoon => 'Due soon',
+    KitchenTicketAge.late => 'Late',
+  };
 }
 
 class KitchenTicketProgressBar extends StatelessWidget {

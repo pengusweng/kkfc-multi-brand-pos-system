@@ -52,4 +52,4 @@ app.*.map.json
 # Alchemist: track CI golden baselines only
 test/**/goldens/**/*.*
 test/**/failures/**/*.*
-!test/**/goldens/windows/*.*
+!test/**/goldens/ci/*.png

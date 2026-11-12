@@ -84,11 +84,20 @@ class KitchenBoardTicket {
         }
       }
     }
+    KitchenBoardLane? effectiveLane = lane;
+    if (effectiveLane == null && rawStatus != null) {
+      final statusEnum = _parseStatus(rawStatus);
+      if (statusEnum != null) {
+        effectiveLane = KitchenBoardLane.fromStatus(statusEnum);
+      }
+    }
+    effectiveLane ??= this.lane;
+
     return KitchenBoardTicket(
       kitchenTicketId: kitchenTicketId ?? this.kitchenTicketId,
       orderId: orderId ?? this.orderId,
       orderCode: orderCode ?? this.orderCode,
-      lane: lane ?? this.lane,
+      lane: effectiveLane,
       data: effectiveData,
       rawStatus: rawStatus ?? this.rawStatus,
       sentToKitchenLabel: sentToKitchenLabel ?? this.sentToKitchenLabel,

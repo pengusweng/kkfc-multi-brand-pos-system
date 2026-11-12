@@ -2,58 +2,74 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
-/// The four operational columns on the Kitchen Display System (KDS) board.
+/// The operational columns on the Kitchen Display System (KDS) board.
 enum KitchenBoardLane {
   queued,
+  acknowledged,
   preparing,
+  rework,
   qcCheck,
   ready;
 
   String get title => switch (this) {
     KitchenBoardLane.queued => 'Queued',
+    KitchenBoardLane.acknowledged => 'Acknowledged',
     KitchenBoardLane.preparing => 'Preparing',
+    KitchenBoardLane.rework => 'Rework',
     KitchenBoardLane.qcCheck => 'QC check',
     KitchenBoardLane.ready => 'Ready',
   };
 
   String get emptyMessage => switch (this) {
     KitchenBoardLane.queued => 'Nothing queued',
+    KitchenBoardLane.acknowledged => 'Nothing acknowledged',
     KitchenBoardLane.preparing => 'Nothing preparing',
+    KitchenBoardLane.rework => 'Nothing in rework',
     KitchenBoardLane.qcCheck => 'Nothing waiting for QC',
     KitchenBoardLane.ready => 'Nothing ready for handover',
   };
 
   IconData get icon => switch (this) {
     KitchenBoardLane.queued => Icons.format_list_bulleted_rounded,
+    KitchenBoardLane.acknowledged => Icons.visibility_outlined,
     KitchenBoardLane.preparing => Icons.local_fire_department_outlined,
+    KitchenBoardLane.rework => Icons.replay_rounded,
     KitchenBoardLane.qcCheck => Icons.search_rounded,
     KitchenBoardLane.ready => Icons.check_rounded,
   };
 
   Color get headerForeground => switch (this) {
     KitchenBoardLane.queued => KkfcColors.statusQueuedFg,
+    KitchenBoardLane.acknowledged => KkfcColors.statusAcknowledgedFg,
     KitchenBoardLane.preparing => KkfcColors.statusPreparingFg,
+    KitchenBoardLane.rework => KkfcColors.reworkText,
     KitchenBoardLane.qcCheck => KkfcColors.statusCheckingFg,
     KitchenBoardLane.ready => KkfcColors.statusReadyFg,
   };
 
   Color get headerBackground => switch (this) {
     KitchenBoardLane.queued => KkfcColors.statusQueuedBg,
+    KitchenBoardLane.acknowledged => KkfcColors.statusAcknowledgedBg,
     KitchenBoardLane.preparing => KkfcColors.statusPreparingBg,
+    KitchenBoardLane.rework => KkfcColors.reworkBg,
     KitchenBoardLane.qcCheck => KkfcColors.statusCheckingBg,
     KitchenBoardLane.ready => KkfcColors.statusReadyBg,
   };
 
   Color get headerBorder => switch (this) {
     KitchenBoardLane.queued => KkfcColors.statusQueuedBorder,
+    KitchenBoardLane.acknowledged => KkfcColors.statusAcknowledgedBorder,
     KitchenBoardLane.preparing => KkfcColors.statusPreparingBorder,
+    KitchenBoardLane.rework => KkfcColors.reworkBorder,
     KitchenBoardLane.qcCheck => KkfcColors.statusCheckingBorder,
     KitchenBoardLane.ready => KkfcColors.statusReadyBorder,
   };
 
   Color get badgeTextColor => switch (this) {
     KitchenBoardLane.queued => KkfcColors.ink,
+    KitchenBoardLane.acknowledged => KkfcColors.statusAcknowledgedFg,
     KitchenBoardLane.preparing => KkfcColors.statusPreparingFg,
+    KitchenBoardLane.rework => KkfcColors.reworkText,
     KitchenBoardLane.qcCheck => KkfcColors.statusCheckingFg,
     KitchenBoardLane.ready => KkfcColors.statusReadyFg,
   };
@@ -62,9 +78,9 @@ enum KitchenBoardLane {
   /// or returns `null` for terminal/non-board statuses.
   static KitchenBoardLane? fromStatus(KkfcStatus status) => switch (status) {
     KkfcStatus.queued => KitchenBoardLane.queued,
-    KkfcStatus.acknowledged ||
-    KkfcStatus.preparing ||
-    KkfcStatus.reworking => KitchenBoardLane.preparing,
+    KkfcStatus.acknowledged => KitchenBoardLane.acknowledged,
+    KkfcStatus.preparing => KitchenBoardLane.preparing,
+    KkfcStatus.reworking => KitchenBoardLane.rework,
     KkfcStatus.checking => KitchenBoardLane.qcCheck,
     KkfcStatus.ready => KitchenBoardLane.ready,
     _ => null,
@@ -73,12 +89,9 @@ enum KitchenBoardLane {
   /// Resolves the primary CTA label shown on a ticket card in this lane.
   String actionLabelFor(KkfcStatus status) => switch (this) {
     KitchenBoardLane.queued => 'Acknowledge',
-    KitchenBoardLane.preparing =>
-      status == KkfcStatus.reworking
-          ? 'Open rework'
-          : (status == KkfcStatus.acknowledged
-                ? 'Start Preparing'
-                : 'Send to QC'),
+    KitchenBoardLane.acknowledged => 'Start Preparing',
+    KitchenBoardLane.preparing => 'Send to QC',
+    KitchenBoardLane.rework => 'Open rework',
     KitchenBoardLane.qcCheck => 'QC check',
     KitchenBoardLane.ready => 'Hand over',
   };

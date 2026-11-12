@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/core/models/user_role.dart';
@@ -6,10 +9,11 @@ import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_lane_column.dart';
 import 'package:mobile/features/kitchen/kitchen_board/providers/kitchen_board_providers.dart';
 
-/// Responsive 4-lane KDS board layout:
-/// - `>= 960px`: 4 equal-width columns side-by-side (Tablet Landscape / Web)
-/// - `>= 600px`: 2×2 lane grid (Tablet Portrait)
-/// - `< 600px`: Vertically stacked lanes (Phone)
+/// Operational KDS board layout with 6 distinct status columns:
+/// Queued, Acknowledged, Preparing, Rework, QC Check, and Ready.
+///
+/// Supports smooth sideways horizontal scrolling across viewports,
+/// while each column scrolls tickets vertically.
 class KitchenBoardLanesView extends StatelessWidget {
   const KitchenBoardLanesView({
     super.key,
@@ -26,92 +30,63 @@ class KitchenBoardLanesView extends StatelessWidget {
   final ValueChanged<KitchenBoardTicket>? onTicketAction;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
 
-  static const double _fourLaneBreakpoint = 960.0;
-  static const double _twoByTwoBreakpoint = 600.0;
+  static const double _minLaneWidth = 280.0;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final height = constraints.maxHeight;
         final width = constraints.maxWidth;
+        final hasBoundedHeight = constraints.hasBoundedHeight;
 
-        if (width >= _fourLaneBreakpoint) {
-          return Padding(
-            padding: const EdgeInsets.all(KkfcSpace.s16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
-                  if (i > 0) const SizedBox(width: KkfcSpace.s12),
-                  Expanded(
-                    child: _buildLane(
-                      KitchenBoardLane.values[i],
-                      scrollable: true,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        }
+        // Provide a minimum width of 280px per lane so cards and actions remain
+        // easily readable, clear, and comfortably tappable.
+        // If the screen is wider than the lanes combined, expand lanes equally.
+        const horizontalPadding = KkfcSpace.s16 * 2;
+        final totalGaps = KkfcSpace.s12 * (KitchenBoardLane.values.length - 1);
+        final availableWidth = width - horizontalPadding - totalGaps;
+        final computedWidth = availableWidth / KitchenBoardLane.values.length;
+        final laneWidth = math.max(_minLaneWidth, computedWidth);
 
-        if (width >= _twoByTwoBreakpoint) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(KkfcSpace.s16),
-            child: Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _buildLane(
-                        KitchenBoardLane.queued,
-                        scrollable: false,
-                      ),
-                    ),
-                    const SizedBox(width: KkfcSpace.s12),
-                    Expanded(
-                      child: _buildLane(
-                        KitchenBoardLane.preparing,
-                        scrollable: false,
-                      ),
-                    ),
-                  ],
+        final laneList = Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
+              if (i > 0) const SizedBox(width: KkfcSpace.s12),
+              SizedBox(
+                width: laneWidth,
+                child: _buildLane(
+                  KitchenBoardLane.values[i],
+                  scrollable: hasBoundedHeight,
                 ),
-                const SizedBox(height: KkfcSpace.s12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _buildLane(
-                        KitchenBoardLane.qcCheck,
-                        scrollable: false,
-                      ),
-                    ),
-                    const SizedBox(width: KkfcSpace.s12),
-                    Expanded(
-                      child: _buildLane(
-                        KitchenBoardLane.ready,
-                        scrollable: false,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(KkfcSpace.s12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < KitchenBoardLane.values.length; i++) ...[
-                if (i > 0) const SizedBox(height: KkfcSpace.s12),
-                _buildLane(KitchenBoardLane.values[i], scrollable: false),
-              ],
+              ),
             ],
+          ],
+        );
+
+        return ScrollConfiguration(
+          behavior: const MaterialScrollBehavior().copyWith(
+            dragDevices: {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.stylus,
+              PointerDeviceKind.trackpad,
+            },
+          ),
+          child: SingleChildScrollView(
+            key: const ValueKey('kitchen-board-horizontal-scroll-view'),
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            padding: const EdgeInsets.all(KkfcSpace.s16),
+            child: hasBoundedHeight
+                ? SizedBox(
+                    height: math.max(0.0, height - (KkfcSpace.s16 * 2)),
+                    child: laneList,
+                  )
+                : laneList,
           ),
         );
       },
