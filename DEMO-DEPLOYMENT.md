@@ -6,31 +6,6 @@ Demo: **12 November 2026 (Asia/Singapore)**. This guide uses the existing NestJS
 
 ## 1. Code preparation
 
-### Existing Docker deployment: correction for the login 500
-
-The supplied deployment log for commit `59380a9` shows Render building the normal `server/Dockerfile`. That image starts `node dist/main` directly, without migrations or seeding. It also omits the CLI and source files needed by `start:demo`. The log ends before the login failure, so the exact request error is not yet confirmed. A healthy `SELECT 1` alone does not prove the user/session tables exist.
-
-- [x] **DONE** - Added `server/Dockerfile.render`, a demo image containing the migration and seed tools, configured to run `npm run start:demo`.
-- [ ] **TODO** - Commit and push this new Dockerfile to the branch Render deploys. Earlier commits do not contain it.
-- [ ] **TODO** - In the existing API service, open **Settings -> Build & Deploy** and set these values:
-
-| Existing Docker service setting | Value |
-| --- | --- |
-| Root Directory | `server` |
-| Dockerfile Path (relative to Root Directory) | `Dockerfile.render` |
-| Docker Build Context Directory | `.` |
-| Docker Command | Leave empty to use the image's CMD; remove any `node dist/main` override |
-| Health Check Path | `/api/health` |
-
-- [ ] **TODO** - Keep `DATABASE_URL`, `DEMO_SEED_PASSWORD`, and `DEMO_SEED_PIN` in Render Environment. Use a password of **20-32 characters**: the login DTO rejects more than 32. The Docker image uses Node 22 from `FROM`, so `NODE_VERSION` does not control this Docker deployment.
-- [ ] **TODO** - Redeploy the latest commit. Confirm logs show `start:demo`, migration completion, fixture seeding, and finally Nest startup. If migrations fail, share the sanitized error; do not reset the database or bypass migrations.
-- [ ] **TODO** - Retry login using `test_order_staff` and the hosted seed password. Existing seeded passwords are preserved; changing an environment value does not rotate them.
-- [ ] **TODO** - If login still returns 500, export **runtime logs covering the login attempt**, not only the build/startup log. Remove credentials and tokens.
-
-This lets you keep the existing service and database. Section 3 below describes the alternative of creating a new native Node service; you do not need both approaches.
-
-Docker verification: `git diff --check` passed. A local image build could not be run because the Docker daemon is unavailable in this session. Hosted image build, migration replay, and login remain TODO.
-
 - [x] **DONE** — API listens on `0.0.0.0` and Render's `PORT` (`server/src/main.ts`).
 - [x] **DONE** — Public `GET /api/health` checks PostgreSQL with `SELECT 1`. Returns 200 for success and 503 for failure without exposing connection details (`server/src/health.controller.ts`).
 - [x] **DONE** — Health controller registered in `server/src/app.module.ts`.
@@ -84,7 +59,7 @@ Before deploying, add the following under **Environment**:
 | `NODE_ENV` | `production` |
 | `NODE_VERSION` | `22` |
 | `DATABASE_URL` | The database's **Internal Database URL** |
-| `DEMO_SEED_PASSWORD` | A newly generated strong password, 20-32 characters (login accepts at most 32) |
+| `DEMO_SEED_PASSWORD` | A newly generated strong password, preferably 20+ characters |
 | `DEMO_SEED_PIN` | A new four-digit PIN, preserving any leading zero |
 
 Do not add a custom `PORT`; the API reads Render's assigned value. Do not use the password or PIN from the local test fixtures.
@@ -103,7 +78,7 @@ The synthetic menu fixture intentionally uses missing-image placeholders. Login 
 
 Replace `YOUR-SERVICE` below with the actual service hostname shown by Render. Never enter that placeholder literally.
 
-- [ ] **TODO** — Open `https://YOUR-SERVICE.onrender.com/api/health`.
+- [x] **TODO** — Open `https://YOUR-SERVICE.onrender.com/api/health`.
 
 Expected HTTP 200:
 
@@ -113,19 +88,27 @@ Expected HTTP 200:
 
 This verifies a real database query, not just that the Node process is running. A 404 at the bare `/` URL is normal because there is no root route.
 
-- [ ] **TODO** — Confirm the logs say migrations completed. Do not replace migrations with `prisma db push`, `migrate reset`, or `migrate dev` to bypass a deployment error.
-- [ ] **TODO** — Open `https://YOUR-SERVICE.onrender.com/api/docs`.
-- [ ] **TODO** — Use `POST /api/auth/login` with username `test_order_staff` and the password from your hosting settings. Do not save the response token in this guide.
-- [ ] **TODO** — Use Swagger's **Authorize** control with the returned bearer token.
-- [ ] **TODO** — Call `GET /api/auth/me` and verify the expected user.
-- [ ] **TODO** — Call `GET /api/brands`; copy a returned `brand_id`.
-- [ ] **TODO** — Call `GET /api/menu-catalog/brand/{brandId}?page=1&limit=100`. Check items, prices, channels, modifiers, and pagination. This is the preferred Android menu endpoint.
-- [ ] **TODO** — Call `GET /api/menu-items/brand/{brandId}` to check the Android fallback endpoint. If that fallback is exercised, also verify `GET /api/menu-channels/menu-item/{menuItemId}`.
-- [ ] **TODO** — Verify an incorrect password returns 401 and an authenticated menu endpoint rejects a request without a token.
+- [x] **TODO** — Confirm the logs say migrations completed. Do not replace migrations with `prisma db push`, `migrate reset`, or `migrate dev` to bypass a deployment error.
+- [x] **TODO** — Open `https://YOUR-SERVICE.onrender.com/api/docs`.
+- [x] **TODO** — Use `POST /api/auth/login` with username `test_order_staff` and the password from your hosting settings. Do not save the response token in this guide.
+- [x] **TODO** — Use Swagger's **Authorize** control with the returned bearer token.
+- [x] **TODO** — Call `GET /api/auth/me` and verify the expected user.
+- [x] **TODO** — Call `GET /api/brands`; copy a returned `brand_id`.
+- [x] **TODO** — Call `GET /api/menu-catalog/brand/{brandId}?page=1&limit=100`. Check items, prices, channels, modifiers, and pagination. This is the preferred Android menu endpoint.
+- [x] **TODO** — Call `GET /api/menu-items/brand/{brandId}` to check the Android fallback endpoint. If that fallback is exercised, also verify `GET /api/menu-channels/menu-item/{menuItemId}`.
+- [x] **TODO** — Verify an incorrect password returns 401 and an authenticated menu endpoint rejects a request without a token.
 
 Do not run the full integration suite against this demo database: the repository's integration tests expect a separate test database and may change fixture data.
 
 ## 5. Connect the physical Android device
+
+### Windows APK build fixes
+
+- [x] **DONE** - Disabled Kotlin incremental compilation in `mobile/android/gradle.properties`. The supplied build log failed in `image_picker_android` because the plugin source is on `C:` and the project is on `F:` (`this and base files have different roots`). This trades incremental Kotlin build speed for compatibility; app behavior is unchanged.
+- [x] **DONE / PASS** - Built the release APK after this setting using `F:\flutter`, `ENV=prod`, and `API_URL=https://kkfc-demo-api.onrender.com/api`. Gradle completed successfully in 117 seconds; Flutter reported a 53.7 MB APK at `mobile/build/app/outputs/flutter-apk/app-release.apk`. The preceding Flutter SDK path issue was resolved by using `F:\flutter`; keep the SDK location free of spaces.
+- [ ] **TODO** - Install this APK on the physical device and verify hosted login/menu over a separate network. Build success does not verify device behavior.
+
+If retrying manually, run `flutter clean`, `flutter pub get`, and the release build command below from `mobile/`. Do not upgrade dependencies just to clear these path/cache failures.
 
 **DONE — existing code support:** `mobile/lib/core/config/app_config.dart` already accepts the `API_URL` and `ENV` build settings. The Android main manifest already includes Internet permission. No credentials need to be added to the app.
 
@@ -215,7 +198,8 @@ Recovery:
 - [x] **DONE / PASS** — `npm.cmd run db:seed:check`: production credential requirements, PIN validation, hosting-secret hashes, fixture preservation, and missing-record restoration. Uses an in-memory database substitute; no real database changes.
 - [x] **DONE / PASS** — Local HTTP smoke check against the compiled health controller: module registration, `/api/health` prefix, real HTTP 200 for a successful mocked query, HTTP 503 for a failed mocked query, and no underlying connection-error details in the response. This did not connect to PostgreSQL.
 - [x] **DONE / PASS** — Prettier on changed TypeScript files, ESLint on changed API source files, and `git diff --check`.
-- [ ] **TODO / NOT RUN** — Render deployment, empty PostgreSQL migration replay, hosted login/menu checks, APK build/install, external-network test, and web rehearsal. Record your actual results above after deployment.
+- [x] **DONE / PASS** — Release Android APK built successfully after disabling Kotlin incremental compilation; configured for the hosted API. See section 5 for its path and build result.
+- [ ] **TODO / NOT RUN BY CODEX** — Render deployment, empty PostgreSQL migration replay, hosted login/menu checks, APK install, external-network test, and web rehearsal. Record your actual results above after deployment.
 
 ## References
 
