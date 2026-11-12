@@ -1,12 +1,14 @@
 import { Search, X } from "lucide-react";
 
-type StaffSearchFieldProps = {
+type SearchFieldProps = {
+  /** Placeholder and accessible name, e.g. "Search name or username". */
+  label: string;
   value: string;
   onChange: (value: string) => void;
 };
 
 // DESIGN.md › Search Field: leading lens, trailing clear.
-export default function StaffSearchField({ value, onChange }: StaffSearchFieldProps) {
+export default function SearchField({ label, value, onChange }: SearchFieldProps) {
   return (
     <div className="relative w-full sm:w-auto sm:min-w-72 sm:flex-1 md:max-w-sm">
       <Search
@@ -17,8 +19,8 @@ export default function StaffSearchField({ value, onChange }: StaffSearchFieldPr
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search name or username"
-        aria-label="Search name or username"
+        placeholder={label}
+        aria-label={label}
         className="h-10 w-full rounded-lg border border-hairline bg-field pr-9 pl-9 text-base text-ink caret-primary outline-none placeholder:text-ink-muted/80 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
       />
       {value ? (

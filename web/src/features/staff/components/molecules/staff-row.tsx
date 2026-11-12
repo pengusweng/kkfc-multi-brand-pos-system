@@ -2,7 +2,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import type { StaffMember } from "../../utils/staff";
 import { CLUSTER } from "../../utils/table-columns";
 import StatusBadge from "../atoms/status-badge";
-import ViewButton from "../atoms/view-button";
+import ViewButton from "@/src/components/ui/atoms/view-button";
 
 type StaffRowProps = {
   member: StaffMember;

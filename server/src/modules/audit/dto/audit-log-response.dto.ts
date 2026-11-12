@@ -1,5 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AuditOutcome } from '@prisma/client';
+import { AuditOutcome, UserRole } from '@prisma/client';
+
+export class AuditActorDTO {
+  @ApiProperty({ type: String })
+  username: string;
+
+  @ApiProperty({ type: String })
+  first_name: string;
+
+  @ApiProperty({ type: String })
+  last_name: string;
+
+  @ApiProperty({ enum: UserRole })
+  role: UserRole;
+}
 
 export class AuditLogResponseDTO {
   @ApiProperty({ enum: AuditOutcome })
@@ -56,6 +70,25 @@ export class AuditLogResponseDTO {
 
   @ApiProperty({ type: String, format: 'date-time' })
   created_at: string;
+
+  @ApiProperty({
+    type: AuditActorDTO,
+    nullable: true,
+    description:
+      'Display identity of the actor; null when nobody was signed in (e.g. a failed sign-in).',
+  })
+  actor: AuditActorDTO | null;
+}
+
+export class AuditOutcomeCountsDTO {
+  @ApiProperty({ example: 12, description: 'Every outcome.' })
+  all: number;
+  @ApiProperty({ example: 10 })
+  SUCCESS: number;
+  @ApiProperty({ example: 1 })
+  DENIED: number;
+  @ApiProperty({ example: 1 })
+  FAILED: number;
 }
 
 export class AuditPaginationResponseDTO {
@@ -70,6 +103,12 @@ export class AuditPaginationResponseDTO {
     description: 'Zero when there are no matching records.',
   })
   totalPages: number;
+  @ApiProperty({
+    type: AuditOutcomeCountsDTO,
+    description:
+      'Records per outcome under every filter except outcome, for labelling outcome tabs.',
+  })
+  counts: AuditOutcomeCountsDTO;
 }
 
 export class AuditLogsResponseDTO {

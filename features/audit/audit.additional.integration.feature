@@ -21,12 +21,48 @@ Feature: Additional audit integration coverage
 
   # Jest: server/src/modules/audit/tests/audit.http.spec.ts
   # Context: Audit list HTTP API
+  @IT-AUDIT-018
+  Scenario: Return only the actor's display identity
+    Test Case ID: IT-AUDIT-018
+    Given audit records with and without a signed-in actor
+    When audit history is listed
+    Then each record carries the actor's username, name and role, or null when there was no actor
+
+  # Jest: server/src/modules/audit/tests/audit.http.spec.ts
+  # Context: Audit list HTTP API
   @IT-AUDIT-002
-  Scenario: Apply the same audit filters to records and totals
+  Scenario: Apply the same audit filters to records and per-outcome counts
     Test Case ID: IT-AUDIT-002
     Given an authorized session and valid audit filters
     When filtered audit history is requested
-    Then records and total count use identical filters in a consistent transaction
+    Then records use every filter, each outcome is counted under every filter except outcome, and all queries share a consistent transaction
+
+  # Jest: server/src/modules/audit/tests/audit.http.spec.ts
+  # Context: Audit list HTTP API
+  @IT-AUDIT-019
+  Scenario: Search actors and filter by an Asia/Manila date range
+    Test Case ID: IT-AUDIT-019
+    Given an authorized session, a multi-word actor search and a from/to date range
+    When audit history is requested
+    Then every search term must match the actor's username or name, and records run from Manila midnight on the from date to the midnight after the to date
+
+  # Jest: server/src/modules/audit/tests/audit.http.spec.ts
+  # Context: Audit list HTTP API
+  @IT-AUDIT-020
+  Scenario: Apply open-ended and single-day date ranges
+    Test Case ID: IT-AUDIT-020
+    Given only a from date, only a to date, or the same from and to date
+    When audit history is requested
+    Then only the given bound is applied, or exactly that Manila day is returned
+
+  # Jest: server/src/modules/audit/tests/audit.http.spec.ts
+  # Context: Audit list HTTP API
+  @IT-AUDIT-021
+  Scenario: Ignore a blank actor search
+    Test Case ID: IT-AUDIT-021
+    Given a search made only of spaces
+    When audit history is requested
+    Then no search filter is applied
 
   # Jest: server/src/modules/audit/tests/audit.http.spec.ts
   # Context: Audit list HTTP API
@@ -60,7 +96,7 @@ Feature: Additional audit integration coverage
   @IT-AUDIT-006
   Scenario: Reject invalid audit query parameters
     Test Case ID: IT-AUDIT-006
-    Given invalid audit filters or pagination
+    Given invalid audit filters, search, dates, a from date after the to date, or pagination
     When audit history is requested
     Then the response is 400 before querying records
 

@@ -13,7 +13,6 @@ const PENDING = new Set<string>([
 
 /** GET routes that expose confidential or security data and must be audited. */
 const SENSITIVE_READS = [
-  'AuditController.findAll',
   'RecipesController.findOne',
   'AssetsController.download',
   'UsersController.findAll',

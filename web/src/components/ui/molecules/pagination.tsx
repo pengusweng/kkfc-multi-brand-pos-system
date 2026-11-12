@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { pageItems } from "../../utils/pagination";
+import { pageItems } from "@/src/lib/pagination";
 import PageButton from "../atoms/page-button";
 
-type StaffPaginationProps = {
+type PaginationProps = {
   page: number;
   pageSize: number;
   total: number;
@@ -10,7 +10,7 @@ type StaffPaginationProps = {
   onPageChange: (page: number) => void;
 };
 
-export default function StaffPagination({ page, pageSize, total, totalPages, onPageChange }: StaffPaginationProps) {
+export default function Pagination({ page, pageSize, total, totalPages, onPageChange }: PaginationProps) {
   const first = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const last = Math.min(page * pageSize, total);
 

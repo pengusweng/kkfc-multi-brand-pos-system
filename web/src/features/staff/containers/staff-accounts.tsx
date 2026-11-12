@@ -8,10 +8,10 @@ import CreateStaffModal from "../components/organisms/create-staff-modal";
 import EditStaffModal from "../components/organisms/edit-staff-modal";
 import StaffDetailModal from "../components/organisms/staff-detail-modal";
 import StaffFilterBar from "../components/organisms/staff-filter-bar";
-import StaffPagination from "../components/molecules/staff-pagination";
+import Pagination from "@/src/components/ui/molecules/pagination";
 import StaffTable from "../components/organisms/staff-table";
 import { useDeactivateStaff } from "../hooks/useDeactivateStaff";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useDebouncedValue } from "@/src/hooks/useDebouncedValue";
 import { USERS_PAGE_SIZE, useUsers } from "../hooks/useUsers";
 import type { UserRole } from "../schemas/userSchema";
 import { nextSort, toStaffMember, type StaffMember, type StaffSort, type StaffStatusFilter } from "../utils/staff";
@@ -26,23 +26,17 @@ export default function StaffAccounts() {
   const search = useDebouncedValue(query.trim());
   const [creating, setCreating] = useState(false);
 
-  // Kept after closing so the modal's content doesn't vanish mid exit animation.
   const [viewing, setViewing] = useState<StaffMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Edit swaps the profile for the form and returns to the profile afterwards.
   const [editOpen, setEditOpen] = useState(false);
 
   const { deactivate, error: deactivateError, resetError } = useDeactivateStaff((member) => {
     setViewing(member); // the modal now shows "Inactive" and hides the Deactivate button
   });
 
-  // The page belongs to one status + role + search + sort combination; changing any
-  // of them (including when the debounced search settles) goes back to page 1.
   const filterKey = `${status}|${role ?? ""}|${search}|${sort ? `${sort.by}:${sort.order}` : ""}`;
   const [paging, setPaging] = useState({ filterKey, page: 1 });
-  // Record the new combination right away (React's "adjust state while rendering"
-  // pattern); otherwise returning to an earlier combination would resurrect its old page.
   if (paging.filterKey !== filterKey) setPaging({ filterKey, page: 1 });
   const page = paging.filterKey === filterKey ? paging.page : 1;
 
@@ -90,7 +84,7 @@ export default function StaffAccounts() {
         emptyMessage={emptyMessage}
         footer={
           total > 0 ? (
-            <StaffPagination
+            <Pagination
               page={page}
               pageSize={USERS_PAGE_SIZE}
               total={total}

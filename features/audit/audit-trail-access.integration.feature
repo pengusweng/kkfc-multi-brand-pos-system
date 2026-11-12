@@ -4,23 +4,23 @@ Feature: Audit trail access logging
   Requirement ID: NFR-006
 
   As an owner,
-  I want views of the audit trail to be audited themselves,
-  So that access to the record of who did what is also traceable.
+  I want my own views of the audit trail kept out of it,
+  So that real activity isn't buried under rows recording that I looked.
 
   # Jest: server/src/modules/audit/tests/audit-trail-access.http.spec.ts
   # Context: Audit trail access logging
   @IT-AUDIT-013
-  Scenario: Audit valid audit trail views only
+  Scenario: Do not audit audit trail views
     Test Case ID: IT-AUDIT-013
     Given a superadmin
     When they view the audit trail with valid filters and then with an out-of-range limit
-    Then the valid view writes one AUDIT_LOGS_VIEWED SUCCESS row with its request ID and the rejected query writes none
+    Then the valid view returns records and neither request writes an audit row
 
   # Jest: server/src/modules/audit/tests/audit-trail-access.http.spec.ts
   # Context: Audit trail access logging
   @IT-AUDIT-014
-  Scenario: Audit denied audit trail views
+  Scenario: Deny other roles without writing audit rows
     Test Case ID: IT-AUDIT-014
     Given a manager
     When they try to view the audit trail
-    Then no records are read and an AUDIT_LOGS_VIEWED DENIED row records ACCESS_DENIED
+    Then the response is 403, no records are read, and no audit row is written

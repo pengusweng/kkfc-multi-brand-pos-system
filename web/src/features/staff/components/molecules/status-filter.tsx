@@ -1,5 +1,5 @@
 import type { StaffStatusFilter } from "../../utils/staff";
-import FilterChip from "../atoms/filter-chip";
+import FilterChip from "@/src/components/ui/atoms/filter-chip";
 
 const FILTERS: { value: StaffStatusFilter; label: string }[] = [
   { value: "all", label: "All" },
