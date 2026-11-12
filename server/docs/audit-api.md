@@ -199,3 +199,13 @@ not stored. A storage outage is `FAILED` (`HTTP_503`). Rejected files (empty,
 over 5 MiB, wrong type) and unknown keys are not audited. Images uploaded as
 part of another action (brand logos, menu item images, hand-over photos) are
 covered by that action's row.
+
+Audit trail access:
+
+| Action | Entity | Endpoint |
+| --- | --- | --- |
+| `AUDIT_LOGS_VIEWED` | `audit_logs` | `GET /api/audit-logs` (sensitive read). Non-superadmins are `DENIED` (`ACCESS_DENIED`). The row is written after the query runs, so a view does not appear in its own results. |
+
+Not yet audited: `PATCH /api/recipes/:id` and the sensitive read
+`GET /api/recipes/:id`. Recipe access **denials** are still recorded by the
+recipe access check as `RECIPE_<action>` rows with outcome `DENIED`.

@@ -10,6 +10,7 @@ import { Authenticated } from '../auth/auth.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { AuditService } from './audit.service';
+import { Audit } from '../../shared/audit/audit.decorator';
 import { AuditLogsResponseDTO } from './dto/audit-log-response.dto';
 import { FindAuditLogsDTO } from './dto/find-audit-logs.dto';
 
@@ -22,6 +23,9 @@ export class AuditController {
   constructor(private readonly service: AuditService) {}
 
   @Get()
+  // Viewing the trail is itself audited. The row is written after the query,
+  // so it appears from the next view onwards.
+  @Audit({ action: 'AUDIT_LOGS_VIEWED', entity: 'audit_logs' })
   @ApiOperation({
     summary: 'List audit logs (owner).',
     description:
