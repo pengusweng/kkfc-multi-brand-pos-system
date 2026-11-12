@@ -15,7 +15,7 @@ type FormFieldProps = {
 export default function FormField({ id, label, hint, error, children }: FormFieldProps) {
   const message = error ?? hint;
   return (
-    <div className="grid gap-2">
+    <div className="grid content-start gap-2">
       <Label htmlFor={id} className="leading-5 font-semibold text-ink">
         {label}
       </Label>
