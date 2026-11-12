@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/availability/presentation/pages/kitchen_availability_screen.dart';
+import 'package:mobile/features/availability/presentation/widgets/availability_list_skeleton.dart';
 import 'package:mobile/features/availability/presentation/widgets/change_availability_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_toolbar.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
@@ -17,6 +20,7 @@ import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/app_header.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
 
 class _TestUserRoleNotifier extends UserRoleNotifier {
   _TestUserRoleNotifier(this._role);
@@ -338,6 +342,61 @@ void main() {
           find.text('Gamcheon Samgyupsal Rice Bowl marked as unavailable'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets('renders background canvas wave accents and header wave arcs', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildAvailabilityTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KkfcCanvasWaves), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is CanvasWavesPainter,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is HeaderWavesPainter,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'displays AvailabilityListSkeleton while loading and replaces it when items arrive',
+      (tester) async {
+        final completer = Completer<List<MenuItem>>();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              userRoleProvider.overrideWith(
+                () => _TestUserRoleNotifier(UserRole.kitchenStaff),
+              ),
+              assignedBrandsProvider.overrideWith((ref) => testBrands),
+              menuItemsProvider.overrideWith((ref) => completer.future),
+            ],
+            child: MaterialApp(
+              theme: counterTheme,
+              home: const KitchenAvailabilityScreen(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(AvailabilityListSkeleton), findsOneWidget);
+        expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsNothing);
+
+        completer.complete(sampleGamcheonMenu);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AvailabilityListSkeleton), findsNothing);
+        expect(find.text('Gamcheon Samgyupsal Rice Bowl'), findsOneWidget);
       },
     );
   });
