@@ -1,6 +1,4 @@
 // Column classes shared by the staff table header, rows and skeleton rows.
-export const HEAD = "h-11 px-3 md:px-4 text-[0.8125rem] font-semibold tracking-[0.02em] text-ink-muted";
-
 export const CLUSTER = "md:w-px md:pr-10 xl:pr-4";
 
 export const COL = {

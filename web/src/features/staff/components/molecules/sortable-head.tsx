@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
-import { TableHead } from "@/components/ui/table";
+import { DataTableHead } from "@/src/components/ui/organisms/data-table";
 import type { StaffSort, StaffSortField } from "../../utils/staff";
 
 type SortableHeadProps = {
@@ -17,7 +17,7 @@ export default function SortableHead({ field, label, sort, onSort, className = "
   const Icon = active === "asc" ? ArrowUp : active === "desc" ? ArrowDown : ChevronsUpDown;
 
   return (
-    <TableHead
+    <DataTableHead
       aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
       className={className}
     >
@@ -35,6 +35,6 @@ export default function SortableHead({ field, label, sort, onSort, className = "
           className={`size-3.5 shrink-0 transition-opacity ${active ? "opacity-100" : "opacity-40 group-hover:opacity-80"}`}
         />
       </button>
-    </TableHead>
+    </DataTableHead>
   );
 }
