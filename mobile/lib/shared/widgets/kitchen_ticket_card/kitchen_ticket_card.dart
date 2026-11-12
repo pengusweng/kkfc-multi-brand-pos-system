@@ -311,8 +311,8 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                             horizontal: 8,
                             vertical: 4,
                           ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          minimumSize: const Size(48, 44),
+                          tapTargetSize: MaterialTapTargetSize.padded,
                           foregroundColor: KkfcColors.ticketSubtleInk,
                         ),
                         child: const Text(

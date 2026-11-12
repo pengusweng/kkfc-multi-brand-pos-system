@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge.dart';
@@ -75,7 +76,7 @@ class KitchenTicketBrandRow extends StatelessWidget {
           child: Text(
             brand.code,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: KkfcTextSizes.textXs,
               fontWeight: FontWeight.w700,
               color: KkfcColors.ticketInk,
             ),
