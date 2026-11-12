@@ -23,6 +23,34 @@ export class AuditLogResponseDTO {
   @ApiProperty({ type: String, nullable: true })
   reason: string | null;
 
+  @ApiProperty({
+    description:
+      'Nullable JSON snapshot; structure depends on the audited action.',
+    nullable: true,
+    oneOf: [
+      { type: 'object', additionalProperties: true },
+      { type: 'array', items: {} },
+      { type: 'string' },
+      { type: 'number' },
+      { type: 'boolean' },
+    ],
+  })
+  before_data: unknown;
+
+  @ApiProperty({
+    description:
+      'Nullable JSON snapshot; structure depends on the audited action.',
+    nullable: true,
+    oneOf: [
+      { type: 'object', additionalProperties: true },
+      { type: 'array', items: {} },
+      { type: 'string' },
+      { type: 'number' },
+      { type: 'boolean' },
+    ],
+  })
+  after_data: unknown;
+
   @ApiProperty({ type: String, nullable: true })
   request_id: string | null;
 

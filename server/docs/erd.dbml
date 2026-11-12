@@ -373,6 +373,8 @@ Table audit_logs {
   entity_id uuid
   outcome audit_outcomes [not null]
   reason varchar(1000)
+  before_data jsonb
+  after_data jsonb
   request_id varchar(128)
   created_at timestamp [not null, default: `now()`]
   indexes {

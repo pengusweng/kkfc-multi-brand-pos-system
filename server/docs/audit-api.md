@@ -36,6 +36,8 @@ Example `200` response (illustrative audit record):
     "entity_id": "22222222-2222-4222-8222-222222222222",
     "outcome": "SUCCESS",
     "reason": null,
+    "before_data": null,
+    "after_data": null,
     "request_id": "6f1c2d4e-8a9b-4c3d-9e2f-1a2b3c4d5e6f",
     "created_at": "2026-10-29T02:00:00.000Z"
   }],
@@ -51,6 +53,7 @@ Example `200` response (illustrative audit record):
 | `data[].action`, `data[].entity_type` | Strings identifying the action and entity type |
 | `data[].outcome` | `SUCCESS`, `DENIED`, or `FAILED` |
 | `data[].reason`, `data[].request_id` | String or null |
+| `data[].before_data`, `data[].after_data` | Nullable JSON snapshots; structure depends on the action |
 | `data[].created_at` | ISO 8601 timestamp |
 | `meta.page`, `meta.limit` | Effective page and limit integers |
 | `meta.total` | Number of records matching the filters across all pages |
@@ -106,6 +109,7 @@ Each row stores metadata only:
   characters of `A-Z a-z 0-9 . _ : -`); otherwise the server generates a UUID.
   Every response echoes it in the `x-request-id` header, so a client error
   report can be matched to its audit row.
+- `before_data` / `after_data`: not populated by the automatic pipeline.
 
 Request bodies, credentials, PINs and recipe contents are never written. If the
 audit table cannot be written, the request still succeeds or fails exactly as it

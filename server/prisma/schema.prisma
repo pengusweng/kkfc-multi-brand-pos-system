@@ -452,6 +452,8 @@ model AuditLog {
   entity_id    String?      @db.Uuid
   outcome      AuditOutcome
   reason       String?      @db.VarChar(1000)
+  before_data  Json?        @db.JsonB
+  after_data   Json?        @db.JsonB
   request_id   String?      @db.VarChar(128)
   created_at   DateTime     @default(now()) @db.Timestamp(6)
 
