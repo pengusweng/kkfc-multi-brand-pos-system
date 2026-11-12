@@ -339,26 +339,6 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
           ),
         ),
       ),
-      child: widget.isActionLoading
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: KkfcColors.onSolid,
-              ),
-            )
-          : Text(
-              resolvedLabel,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: widget.isActionEnabled
-                    ? KkfcColors.onSolid
-                    : KkfcColors.ticketMuted,
-              ),
-            ),
     );
   }
 
