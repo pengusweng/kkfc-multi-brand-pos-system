@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditContextGuard } from './shared/audit/audit-context.guard';
+import { AuditLogModule } from './shared/audit/audit-log.module';
+import { AuditInterceptor } from './shared/audit/audit.interceptor';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from './shared/filters/prisma-exception.filter';
 import { PrismaModule } from './shared/prisma/prisma.module';
@@ -34,6 +37,7 @@ import { KitchenFulfillmentModule } from './modules/kitchen/kitchen-fulfillment/
       ],
     }),
     PrismaModule,
+    AuditLogModule,
     StorageModule,
     UsersModule,
     AuthModule,
@@ -57,6 +61,9 @@ import { KitchenFulfillmentModule } from './modules/kitchen/kitchen-fulfillment/
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+    // Runs before every controller guard so denials can be audited.
+    { provide: APP_GUARD, useClass: AuditContextGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule {}
