@@ -21,6 +21,7 @@ import { OrdersRepository } from '../orders.repository';
 import { OrdersService } from '../orders.service';
 import { AuthService } from '../../../auth/auth.service';
 import { OrdersController } from '../orders.controller';
+import { KitchenTicketChanges } from '../../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 
 describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
   let app: INestApplication;
@@ -1462,6 +1463,7 @@ describe('Draft cancellation HTTP API', () => {
     const module = await Test.createTestingModule({
       controllers: [OrdersController],
       providers: [
+        KitchenTicketChanges,
         { provide: OrdersService, useValue: service },
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
@@ -1618,6 +1620,7 @@ describe('Order detail HTTP API', () => {
     const module = await Test.createTestingModule({
       controllers: [OrdersController],
       providers: [
+        KitchenTicketChanges,
         { provide: OrdersService, useValue: service },
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
