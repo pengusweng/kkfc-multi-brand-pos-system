@@ -3,13 +3,16 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  MessageEvent,
 } from '@nestjs/common';
 import { KitchenTicketStatus, Prisma } from '@prisma/client';
 import { assertExists } from '../../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 import { OrdersRepository } from '../../orders/orders/orders.repository';
 import { CreateKitchenTicketDTO } from './dto/create-kitchen-ticket.dto';
+import { KitchenTicketChanges } from './kitchen-ticket-changes.service';
 import { KitchenTicketRepository } from './kitchen-ticket.repository';
+import { from, map, merge, Observable, of, switchMap } from 'rxjs';
 
 @Injectable()
 export class KitchenTicketService {
@@ -18,6 +21,7 @@ export class KitchenTicketService {
   constructor(
     private readonly kitchenTicketRepository: KitchenTicketRepository,
     private readonly ordersRepository: OrdersRepository,
+    private readonly changes: KitchenTicketChanges,
   ) {}
 
   async create(dto: CreateKitchenTicketDTO) {
@@ -28,6 +32,7 @@ export class KitchenTicketService {
     const ticket = await this.kitchenTicketRepository.create(dto);
 
     this.logger.log(`Created kitchen ticket ${ticket.kitchen_ticket_id}`);
+    this.notifyChange();
     return ticket;
   }
 
@@ -74,6 +79,13 @@ export class KitchenTicketService {
       `Listed today's kitchen tickets: returned=${tickets.length}`,
     );
     return tickets;
+  }
+
+  stream(): Observable<MessageEvent> {
+    return merge(of(null), this.changes.changes$).pipe(
+      switchMap(() => from(this.findMany())),
+      map((tickets) => ({ data: tickets })),
+    );
   }
 
   async findManyByPreparer(
@@ -481,6 +493,7 @@ export class KitchenTicketService {
     this.logger.log(
       `Assigned preparer ${preparerId} to kitchen ticket ${kitchenTicketId}`,
     );
+    this.notifyChange();
     return updated;
   }
 
@@ -510,7 +523,17 @@ export class KitchenTicketService {
     this.logger.log(
       `Assigned checker ${checkerId} to kitchen ticket ${kitchenTicketId}`,
     );
+    this.notifyChange();
 
     return updated;
+  }
+
+  /**
+   * Pushes today's tickets to stream subscribers. Status transitions accept a
+   * `tx`, so they don't notify themselves: whoever owns the transaction calls
+   * this once it has committed.
+   */
+  notifyChange() {
+    this.changes.notify();
   }
 }

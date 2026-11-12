@@ -35,12 +35,15 @@ describe('KitchenFulfillmentService', () => {
     let service: KitchenFulfillmentService;
     let rejections: { create: jest.Mock };
     let qc: { failAttempt: jest.Mock };
-    let tickets: { rework: jest.Mock };
+    let tickets: { rework: jest.Mock; notifyChange: jest.Mock };
 
     beforeEach(async () => {
       rejections = { create: jest.fn().mockResolvedValue(rejection) };
       qc = { failAttempt: jest.fn().mockResolvedValue(attempt) };
-      tickets = { rework: jest.fn().mockResolvedValue(ticket) };
+      tickets = {
+        rework: jest.fn().mockResolvedValue(ticket),
+        notifyChange: jest.fn(),
+      };
       const prisma = {
         $transaction: jest.fn(
           (work: (client: Prisma.TransactionClient) => Promise<unknown>) =>
@@ -128,6 +131,7 @@ describe('KitchenFulfillmentService', () => {
       const tickets = {
         findOne: jest.fn().mockResolvedValue(ticket),
         handOver: jest.fn().mockResolvedValue(handedOverTicket),
+        notifyChange: jest.fn(),
       };
       const orders = { complete: jest.fn().mockResolvedValue(order) };
       const handoffs = { create: jest.fn().mockResolvedValue({}) };
@@ -172,7 +176,7 @@ describe('KitchenFulfillmentService', () => {
       kitchen_tickets_order: ticket,
     };
     let orders: { cancel: jest.Mock };
-    let tickets: { cancel: jest.Mock };
+    let tickets: { cancel: jest.Mock; notifyChange: jest.Mock };
     let repository: { transaction: jest.Mock; findByBrand: jest.Mock };
     const tx = {} as Prisma.TransactionClient;
     let module: TestingModule;
@@ -180,7 +184,10 @@ describe('KitchenFulfillmentService', () => {
 
     beforeEach(async () => {
       orders = { cancel: jest.fn().mockResolvedValue(order) };
-      tickets = { cancel: jest.fn().mockResolvedValue(ticket) };
+      tickets = {
+        cancel: jest.fn().mockResolvedValue(ticket),
+        notifyChange: jest.fn(),
+      };
       repository = {
         transaction: jest.fn(
           (work: (client: Prisma.TransactionClient) => Promise<unknown>) =>

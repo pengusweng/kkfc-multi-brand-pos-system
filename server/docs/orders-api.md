@@ -294,7 +294,7 @@ Neither `create_request_hash` nor `recipe_snapshot` is returned.
 #### Order items on kitchen tickets
 
 The kitchen ticket read endpoints (`GET /api/kitchen-ticket`, `/today`,
-`/preparer/:preparerId`, `/checker/:checkerId` and `/:id`) include an
+`/today/stream`, `/preparer/:preparerId`, `/checker/:checkerId` and `/:id`) include an
 `order_items` array on each ticket so kitchen clients can identify items without
 the Order API. Each element contains `order_item_id`, `menu_item_id`,
 `item_name`, `quantity`, `notes`, and `modifiers` (each with
@@ -305,6 +305,46 @@ Use `order_items[].order_item_id` as `rejections[].order_item_id` in
 `POST /api/kitchen-fulfillment/qc-attempts/:attemptId/reject`, with
 `portion_number` between 1 and that item's `quantity`. Ticket state-change and
 assignment responses still return the ticket without `order_items`.
+
+#### Live kitchen tickets (SSE)
+
+`GET /api/kitchen-ticket/today/stream` is a Server-Sent Events stream of the
+same list `GET /api/kitchen-ticket/today` returns. It needs the same bearer
+session and kitchen roles. Each message is unnamed (no `event:` line), carries
+the whole list, and gets an incrementing `id` from Nest:
+
+```text
+id: 1
+data: [{"kitchen_ticket_id":"…","status":"QUEUED","order_items":[…]}, …]
+
+```
+
+- The first message is sent as soon as the connection opens, so clients don't
+  need a separate `GET /today` to load the initial list.
+- A new message follows every committed ticket change: confirming an order
+  (creates the ticket), assigning a preparer or checker, and each kitchen
+  fulfillment step (acknowledge through hand-over or cancel).
+- Each message replaces the previous list. Missed messages are not replayed;
+  reconnecting sends the current list again.
+- Because the endpoint needs an `Authorization` header, a browser
+  `EventSource` cannot use it. Use a client that can set headers (Dio, curl,
+  `fetch` with a stream reader). Disable client receive timeouts for this
+  request, because the stream is silent while nothing changes.
+
+Try it locally:
+
+```bash
+curl -N -H "Authorization: Bearer <session token>" \
+  http://localhost:3000/api/kitchen-ticket/today/stream
+```
+
+Server side, `KitchenTicketChanges` (a shared rxjs subject) signals changes and
+the stream refetches `findMany()` on each signal. Call
+`KitchenTicketService.notifyChange()` (or `KitchenTicketChanges.notify()` from
+outside the kitchen ticket module) only **after** the write's transaction has
+committed, or subscribers will reload the pre-commit state. Status transition
+methods that accept a `tx` do not notify; their callers do. The subject is
+in-memory, so this only works with a single API instance.
 
 ### Errors
 

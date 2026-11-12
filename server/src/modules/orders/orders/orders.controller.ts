@@ -32,6 +32,7 @@ import {
   CancelOrderDTO,
 } from './dto/order.dto';
 import { FindOrdersDTO } from './dto/find-orders.dto';
+import { KitchenTicketChanges } from '../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 import { OrdersService } from './orders.service';
 
 @Controller('brands/:brandId/orders')
@@ -39,7 +40,10 @@ import { OrdersService } from './orders.service';
 @UseGuards(Authenticated, RolesGuard)
 @Roles(UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN)
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly kitchenTicketChanges: KitchenTicketChanges,
+  ) {}
 
   @FindOrdersDocs()
   @Get()
@@ -90,13 +94,21 @@ export class OrdersController {
   @ConfirmOrderDocs()
   @Post(':orderId/confirm')
   @HttpCode(200)
-  confirm(
+  async confirm(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('orderId', ParseUUIDPipe) orderId: string,
     @Body() dto: ConfirmOrderDTO,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.orders.confirm(brandId, orderId, req.session.user.user_id, dto);
+    const order = await this.orders.confirm(
+      brandId,
+      orderId,
+      req.session.user.user_id,
+      dto,
+    );
+    // Confirming creates the kitchen ticket; the transaction has committed here.
+    this.kitchenTicketChanges.notify();
+    return order;
   }
 
   @CancelOrderDocs()

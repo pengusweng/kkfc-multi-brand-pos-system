@@ -14,3 +14,4 @@
 *.robot text eol=lf
 *.resource text eol=lf
 *.feature text eol=lf
+*.sh text eol=lf

@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  MessageEvent,
   Param,
   ParseUUIDPipe,
   Patch,
   Query,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
@@ -22,9 +24,11 @@ import {
   FindOneKitchenTicketDocs,
   FindTodaysKitchenTicketsDocs,
   KitchenTicketDocs,
+  StreamTodaysKitchenTicketsDocs,
 } from './docs/kitchen-ticket.docs';
 import { FindKitchenTicketsDTO } from './dto/find-kitchen-tickets.dto';
 import { KitchenTicketService } from './kitchen-ticket.service';
+import { Observable } from 'rxjs';
 
 @Controller('kitchen-ticket')
 @KitchenTicketDocs()
@@ -58,6 +62,12 @@ export class KitchenTicketController {
   @FindTodaysKitchenTicketsDocs()
   async findMany() {
     return this.kitchenTicketService.findMany();
+  }
+
+  @Sse('today/stream')
+  @StreamTodaysKitchenTicketsDocs()
+  stream(): Observable<MessageEvent> {
+    return this.kitchenTicketService.stream();
   }
 
   @Get('preparer/:preparerId')

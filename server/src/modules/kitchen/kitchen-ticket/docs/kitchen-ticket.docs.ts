@@ -5,6 +5,7 @@ import {
   ApiExtraModels,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiResponse,
   ApiTags,
   getSchemaPath,
@@ -184,6 +185,32 @@ export function FindTodaysKitchenTicketsDocs() {
       status: 200,
       description: 'Tickets created today in Asia/Manila.',
       schema: { ...ticketArraySchema, example: [ticketWithItemsExample] },
+    }),
+  );
+}
+
+export function StreamTodaysKitchenTicketsDocs() {
+  return applyDecorators(
+    ApiOperation({
+      summary: "Stream today's kitchen tickets (Server-Sent Events).",
+      description: [
+        'Keeps the connection open and pushes the full list from GET /kitchen-ticket/today as an unnamed SSE message (`data: <JSON array>`).',
+        'The first message is sent immediately on connect. After that, a new message is sent whenever a ticket is created (order confirmed), claimed (preparer/checker assigned), or changes status through kitchen fulfillment.',
+        'Each message replaces the previous list; clients should not merge. Events missed while disconnected are not replayed, but reconnecting delivers the current list again.',
+        'Requires the same bearer session and roles as the other kitchen ticket reads, so a browser EventSource (which cannot send headers) will not work; use a client that can set Authorization. Swagger UI cannot display a stream; use curl -N to try it.',
+      ].join('\n\n'),
+    }),
+    ApiProduces('text/event-stream'),
+    ApiResponse({
+      status: 200,
+      description:
+        "An open text/event-stream. Each message's data is a JSON array of today's tickets with their order items.",
+      content: {
+        'text/event-stream': {
+          schema: { type: 'string' },
+          example: `id: 1\ndata: ${JSON.stringify([ticketWithItemsExample])}\n\n`,
+        },
+      },
     }),
   );
 }

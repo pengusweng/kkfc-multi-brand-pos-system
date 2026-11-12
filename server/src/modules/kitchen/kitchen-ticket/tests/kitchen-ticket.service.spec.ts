@@ -3,6 +3,7 @@ import { KitchenTicketStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { OrdersRepository } from '../../../orders/orders/orders.repository';
 import { KitchenTicketRepository } from '../kitchen-ticket.repository';
+import { KitchenTicketChanges } from '../kitchen-ticket-changes.service';
 import { KitchenTicketService } from '../kitchen-ticket.service';
 
 const now = new Date('2026-10-30T04:00:00Z');
@@ -86,6 +87,7 @@ function setup(status: KitchenTicketStatus = KitchenTicketStatus.QUEUED) {
     service: new KitchenTicketService(
       repository,
       new OrdersRepository(client as unknown as PrismaService),
+      new KitchenTicketChanges(),
     ),
   };
 }
