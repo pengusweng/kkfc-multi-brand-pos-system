@@ -245,21 +245,23 @@ void main() {
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ProviderScope(
-                        overrides: [
-                          assignedBrandsProvider.overrideWith(
-                            (ref) => testBrands,
+                  Navigator.of(context)
+                      .push(
+                        MaterialPageRoute(
+                          builder: (_) => ProviderScope(
+                            overrides: [
+                              assignedBrandsProvider.overrideWith(
+                                (ref) => testBrands,
+                              ),
+                              menuItemsProvider.overrideWith(
+                                (ref) async => sampleGamcheonMenu,
+                              ),
+                            ],
+                            child: const KitchenAvailabilityScreen(),
                           ),
-                          menuItemsProvider.overrideWith(
-                            (ref) async => sampleGamcheonMenu,
-                          ),
-                        ],
-                        child: const KitchenAvailabilityScreen(),
-                      ),
-                    ),
-                  ).then((_) => popped = true);
+                        ),
+                      )
+                      .then((_) => popped = true);
                 },
                 child: const Text('Open'),
               ),

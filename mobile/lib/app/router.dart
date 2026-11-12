@@ -43,7 +43,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final canAccessPos = role?.canAccessPos ?? true;
       final canAccessKitchen = role?.canAccessKitchenBoard ?? false;
-      final onKitchenPage = state.matchedLocation == AppRoutes.kitchenTickets ||
+      final onKitchenPage =
+          state.matchedLocation == AppRoutes.kitchenTickets ||
           state.matchedLocation == AppRoutes.availability;
 
       if (isLoggedIn && onLogin) {
@@ -58,7 +59,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         // Roles without kitchen access must never see the kitchen tickets page.
-        if (!canAccessKitchen && state.matchedLocation == AppRoutes.kitchenTickets) {
+        if (!canAccessKitchen &&
+            state.matchedLocation == AppRoutes.kitchenTickets) {
           return AppRoutes.menu;
         }
       }

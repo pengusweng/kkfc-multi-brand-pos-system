@@ -12,9 +12,7 @@ void main() {
         MaterialApp(
           theme: counterTheme,
           home: const Scaffold(
-            body: SingleChildScrollView(
-              child: AvailabilityListSkeleton(),
-            ),
+            body: SingleChildScrollView(child: AvailabilityListSkeleton()),
           ),
         ),
       );
@@ -54,9 +52,7 @@ void main() {
           theme: counterTheme,
           home: const MediaQuery(
             data: MediaQueryData(disableAnimations: true),
-            child: Scaffold(
-              body: AvailabilityListSkeleton(),
-            ),
+            child: Scaffold(body: AvailabilityListSkeleton()),
           ),
         ),
       );

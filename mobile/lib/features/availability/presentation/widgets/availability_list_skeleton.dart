@@ -4,10 +4,7 @@ import 'package:mobile/app/theme/tokens.dart';
 /// Loading skeleton that mirrors the exact layout, dimensions, borders, and
 /// visual rhythm of [AvailabilityItemCard].
 class AvailabilityListSkeleton extends StatefulWidget {
-  const AvailabilityListSkeleton({
-    super.key,
-    this.itemCount = 5,
-  });
+  const AvailabilityListSkeleton({super.key, this.itemCount = 5});
 
   final int itemCount;
 

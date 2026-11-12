@@ -35,5 +35,5 @@ class MenuItemAvailabilityRepository {
 
 final menuItemAvailabilityRepositoryProvider =
     Provider<MenuItemAvailabilityRepository>((ref) {
-  return MenuItemAvailabilityRepository(ref.watch(dioProvider));
-});
+      return MenuItemAvailabilityRepository(ref.watch(dioProvider));
+    });

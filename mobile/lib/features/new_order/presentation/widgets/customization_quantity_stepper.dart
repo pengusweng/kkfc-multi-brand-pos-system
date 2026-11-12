@@ -313,13 +313,7 @@ class _HoldableStepperButtonState extends State<HoldableStepperButton> {
           child: InkWell(
             borderRadius: BorderRadius.circular(8.0),
             onTap: widget.enabled ? _handleTap : null,
-            child: Center(
-              child: Icon(
-                widget.icon,
-                size: 16,
-                color: iconColor,
-              ),
-            ),
+            child: Center(child: Icon(widget.icon, size: 16, color: iconColor)),
           ),
         ),
       ),

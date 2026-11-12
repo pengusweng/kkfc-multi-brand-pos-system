@@ -239,10 +239,95 @@ class _FakeAuthRepository extends AuthRepository {
 
 void main() {
   group('KitchenBoardRepository', () {
-    test(
-      'requests GET /api/kitchen-ticket/today/stream first and parses active lanes',
-      () async {
-        final payload = [
+    test('requests GET /api/kitchen-ticket/today/stream first and parses active lanes', () async {
+      final payload = [
+        {
+          'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
+          'order_id': '00000000-0000-4000-8000-000000000116',
+          'order_code': 'KK-00016',
+          'ticket_number': 'T-016',
+          'status': 'QUEUED',
+          'created_at': '2026-11-10T09:39:00.000Z',
+          'channel': 'Takeaway',
+          'reference': 'Call: Ana',
+          'payment_status': 'PAID',
+          'items': [
+            {
+              'quantity': 2,
+              'item_name': 'Iced Sea Salt Cream Latte',
+              'modifiers': ['50% Less Sweet', '22oz Large Cup'],
+              'notes': 'Separate straws',
+            },
+          ],
+        },
+        {
+          'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
+          'order_id': '00000000-0000-4000-8000-000000000115',
+          'order_code': 'AI-00015',
+          'ticket_number': 'T-015',
+          'status': 'PREPARING',
+          'created_at': '2026-11-10T09:35:00.000Z',
+        },
+        {
+          'kitchen_ticket_id': '00000000-0000-4000-8000-000000000099',
+          'order_id': '00000000-0000-4000-8000-000000000199',
+          'order_code': 'GC-00099',
+          'ticket_number': 'T-099',
+          'status': 'HANDED_OVER',
+          'created_at': '2026-11-10T09:00:00.000Z',
+        },
+      ];
+
+      final adapter = _RecordingAdapter(
+        (_) async => ResponseBody.fromString(
+          ': ping\n\ndata: ${jsonEncode(payload)}\n\n',
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['text/event-stream'],
+          },
+        ),
+      );
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final tickets = await repo.fetchTodaysTickets(
+        now: DateTime.parse('2026-11-10T09:41:00.000Z'),
+      );
+
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'GET');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/today/stream',
+      );
+
+      // Terminal HANDED_OVER ticket is filtered out
+      expect(tickets, hasLength(2));
+      expect(tickets[0].data.ticketNumber, 'T-016');
+      expect(tickets[0].lane, KitchenBoardLane.queued);
+      expect(tickets[0].data.brand.code, 'KK');
+      expect(tickets[0].data.items.first.name, 'Iced Sea Salt Cream Latte');
+      expect(
+        tickets[0].data.items.first.modifiers,
+        contains('Note: Separate straws'),
+      );
+
+      expect(tickets[1].data.ticketNumber, 'T-015');
+      expect(tickets[1].lane, KitchenBoardLane.preparing);
+      expect(tickets[1].data.brand.code, 'AI');
+    });
+
+    test('falls back to GET /api/kitchen-ticket/today when GET /api/kitchen-ticket/today/stream fails', () async {
+      final adapter = _RecordingAdapter((options) async {
+        if (options.uri.path.endsWith('/today/stream')) {
+          throw DioException.connectionError(
+            requestOptions: options,
+            reason: 'SSE stream unavailable',
+          );
+        }
+        return _jsonResponse([
           {
             'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
             'order_id': '00000000-0000-4000-8000-000000000116',
@@ -250,18 +335,95 @@ void main() {
             'ticket_number': 'T-016',
             'status': 'QUEUED',
             'created_at': '2026-11-10T09:39:00.000Z',
-            'channel': 'Takeaway',
-            'reference': 'Call: Ana',
-            'payment_status': 'PAID',
-            'items': [
-              {
-                'quantity': 2,
-                'item_name': 'Iced Sea Salt Cream Latte',
-                'modifiers': ['50% Less Sweet', '22oz Large Cup'],
-                'notes': 'Separate straws',
-              },
-            ],
           },
+        ]);
+      });
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final tickets = await repo.fetchTodaysTickets(
+        now: DateTime.parse('2026-11-10T09:41:00.000Z'),
+      );
+
+      expect(adapter.requests, hasLength(2));
+      expect(
+        adapter.requests[0].uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/today/stream',
+      );
+      expect(
+        adapter.requests[1].uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/today',
+      );
+      expect(tickets, hasLength(1));
+      expect(tickets.first.data.ticketNumber, 'T-016');
+    });
+
+    test('streamTodaysTickets emits multiple SSE updates in real time and ignores : ping heartbeats', () async {
+      final streamController = StreamController<Uint8List>();
+      final adapter = _RecordingAdapter((options) async {
+        return ResponseBody(
+          streamController.stream,
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['text/event-stream'],
+          },
+        );
+      });
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final emissions = <List<KitchenBoardTicket>>[];
+      final sub = repo
+          .streamTodaysTickets(now: DateTime.parse('2026-11-10T09:41:00.000Z'))
+          .listen(emissions.add);
+
+      // 1. Emit initial snapshot
+      streamController.add(
+        Uint8List.fromList(
+          utf8.encode(
+            'id: 1\ndata: ${jsonEncode([
+              {'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016', 'order_id': '00000000-0000-4000-8000-000000000116', 'order_code': 'KK-00016', 'ticket_number': 'T-016', 'status': 'QUEUED', 'created_at': '2026-11-10T09:39:00.000Z'},
+            ])}\n\n',
+          ),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(emissions, hasLength(1));
+      expect(emissions.first.first.lane, KitchenBoardLane.queued);
+
+      // 2. Emit heartbeat comment (: ping) — should be ignored
+      streamController.add(Uint8List.fromList(utf8.encode(': ping\n\n')));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(emissions, hasLength(1));
+
+      // 3. Emit updated snapshot where ticket moved to PREPARING
+      streamController.add(
+        Uint8List.fromList(
+          utf8.encode(
+            'id: 2\ndata: ${jsonEncode([
+              {'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016', 'order_id': '00000000-0000-4000-8000-000000000116', 'order_code': 'KK-00016', 'ticket_number': 'T-016', 'status': 'PREPARING', 'created_at': '2026-11-10T09:39:00.000Z'},
+            ])}\n\n',
+          ),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(emissions, hasLength(2));
+      expect(emissions.last.first.lane, KitchenBoardLane.preparing);
+
+      unawaited(sub.cancel());
+      unawaited(streamController.close());
+    });
+
+    test('watchTodaysTickets falls back to GET /api/kitchen-ticket/today when stream fails', () async {
+      final adapter = _RecordingAdapter((options) async {
+        if (options.uri.path.endsWith('/today/stream')) {
+          return ResponseBody.fromString('Service Unavailable', 503);
+        }
+        return _jsonResponse([
           {
             'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
             'order_id': '00000000-0000-4000-8000-000000000115',
@@ -270,107 +432,34 @@ void main() {
             'status': 'PREPARING',
             'created_at': '2026-11-10T09:35:00.000Z',
           },
-          {
-            'kitchen_ticket_id': '00000000-0000-4000-8000-000000000099',
-            'order_id': '00000000-0000-4000-8000-000000000199',
-            'order_code': 'GC-00099',
-            'ticket_number': 'T-099',
-            'status': 'HANDED_OVER',
-            'created_at': '2026-11-10T09:00:00.000Z',
-          },
-        ];
+        ]);
+      });
 
-        final adapter = _RecordingAdapter(
-          (_) async => ResponseBody.fromString(
-            ': ping\n\ndata: ${jsonEncode(payload)}\n\n',
-            200,
-            headers: {
-              Headers.contentTypeHeader: ['text/event-stream'],
-            },
-          ),
-        );
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final results = await repo
+          .watchTodaysTickets(now: DateTime.parse('2026-11-10T09:41:00.000Z'))
+          .toList();
 
-        final tickets = await repo.fetchTodaysTickets(
-          now: DateTime.parse('2026-11-10T09:41:00.000Z'),
-        );
+      expect(adapter.requests, hasLength(2));
+      expect(
+        adapter.requests[0].uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/today/stream',
+      );
+      expect(
+        adapter.requests[1].uri.toString(),
+        'http://localhost:3000/api/kitchen-ticket/today',
+      );
+      expect(results, hasLength(1));
+      expect(results.first.first.data.ticketNumber, 'T-015');
+    });
 
-        expect(adapter.requests, hasLength(1));
-        expect(adapter.requests.first.method, 'GET');
-        expect(
-          adapter.requests.first.uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/today/stream',
-        );
-
-        // Terminal HANDED_OVER ticket is filtered out
-        expect(tickets, hasLength(2));
-        expect(tickets[0].data.ticketNumber, 'T-016');
-        expect(tickets[0].lane, KitchenBoardLane.queued);
-        expect(tickets[0].data.brand.code, 'KK');
-        expect(tickets[0].data.items.first.name, 'Iced Sea Salt Cream Latte');
-        expect(
-          tickets[0].data.items.first.modifiers,
-          contains('Note: Separate straws'),
-        );
-
-        expect(tickets[1].data.ticketNumber, 'T-015');
-        expect(tickets[1].lane, KitchenBoardLane.preparing);
-        expect(tickets[1].data.brand.code, 'AI');
-      },
-    );
-
-    test(
-      'falls back to GET /api/kitchen-ticket/today when GET /api/kitchen-ticket/today/stream fails',
-      () async {
-        final adapter = _RecordingAdapter((options) async {
-          if (options.uri.path.endsWith('/today/stream')) {
-            throw DioException.connectionError(
-              requestOptions: options,
-              reason: 'SSE stream unavailable',
-            );
-          }
-          return _jsonResponse([
-            {
-              'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-              'order_id': '00000000-0000-4000-8000-000000000116',
-              'order_code': 'KK-00016',
-              'ticket_number': 'T-016',
-              'status': 'QUEUED',
-              'created_at': '2026-11-10T09:39:00.000Z',
-            },
-          ]);
-        });
-
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
-
-        final tickets = await repo.fetchTodaysTickets(
-          now: DateTime.parse('2026-11-10T09:41:00.000Z'),
-        );
-
-        expect(adapter.requests, hasLength(2));
-        expect(
-          adapter.requests[0].uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/today/stream',
-        );
-        expect(
-          adapter.requests[1].uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/today',
-        );
-        expect(tickets, hasLength(1));
-        expect(tickets.first.data.ticketNumber, 'T-016');
-      },
-    );
-
-    test(
-      'streamTodaysTickets emits multiple SSE updates in real time and ignores : ping heartbeats',
-      () async {
-        final streamController = StreamController<Uint8List>();
-        final adapter = _RecordingAdapter((options) async {
+    test('KitchenBoardNotifier updates state in real time from GET /api/kitchen-ticket/today/stream', () async {
+      final streamController = StreamController<Uint8List>();
+      final adapter = _RecordingAdapter((options) async {
+        if (options.uri.path.endsWith('/today/stream')) {
           return ResponseBody(
             streamController.stream,
             200,
@@ -378,206 +467,67 @@ void main() {
               Headers.contentTypeHeader: ['text/event-stream'],
             },
           );
-        });
+        }
+        return _jsonResponse([]);
+      });
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        final emissions = <List<KitchenBoardTicket>>[];
-        final sub = repo
-            .streamTodaysTickets(now: DateTime.parse('2026-11-10T09:41:00.000Z'))
-            .listen(emissions.add);
-
-        // 1. Emit initial snapshot
-        streamController.add(
-          Uint8List.fromList(
-            utf8.encode(
-              'id: 1\ndata: ${jsonEncode([
-                {
-                  'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-                  'order_id': '00000000-0000-4000-8000-000000000116',
-                  'order_code': 'KK-00016',
-                  'ticket_number': 'T-016',
-                  'status': 'QUEUED',
-                  'created_at': '2026-11-10T09:39:00.000Z',
-                },
-              ])}\n\n',
-            ),
-          ),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        expect(emissions, hasLength(1));
-        expect(emissions.first.first.lane, KitchenBoardLane.queued);
-
-        // 2. Emit heartbeat comment (: ping) — should be ignored
-        streamController.add(Uint8List.fromList(utf8.encode(': ping\n\n')));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        expect(emissions, hasLength(1));
-
-        // 3. Emit updated snapshot where ticket moved to PREPARING
-        streamController.add(
-          Uint8List.fromList(
-            utf8.encode(
-              'id: 2\ndata: ${jsonEncode([
-                {
-                  'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-                  'order_id': '00000000-0000-4000-8000-000000000116',
-                  'order_code': 'KK-00016',
-                  'ticket_number': 'T-016',
-                  'status': 'PREPARING',
-                  'created_at': '2026-11-10T09:39:00.000Z',
-                },
-              ])}\n\n',
-            ),
-          ),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        expect(emissions, hasLength(2));
-        expect(emissions.last.first.lane, KitchenBoardLane.preparing);
-
-        unawaited(sub.cancel());
+      final container = ProviderContainer(
+        overrides: [
+          kitchenBoardRepositoryProvider.overrideWithValue(repo),
+          initialRoleProvider.overrideWithValue(UserRole.kitchenHead),
+          authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+        ],
+      );
+      addTearDown(() {
         unawaited(streamController.close());
-      },
-    );
+        container.dispose();
+      });
 
-    test(
-      'watchTodaysTickets falls back to GET /api/kitchen-ticket/today when stream fails',
-      () async {
-        final adapter = _RecordingAdapter((options) async {
-          if (options.uri.path.endsWith('/today/stream')) {
-            return ResponseBody.fromString('Service Unavailable', 503);
-          }
-          return _jsonResponse([
-            {
-              'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
-              'order_id': '00000000-0000-4000-8000-000000000115',
-              'order_code': 'AI-00015',
-              'ticket_number': 'T-015',
-              'status': 'PREPARING',
-              'created_at': '2026-11-10T09:35:00.000Z',
-            },
-          ]);
-        });
+      // Trigger initial build & stream subscription
+      container.read(kitchenBoardProvider);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
-
-        final results = await repo
-            .watchTodaysTickets(now: DateTime.parse('2026-11-10T09:41:00.000Z'))
-            .toList();
-
-        expect(adapter.requests, hasLength(2));
-        expect(
-          adapter.requests[0].uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/today/stream',
-        );
-        expect(
-          adapter.requests[1].uri.toString(),
-          'http://localhost:3000/api/kitchen-ticket/today',
-        );
-        expect(results, hasLength(1));
-        expect(results.first.first.data.ticketNumber, 'T-015');
-      },
-    );
-
-    test(
-      'KitchenBoardNotifier updates state in real time from GET /api/kitchen-ticket/today/stream',
-      () async {
-        final streamController = StreamController<Uint8List>();
-        final adapter = _RecordingAdapter((options) async {
-          if (options.uri.path.endsWith('/today/stream')) {
-            return ResponseBody(
-              streamController.stream,
-              200,
-              headers: {
-                Headers.contentTypeHeader: ['text/event-stream'],
-              },
-            );
-          }
-          return _jsonResponse([]);
-        });
-
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
-
-        final container = ProviderContainer(
-          overrides: [
-            kitchenBoardRepositoryProvider.overrideWithValue(repo),
-            initialRoleProvider.overrideWithValue(UserRole.kitchenHead),
-            authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
-          ],
-        );
-        addTearDown(() {
-          unawaited(streamController.close());
-          container.dispose();
-        });
-
-        // Trigger initial build & stream subscription
-        container.read(kitchenBoardProvider);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-
-        // 1. Server pushes first SSE snapshot with 1 queued ticket
-        streamController.add(
-          Uint8List.fromList(
-            utf8.encode(
-              'data: ${jsonEncode([
-                {
-                  'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-                  'order_id': '',
-                  'order_code': 'KK-00016',
-                  'ticket_number': 'T-016',
-                  'status': 'QUEUED',
-                  'created_at': '2026-11-10T09:39:00.000Z',
-                },
-              ])}\n\n',
-            ),
+      // 1. Server pushes first SSE snapshot with 1 queued ticket
+      streamController.add(
+        Uint8List.fromList(
+          utf8.encode(
+            'data: ${jsonEncode([
+              {'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016', 'order_id': '', 'order_code': 'KK-00016', 'ticket_number': 'T-016', 'status': 'QUEUED', 'created_at': '2026-11-10T09:39:00.000Z'},
+            ])}\n\n',
           ),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
 
-        var boardState = container.read(kitchenBoardProvider);
-        expect(boardState.isLoading, isFalse);
-        expect(boardState.tickets, hasLength(1));
-        expect(boardState.tickets.first.data.ticketNumber, 'T-016');
-        expect(boardState.tickets.first.lane, KitchenBoardLane.queued);
+      var boardState = container.read(kitchenBoardProvider);
+      expect(boardState.isLoading, isFalse);
+      expect(boardState.tickets, hasLength(1));
+      expect(boardState.tickets.first.data.ticketNumber, 'T-016');
+      expect(boardState.tickets.first.lane, KitchenBoardLane.queued);
 
-        // 2. Server pushes second SSE snapshot moving T-016 to PREPARING and adding T-017
-        streamController.add(
-          Uint8List.fromList(
-            utf8.encode(
-              'data: ${jsonEncode([
-                {
-                  'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016',
-                  'order_id': '',
-                  'order_code': 'KK-00016',
-                  'ticket_number': 'T-016',
-                  'status': 'PREPARING',
-                  'created_at': '2026-11-10T09:39:00.000Z',
-                },
-                {
-                  'kitchen_ticket_id': '00000000-0000-4000-8000-000000000017',
-                  'order_id': '',
-                  'order_code': 'GC-00017',
-                  'ticket_number': 'T-017',
-                  'status': 'READY',
-                  'created_at': '2026-11-10T09:40:00.000Z',
-                },
-              ])}\n\n',
-            ),
+      // 2. Server pushes second SSE snapshot moving T-016 to PREPARING and adding T-017
+      streamController.add(
+        Uint8List.fromList(
+          utf8.encode(
+            'data: ${jsonEncode([
+              {'kitchen_ticket_id': '00000000-0000-4000-8000-000000000016', 'order_id': '', 'order_code': 'KK-00016', 'ticket_number': 'T-016', 'status': 'PREPARING', 'created_at': '2026-11-10T09:39:00.000Z'},
+              {'kitchen_ticket_id': '00000000-0000-4000-8000-000000000017', 'order_id': '', 'order_code': 'GC-00017', 'ticket_number': 'T-017', 'status': 'READY', 'created_at': '2026-11-10T09:40:00.000Z'},
+            ])}\n\n',
           ),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
 
-        boardState = container.read(kitchenBoardProvider);
-        expect(boardState.tickets, hasLength(2));
-        expect(boardState.tickets[0].lane, KitchenBoardLane.preparing);
-        expect(boardState.tickets[1].data.ticketNumber, 'T-017');
-        expect(boardState.tickets[1].lane, KitchenBoardLane.ready);
-      },
-    );
+      boardState = container.read(kitchenBoardProvider);
+      expect(boardState.tickets, hasLength(2));
+      expect(boardState.tickets[0].lane, KitchenBoardLane.preparing);
+      expect(boardState.tickets[1].data.ticketNumber, 'T-017');
+      expect(boardState.tickets[1].lane, KitchenBoardLane.ready);
+    });
 
     test('acknowledgeTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/acknowledge', () async {
       const ticketId = '00000000-0000-4000-8000-000000000016';

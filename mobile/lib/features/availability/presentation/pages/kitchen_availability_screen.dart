@@ -179,8 +179,9 @@ class _KitchenAvailabilityScreenState
                                         .watch(menuSearchProvider)
                                         .trim()
                                         .isNotEmpty;
-                                    final isHidingUnavailable =
-                                        ref.watch(hideUnavailableProvider);
+                                    final isHidingUnavailable = ref.watch(
+                                      hideUnavailableProvider,
+                                    );
                                     return Container(
                                       padding: const EdgeInsets.symmetric(
                                         vertical: KkfcSpace.s48,
@@ -245,8 +246,9 @@ class _KitchenAvailabilityScreenState
                                     'availability-back-to-kitchen-board-button',
                                   ),
                                   onPressed: () {
-                                    final navigator =
-                                        Navigator.maybeOf(context);
+                                    final navigator = Navigator.maybeOf(
+                                      context,
+                                    );
                                     if (navigator != null &&
                                         navigator.canPop()) {
                                       navigator.pop();

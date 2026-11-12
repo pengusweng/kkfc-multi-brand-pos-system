@@ -248,8 +248,9 @@ class _KitchenBoardToolbarState extends State<KitchenBoardToolbar> {
                           : KkfcMotion.easeSpring,
                       child: OutlinedButton.icon(
                         key: const ValueKey('kitchen-board-refresh-button'),
-                        onPressed:
-                            widget.isRefreshing ? null : widget.onRefresh,
+                        onPressed: widget.isRefreshing
+                            ? null
+                            : widget.onRefresh,
                         style: OutlinedButton.styleFrom(
                           backgroundColor: KkfcColors.surface,
                           foregroundColor: KkfcColors.ink,

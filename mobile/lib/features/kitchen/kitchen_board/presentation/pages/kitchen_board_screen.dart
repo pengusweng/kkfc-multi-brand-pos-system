@@ -159,17 +159,19 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
                   isReadOnly: userRole?.isKitchenReadOnlyExceptQc ?? false,
                   onRefresh: () =>
                       ref.read(kitchenBoardProvider.notifier).refresh(),
-                  onAvailability: widget.onAvailability ?? () {
-                    if (GoRouter.maybeOf(context) != null) {
-                      context.push(AppRoutes.availability);
-                    } else {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const KitchenAvailabilityScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  onAvailability:
+                      widget.onAvailability ??
+                      () {
+                        if (GoRouter.maybeOf(context) != null) {
+                          context.push(AppRoutes.availability);
+                        } else {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const KitchenAvailabilityScreen(),
+                            ),
+                          );
+                        }
+                      },
                 ),
               ),
             ),

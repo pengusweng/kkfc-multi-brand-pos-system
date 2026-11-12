@@ -60,7 +60,10 @@ void main() {
       );
 
       expect(adapter.lastRequest?.method, 'PATCH');
-      expect(adapter.lastRequest?.uri.path, '/api/menu-items/availability/item-1');
+      expect(
+        adapter.lastRequest?.uri.path,
+        '/api/menu-items/availability/item-1',
+      );
       final decodedBody = jsonDecode(adapter.lastBody ?? '{}');
       expect(decodedBody, {'availability': false});
     });
@@ -86,7 +89,10 @@ void main() {
       );
 
       expect(adapter.lastRequest?.method, 'PATCH');
-      expect(adapter.lastRequest?.uri.path, '/api/menu-items/availability/item-2');
+      expect(
+        adapter.lastRequest?.uri.path,
+        '/api/menu-items/availability/item-2',
+      );
       final decodedBody = jsonDecode(adapter.lastBody ?? '{}');
       expect(decodedBody, {'availability': true});
     });

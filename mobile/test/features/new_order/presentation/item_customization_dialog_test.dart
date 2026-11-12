@@ -167,10 +167,7 @@ void main() {
         const ValueKey('customize-kitchen-note-field'),
       );
       await tester.ensureVisible(kitchenNoteFinder);
-      await tester.enterText(
-        kitchenNoteFinder,
-        'Extra crispy pork please',
-      );
+      await tester.enterText(kitchenNoteFinder, 'Extra crispy pork please');
       await tester.pumpAndSettle();
 
       // Tap "Add to order"

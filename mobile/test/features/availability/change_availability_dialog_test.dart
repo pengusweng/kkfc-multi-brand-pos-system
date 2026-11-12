@@ -105,60 +105,68 @@ void main() {
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('change-availability-cancel-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('change-availability-cancel-button')),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(ChangeAvailabilityDialog), findsNothing);
       expect(updateCalled, isFalse);
     });
 
-    testWidgets('tapping Mark unavailable invokes callback with false and pops dialog', (
-      tester,
-    ) async {
-      bool? passedAvailability;
-      await tester.pumpWidget(
-        buildDialogHost(
-          item: availableItem,
-          onUpdateAvailability: (avail) async {
-            passedAvailability = avail;
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping Mark unavailable invokes callback with false and pops dialog',
+      (tester) async {
+        bool? passedAvailability;
+        await tester.pumpWidget(
+          buildDialogHost(
+            item: availableItem,
+            onUpdateAvailability: (avail) async {
+              passedAvailability = avail;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('change-availability-submit-button')));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('change-availability-submit-button')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(passedAvailability, isFalse);
-      expect(find.byType(ChangeAvailabilityDialog), findsNothing);
-    });
+        expect(passedAvailability, isFalse);
+        expect(find.byType(ChangeAvailabilityDialog), findsNothing);
+      },
+    );
 
-    testWidgets('tapping Mark available invokes callback with true and pops dialog', (
-      tester,
-    ) async {
-      bool? passedAvailability;
-      await tester.pumpWidget(
-        buildDialogHost(
-          item: unavailableItem,
-          onUpdateAvailability: (avail) async {
-            passedAvailability = avail;
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping Mark available invokes callback with true and pops dialog',
+      (tester) async {
+        bool? passedAvailability;
+        await tester.pumpWidget(
+          buildDialogHost(
+            item: unavailableItem,
+            onUpdateAvailability: (avail) async {
+              passedAvailability = avail;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('change-availability-submit-button')));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('change-availability-submit-button')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(passedAvailability, isTrue);
-      expect(find.byType(ChangeAvailabilityDialog), findsNothing);
-    });
+        expect(passedAvailability, isTrue);
+        expect(find.byType(ChangeAvailabilityDialog), findsNothing);
+      },
+    );
 
     testWidgets('shows loading indicator while update is in progress', (
       tester,
@@ -175,7 +183,9 @@ void main() {
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('change-availability-submit-button')));
+      await tester.tap(
+        find.byKey(const ValueKey('change-availability-submit-button')),
+      );
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -185,28 +195,33 @@ void main() {
       expect(find.byType(ChangeAvailabilityDialog), findsNothing);
     });
 
-    testWidgets('on update error shows error toast and does not dismiss dialog', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildDialogHost(
-          item: availableItem,
-          onUpdateAvailability: (_) async => throw Exception('Network error'),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'on update error shows error toast and does not dismiss dialog',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDialogHost(
+            item: availableItem,
+            onUpdateAvailability: (_) async => throw Exception('Network error'),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('change-availability-submit-button')));
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('change-availability-submit-button')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ChangeAvailabilityDialog), findsOneWidget);
-      expect(
-        find.text('Failed to update availability for Gamcheon Samgyupsal Rice Bowl'),
-        findsOneWidget,
-      );
-    });
+        expect(find.byType(ChangeAvailabilityDialog), findsOneWidget);
+        expect(
+          find.text(
+            'Failed to update availability for Gamcheon Samgyupsal Rice Bowl',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

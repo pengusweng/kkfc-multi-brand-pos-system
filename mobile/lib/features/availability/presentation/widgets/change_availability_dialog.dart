@@ -73,8 +73,7 @@ class _ChangeAvailabilityDialogState
   @override
   Widget build(BuildContext context) {
     final target = _targetAvailability;
-    final title =
-        target ? 'Make item available?' : 'Make item unavailable?';
+    final title = target ? 'Make item available?' : 'Make item unavailable?';
     final actionLabel = target ? 'Mark available' : 'Mark unavailable';
 
     return Dialog(
@@ -164,9 +163,7 @@ class _ChangeAvailabilityDialogState
                   SizedBox(
                     height: KkfcTargets.posMinimum,
                     child: FilledButton(
-                      key: const ValueKey(
-                        'change-availability-submit-button',
-                      ),
+                      key: const ValueKey('change-availability-submit-button'),
                       onPressed: _isLoading ? null : _handleSubmit,
                       style: FilledButton.styleFrom(
                         backgroundColor: KkfcColors.action,
@@ -215,9 +212,7 @@ class _ChangeAvailabilityDialogState
                   SizedBox(
                     height: KkfcTargets.posMinimum,
                     child: OutlinedButton(
-                      key: const ValueKey(
-                        'change-availability-cancel-button',
-                      ),
+                      key: const ValueKey('change-availability-cancel-button'),
                       onPressed: _isLoading
                           ? null
                           : () => Navigator.of(context).pop(false),
