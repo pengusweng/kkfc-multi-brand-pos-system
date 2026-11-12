@@ -80,6 +80,7 @@ export class OrdersController {
   @Post()
   @Audit({
     action: 'ORDER_CREATED',
+    snapshot: 'create',
     entity: 'orders',
     id: fromResult('order_id'),
   })
@@ -107,6 +108,7 @@ export class OrdersController {
   @Post(':orderId/confirm')
   @Audit({
     action: 'ORDER_CONFIRMED',
+    snapshot: 'update',
     entity: 'orders',
     id: fromParam('orderId'),
   })
@@ -132,6 +134,7 @@ export class OrdersController {
   @Post(':orderId/cancel')
   @Audit({
     action: 'ORDER_CANCELLED',
+    snapshot: 'update',
     entity: 'orders',
     id: fromParam('orderId'),
   })

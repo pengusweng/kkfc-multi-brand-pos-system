@@ -48,7 +48,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Audit({ action: 'USER_CREATED', entity: 'users', id: fromResult('user_id') })
+  @Audit({
+    action: 'USER_CREATED',
+    snapshot: 'create',
+    entity: 'users',
+    id: fromResult('user_id'),
+  })
   @UseGuards(PinGuard)
   @CreateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
@@ -82,7 +87,12 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Audit({ action: 'USER_UPDATED', entity: 'users', id: fromParam('id') })
+  @Audit({
+    action: 'USER_UPDATED',
+    snapshot: 'update',
+    entity: 'users',
+    id: fromParam('id'),
+  })
   @UpdateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(PinGuard)
@@ -99,7 +109,12 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Audit({ action: 'USER_DEACTIVATED', entity: 'users', id: fromParam('id') })
+  @Audit({
+    action: 'USER_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'users',
+    id: fromParam('id'),
+  })
   @DeleteUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(PinGuard)

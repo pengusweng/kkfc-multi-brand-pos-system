@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 import type { Request } from 'express';
+import { SNAPSHOT_CONFIGS, type SnapshotMode } from './audit-snapshots';
 
 export const AUDIT_KEY = 'audit:event';
 export const NO_AUDIT_KEY = 'audit:skip';
@@ -26,15 +27,22 @@ export interface AuditOptions {
   id?: AuditResolver;
   /** Actor override for routes without a session (e.g. login). */
   actor?: AuditResolver;
+  /**
+   * Record allowlisted column values from the database: `create` stores the
+   * new record in after_data; `update` stores only the changed fields in
+   * before_data / after_data. Requires an entry in SNAPSHOT_CONFIGS.
+   */
+  snapshot?: SnapshotMode;
 }
 
 const ACTION_PATTERN = /^[A-Z][A-Z0-9_]{0,99}$/;
 const ENTITY_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 
 /**
- * Records a SUCCESS row when the handler completes, and a DENIED (401/403) or
- * FAILED (409/5xx) row when it throws, including guard rejections. Rows hold
- * metadata only. Do not use on `@Sse()` routes.
+ * Records a SUCCESS row when the handler completes, and a DENIED (401/403/429)
+ * or FAILED (409/5xx) row when it throws, including guard rejections. Only
+ * successful `snapshot` routes store before/after values, and only allowlisted
+ * columns. Do not use on `@Sse()` routes.
  */
 export function Audit(options: AuditOptions) {
   if (!ACTION_PATTERN.test(options.action)) {
@@ -42,6 +50,11 @@ export function Audit(options: AuditOptions) {
   }
   if (!ENTITY_PATTERN.test(options.entity)) {
     throw new Error(`Invalid audit entity: ${options.entity}`);
+  }
+  if (options.snapshot && !SNAPSHOT_CONFIGS[options.entity]) {
+    throw new Error(
+      `No audit snapshot allowlist for entity: ${options.entity}`,
+    );
   }
   return SetMetadata(AUDIT_KEY, options);
 }

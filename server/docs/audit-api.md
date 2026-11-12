@@ -36,8 +36,8 @@ Example `200` response (illustrative audit record):
     "entity_id": "22222222-2222-4222-8222-222222222222",
     "outcome": "SUCCESS",
     "reason": null,
-    "before_data": null,
-    "after_data": null,
+    "before_data": { "status": "DRAFT", "payment_method": null },
+    "after_data": { "status": "CONFIRMED", "payment_method": "CASH" },
     "request_id": "6f1c2d4e-8a9b-4c3d-9e2f-1a2b3c4d5e6f",
     "created_at": "2026-10-29T02:00:00.000Z"
   }],
@@ -53,7 +53,7 @@ Example `200` response (illustrative audit record):
 | `data[].action`, `data[].entity_type` | Strings identifying the action and entity type |
 | `data[].outcome` | `SUCCESS`, `DENIED`, or `FAILED` |
 | `data[].reason`, `data[].request_id` | String or null |
-| `data[].before_data`, `data[].after_data` | Nullable JSON snapshots; structure depends on the action |
+| `data[].before_data`, `data[].after_data` | JSON object or null; see [Snapshots](#snapshots) |
 | `data[].created_at` | ISO 8601 timestamp |
 | `meta.page`, `meta.limit` | Effective page and limit integers |
 | `meta.total` | Number of records matching the filters across all pages |
@@ -93,7 +93,7 @@ opts out explicitly with `@NoAudit(reason)`.
 
 `400` validation errors and `404` not-found errors are not audited.
 
-Each row stores metadata only:
+Each row stores:
 
 - `actor_id`: the session user, or null when there is no session (for example
   a rejected login).
@@ -109,7 +109,8 @@ Each row stores metadata only:
   characters of `A-Z a-z 0-9 . _ : -`); otherwise the server generates a UUID.
   Every response echoes it in the `x-request-id` header, so a client error
   report can be matched to its audit row.
-- `before_data` / `after_data`: not populated by the automatic pipeline.
+- `before_data` / `after_data`: allowlisted column values for creations and
+  state changes; see [Snapshots](#snapshots).
 
 Request bodies, credentials, PINs and recipe contents are never written. If the
 audit table cannot be written, the request still succeeds or fails exactly as it
@@ -118,6 +119,50 @@ would have, and a constant error message is logged.
 A unit test (`src/shared/audit/tests/audit-coverage.spec.ts`) fails if any
 action route lacks `@Audit()` or `@NoAudit()`, or if a listed sensitive read is
 not audited.
+
+### Snapshots
+
+Routes declare `snapshot: 'create'` or `snapshot: 'update'` in `@Audit()`:
+
+| Kind | `before_data` | `after_data` | Actions |
+| --- | --- | --- | --- |
+| Creation | null | the new record's allowlisted columns | `USER_CREATED`, `BRAND_CREATED`, `ORDER_CREATED`, `MENU_CATALOG_ENTRY_CREATED` and every menu `*_CREATED` |
+| State change | the **changed** columns' old values | the same columns' new values | field edits (`*_UPDATED`), `*_DEACTIVATED` / `*_REACTIVATED`, `MENU_ITEM_AVAILABILITY_CHANGED`, `ORDER_CONFIRMED`, `ORDER_CANCELLED`, every `KITCHEN_TICKET_*` step and claim, `KITCHEN_QC_PASSED` / `KITCHEN_QC_REJECTED` |
+
+For example, a price edit stores `before_data: { "base_price": "150" }` and
+`after_data: { "base_price": "165" }`. An update that changes no allowlisted
+column stores null in both. `DENIED` and `FAILED` rows never store snapshots.
+
+Values are read from the database, never from request or response bodies: once
+before the handler runs (state changes) and once after it succeeds. Each read
+selects only the allowlisted columns below, so nothing else can be stored.
+Decimals are stored as strings and timestamps as ISO 8601 strings. If a read
+fails, the row is still written with that snapshot null. The "before" read
+happens just before the handler's transaction, so a concurrent edit can make it
+slightly stale.
+
+| Entity | Allowlisted columns |
+| --- | --- |
+| `users` | `username`, `first_name`, `last_name`, `role`, `is_active` |
+| `brands` | `code`, `name`, `logo_url`, `is_active` |
+| `orders` | `order_code`, `order_channel`, `status`, `payment_method`, `payment_status`, `table_reference`, `merchant_store_reference`, `external_order_reference` |
+| `menu_items` | `code`, `name`, `description`, `serving_description`, `base_price`, `img_url`, `is_available`, `is_active` |
+| `menu_item_channels` | `menu_item_id`, `order_channel`, `price`, `is_available` |
+| `modifiers` | `code`, `name`, `description`, `is_active` |
+| `menu_item_modifiers` | `menu_item_id`, `modifier_id`, `additional_price`, `is_available` |
+| `kitchen_tickets` | `status`, `preparer_id`, `checker_id` |
+| `kitchen_ticket_qc_attempts` | `attempt_number`, `status`, `checker_id` |
+
+The allowlists live in `src/shared/audit/audit-snapshots.ts`. These columns
+are never snapshotted, and the server refuses to start if an allowlist includes
+one: `password_hash`, `pin_hash`, `token_hash`, `create_request_hash`,
+`recipe_id`, `recipe_snapshot`, `payment_reference`, and the free-text
+`notes` and `cancellation_reason`, which can contain customer details (they
+remain on the order itself). Login, logout, PIN, asset and audit-view actions
+have no snapshots.
+
+A QC pass also moves its kitchen ticket to `READY`, but the row's entity is the
+QC attempt, so only the attempt's status change is captured there.
 
 ### Action catalog
 

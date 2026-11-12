@@ -49,6 +49,7 @@ export class MenuItemModifiersController {
   @Post()
   @Audit({
     action: 'MENU_ITEM_MODIFIER_CREATED',
+    snapshot: 'create',
     entity: 'menu_item_modifiers',
     id: fromResult('menu_item_modifier_id'),
   })
@@ -93,6 +94,7 @@ export class MenuItemModifiersController {
   @Patch(':id')
   @Audit({
     action: 'MENU_ITEM_MODIFIER_UPDATED',
+    snapshot: 'update',
     entity: 'menu_item_modifiers',
     id: fromParam('id'),
   })
@@ -108,6 +110,7 @@ export class MenuItemModifiersController {
   @Patch('reactivate/:id')
   @Audit({
     action: 'MENU_ITEM_MODIFIER_REACTIVATED',
+    snapshot: 'update',
     entity: 'menu_item_modifiers',
     id: fromParam('id'),
   })
@@ -120,6 +123,7 @@ export class MenuItemModifiersController {
   @Delete(':id')
   @Audit({
     action: 'MENU_ITEM_MODIFIER_DEACTIVATED',
+    snapshot: 'update',
     entity: 'menu_item_modifiers',
     id: fromParam('id'),
   })

@@ -218,4 +218,30 @@ describe('Kitchen fulfillment audit logging', () => {
       }),
     ]);
   });
+
+  it('IT-KFUL-022: Given a queued ticket, When it is acknowledged, Then store the status change before and after', async () => {
+    audit.findUnique
+      .mockResolvedValueOnce({
+        status: 'QUEUED',
+        preparer_id: null,
+        checker_id: null,
+      })
+      .mockResolvedValueOnce({
+        status: 'ACKNOWLEDGED',
+        preparer_id: null,
+        checker_id: null,
+      });
+
+    const response = await post(`/${ticketId}/acknowledge`);
+
+    expect(response.status).toBe(200);
+    expect(audit.rows()).toEqual([
+      expect.objectContaining({
+        action: 'KITCHEN_TICKET_ACKNOWLEDGED',
+        entity_id: ticketId,
+        before_data: { status: 'QUEUED' },
+        after_data: { status: 'ACKNOWLEDGED' },
+      }),
+    ]);
+  });
 });

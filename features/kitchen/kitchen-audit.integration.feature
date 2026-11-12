@@ -52,3 +52,12 @@ Feature: Kitchen audit logging
     Given kitchen staff
     When they pass a QC attempt and cancel a confirmed order
     Then both are DENIED with ACCESS_DENIED and no fulfillment step runs
+
+  # Jest: server/src/modules/kitchen/kitchen-fulfillment/tests/kitchen-fulfillment-audit.http.spec.ts
+  # Context: Kitchen fulfillment audit logging
+  @IT-KFUL-022
+  Scenario: Record ticket status changes as before and after values
+    Test Case ID: IT-KFUL-022
+    Given a queued kitchen ticket
+    When it is acknowledged
+    Then the KITCHEN_TICKET_ACKNOWLEDGED row stores status QUEUED before and ACKNOWLEDGED after

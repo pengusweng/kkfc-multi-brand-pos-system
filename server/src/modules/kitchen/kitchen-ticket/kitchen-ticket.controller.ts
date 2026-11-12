@@ -106,6 +106,7 @@ export class KitchenTicketController {
   @Patch(':id/preparer')
   @Audit({
     action: 'KITCHEN_TICKET_PREPARER_ASSIGNED',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('id'),
   })
@@ -123,6 +124,7 @@ export class KitchenTicketController {
   @Patch(':id/checker')
   @Audit({
     action: 'KITCHEN_TICKET_CHECKER_ASSIGNED',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('id'),
   })

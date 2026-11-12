@@ -31,6 +31,7 @@ export class MenuCatalogController {
   @Post()
   @Audit({
     action: 'MENU_CATALOG_ENTRY_CREATED',
+    snapshot: 'create',
     entity: 'menu_items',
     id: fromResult('menu_item_id'),
   })

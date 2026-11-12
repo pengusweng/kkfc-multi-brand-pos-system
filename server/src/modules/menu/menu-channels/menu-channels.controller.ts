@@ -48,6 +48,7 @@ export class MenuChannelsController {
   @Post()
   @Audit({
     action: 'MENU_ITEM_CHANNEL_CREATED',
+    snapshot: 'create',
     entity: 'menu_item_channels',
     id: fromResult('menu_item_channel_id'),
   })
@@ -88,6 +89,7 @@ export class MenuChannelsController {
   @Patch(':id')
   @Audit({
     action: 'MENU_ITEM_CHANNEL_UPDATED',
+    snapshot: 'update',
     entity: 'menu_item_channels',
     id: fromParam('id'),
   })
@@ -103,6 +105,7 @@ export class MenuChannelsController {
   @Patch('reactivate/:id')
   @Audit({
     action: 'MENU_ITEM_CHANNEL_REACTIVATED',
+    snapshot: 'update',
     entity: 'menu_item_channels',
     id: fromParam('id'),
   })
@@ -115,6 +118,7 @@ export class MenuChannelsController {
   @Delete(':id')
   @Audit({
     action: 'MENU_ITEM_CHANNEL_DEACTIVATED',
+    snapshot: 'update',
     entity: 'menu_item_channels',
     id: fromParam('id'),
   })

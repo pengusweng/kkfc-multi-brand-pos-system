@@ -60,6 +60,7 @@ export class KitchenFulfillmentController {
   @Post(':kitchenTicketId/acknowledge')
   @Audit({
     action: 'KITCHEN_TICKET_ACKNOWLEDGED',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('kitchenTicketId'),
   })
@@ -74,6 +75,7 @@ export class KitchenFulfillmentController {
   @Post(':kitchenTicketId/prepare')
   @Audit({
     action: 'KITCHEN_TICKET_PREPARATION_STARTED',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('kitchenTicketId'),
   })
@@ -92,6 +94,7 @@ export class KitchenFulfillmentController {
   @Post(':kitchenTicketId/for-checking')
   @Audit({
     action: 'KITCHEN_TICKET_SENT_FOR_CHECKING',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('kitchenTicketId'),
   })
@@ -110,6 +113,7 @@ export class KitchenFulfillmentController {
   @Post(':kitchenTicketId/check')
   @Audit({
     action: 'KITCHEN_TICKET_CHECK_STARTED',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('kitchenTicketId'),
   })
@@ -134,6 +138,7 @@ export class KitchenFulfillmentController {
   @Post('qc-attempts/:attemptId/pass')
   @Audit({
     action: 'KITCHEN_QC_PASSED',
+    snapshot: 'update',
     entity: 'kitchen_ticket_qc_attempts',
     id: fromParam('attemptId'),
   })
@@ -158,6 +163,7 @@ export class KitchenFulfillmentController {
   @Post('qc-attempts/:attemptId/reject')
   @Audit({
     action: 'KITCHEN_QC_REJECTED',
+    snapshot: 'update',
     entity: 'kitchen_ticket_qc_attempts',
     id: fromParam('attemptId'),
   })
@@ -184,6 +190,7 @@ export class KitchenFulfillmentController {
   @Post(':kitchenTicketId/hand-over')
   @Audit({
     action: 'KITCHEN_TICKET_HANDED_OVER',
+    snapshot: 'update',
     entity: 'kitchen_tickets',
     id: fromParam('kitchenTicketId'),
   })
@@ -225,6 +232,7 @@ export class KitchenFulfillmentController {
   // Same action as the draft cancel so one filter finds every cancellation.
   @Audit({
     action: 'ORDER_CANCELLED',
+    snapshot: 'update',
     entity: 'orders',
     id: fromParam('orderId'),
   })

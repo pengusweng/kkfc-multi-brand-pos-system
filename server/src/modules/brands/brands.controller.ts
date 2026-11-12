@@ -53,6 +53,7 @@ export class BrandsController {
   @Post()
   @Audit({
     action: 'BRAND_CREATED',
+    snapshot: 'create',
     entity: 'brands',
     id: fromResult('brand_id'),
   })
@@ -96,6 +97,7 @@ export class BrandsController {
   @Patch(':brandId')
   @Audit({
     action: 'BRAND_UPDATED',
+    snapshot: 'update',
     entity: 'brands',
     id: fromParam('brandId'),
   })
@@ -127,6 +129,7 @@ export class BrandsController {
   @Delete(':brandId')
   @Audit({
     action: 'BRAND_DEACTIVATED',
+    snapshot: 'update',
     entity: 'brands',
     id: fromParam('brandId'),
   })

@@ -65,6 +65,7 @@ export class MenuItemsController {
   @Post()
   @Audit({
     action: 'MENU_ITEM_CREATED',
+    snapshot: 'create',
     entity: 'menu_items',
     id: fromResult('menu_item_id'),
   })
@@ -121,6 +122,7 @@ export class MenuItemsController {
   @Patch(':id')
   @Audit({
     action: 'MENU_ITEM_UPDATED',
+    snapshot: 'update',
     entity: 'menu_items',
     id: fromParam('id'),
   })
@@ -151,6 +153,7 @@ export class MenuItemsController {
   @Patch('availability/:id')
   @Audit({
     action: 'MENU_ITEM_AVAILABILITY_CHANGED',
+    snapshot: 'update',
     entity: 'menu_items',
     id: fromParam('id'),
   })
@@ -174,6 +177,7 @@ export class MenuItemsController {
   @Patch('reactivate/:id')
   @Audit({
     action: 'MENU_ITEM_REACTIVATED',
+    snapshot: 'update',
     entity: 'menu_items',
     id: fromParam('id'),
   })
@@ -186,6 +190,7 @@ export class MenuItemsController {
   @Delete(':id')
   @Audit({
     action: 'MENU_ITEM_DEACTIVATED',
+    snapshot: 'update',
     entity: 'menu_items',
     id: fromParam('id'),
   })

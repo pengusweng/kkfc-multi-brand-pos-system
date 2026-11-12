@@ -47,6 +47,7 @@ export class ModifiersController {
   @Post()
   @Audit({
     action: 'MODIFIER_CREATED',
+    snapshot: 'create',
     entity: 'modifiers',
     id: fromResult('modifier_id'),
   })
@@ -73,6 +74,7 @@ export class ModifiersController {
   @Patch(':id')
   @Audit({
     action: 'MODIFIER_UPDATED',
+    snapshot: 'update',
     entity: 'modifiers',
     id: fromParam('id'),
   })
@@ -87,6 +89,7 @@ export class ModifiersController {
   @Patch('reactivate/:id')
   @Audit({
     action: 'MODIFIER_REACTIVATED',
+    snapshot: 'update',
     entity: 'modifiers',
     id: fromParam('id'),
   })
@@ -98,6 +101,7 @@ export class ModifiersController {
   @Delete(':id')
   @Audit({
     action: 'MODIFIER_DEACTIVATED',
+    snapshot: 'update',
     entity: 'modifiers',
     id: fromParam('id'),
   })

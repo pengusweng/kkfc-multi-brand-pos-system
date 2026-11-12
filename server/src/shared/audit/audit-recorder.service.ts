@@ -3,7 +3,24 @@ import { AuditOutcome } from '@prisma/client';
 import { isUUID } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuditableRequest } from './audit.decorator';
+import {
+  type AuditSnapshot,
+  SNAPSHOT_CONFIGS,
+  toSnapshotJson,
+} from './audit-snapshots';
 import { logAudit } from './log-audit';
+
+export type AuditSnapshots = {
+  before: AuditSnapshot | null;
+  after: AuditSnapshot | null;
+};
+
+type SnapshotDelegate = {
+  findUnique(args: {
+    where: Record<string, string>;
+    select: Record<string, true>;
+  }): Promise<Record<string, unknown> | null>;
+};
 
 const CODE_PATTERN = /^[A-Z0-9_]{1,100}$/;
 
@@ -51,8 +68,40 @@ export class AuditRecorder {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async recordSuccess(request: AuditableRequest, result: unknown) {
-    await this.write(request, AuditOutcome.SUCCESS, null, result);
+  async recordSuccess(
+    request: AuditableRequest,
+    result: unknown,
+    snapshots?: AuditSnapshots,
+  ) {
+    await this.write(request, AuditOutcome.SUCCESS, null, result, snapshots);
+  }
+
+  /**
+   * Reads the allowlisted columns of one record. Returns null when the entity
+   * has no allowlist, the ID is not a UUID, the row is missing or the read
+   * fails; it never throws.
+   */
+  async loadSnapshot(
+    entity: string,
+    id: unknown,
+  ): Promise<AuditSnapshot | null> {
+    const config = SNAPSHOT_CONFIGS[entity];
+    const uuid = uuidOrNull(id);
+    if (!config || !uuid) return null;
+
+    try {
+      const delegate = this.prisma[config.model] as unknown as SnapshotDelegate;
+      const row = await delegate.findUnique({
+        where: { [config.key]: uuid },
+        select: Object.fromEntries(
+          config.fields.map((field) => [field, true as const]),
+        ),
+      });
+      return row ? toSnapshotJson(row) : null;
+    } catch {
+      this.logger.error(`Failed to load ${entity} audit snapshot.`);
+      return null;
+    }
   }
 
   async recordFailure(request: AuditableRequest, exception: unknown) {
@@ -68,6 +117,7 @@ export class AuditRecorder {
     outcome: AuditOutcome,
     reason: string | null,
     result: unknown,
+    snapshots?: AuditSnapshots,
   ) {
     const audit = request.audit;
     if (!audit) return;
@@ -85,6 +135,8 @@ export class AuditRecorder {
         outcome,
         reason,
         request_id: request.auditRequestId ?? null,
+        before_data: snapshots?.before ?? null,
+        after_data: snapshots?.after ?? null,
       });
     } catch {
       // Constant message: no request data or raw error details in the logs.

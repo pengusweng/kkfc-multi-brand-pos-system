@@ -256,4 +256,26 @@ describe('Menu audit logging', () => {
       }),
     ]);
   });
+
+  it('IT-MENU-004: Given an available menu item, When it is marked unavailable, Then store is_available true before and false after', async () => {
+    audit.findUnique
+      .mockResolvedValueOnce({ is_available: true, is_active: true })
+      .mockResolvedValueOnce({ is_available: false, is_active: true });
+
+    const response = await call(
+      'PATCH',
+      `/menu-items/availability/${routeId}`,
+      { availability: false },
+    );
+
+    expect(response.status).toBe(200);
+    expect(audit.rows()).toEqual([
+      expect.objectContaining({
+        action: 'MENU_ITEM_AVAILABILITY_CHANGED',
+        entity_id: routeId,
+        before_data: { is_available: true },
+        after_data: { is_available: false },
+      }),
+    ]);
+  });
 });
