@@ -1,8 +1,7 @@
 import { cn } from "cn";
 import { RailTransition, WordmarkTransition } from "@/src/components/layout/shared-transitions";
 import { Logo } from "@/src/components/ui/atoms/logo";
-
-const BRANDS = ["Gamcheon", "Aurelia's Inasal", "King Kung's Kafé"];
+import BrandMarquee from "./brand-marquee";
 
 const LINES = [
   "M-30 566C99 468 169 485 251 435S365 277 410 177S448 93 480 50",
@@ -17,7 +16,8 @@ export default function LoginSide({ className }: { className?: string }) {
     <aside
       aria-label="KitchenFlow Web Management"
       className={cn(
-        "relative isolate flex flex-col gap-4 overflow-hidden bg-rail px-6 py-5 text-white sm:px-8 lg:justify-between lg:gap-0 lg:py-12",
+        // --rail-pad is the side padding; the marquee reads it to bleed to the rail's edges.
+        "relative isolate flex flex-col gap-4 overflow-hidden bg-rail px-(--rail-pad) py-5 text-white [--rail-pad:1.5rem] sm:[--rail-pad:2rem] lg:justify-between lg:gap-0 lg:py-12",
         className,
       )}
     >
@@ -28,7 +28,7 @@ export default function LoginSide({ className }: { className?: string }) {
         fill="none"
         stroke="currentColor"
         strokeWidth="1"
-        className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-full w-1/2 text-primary opacity-50 lg:inset-y-auto lg:top-1/2 lg:h-72 lg:w-full lg:-translate-y-1/2 lg:opacity-70 lg:[mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)]"
+        className="pointer-events-none absolute right-0 -z-10 hidden w-full text-primary opacity-70 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] lg:top-1/2 lg:block lg:h-72 lg:-translate-y-1/2"
       >
         {LINES.map((d, index) => (
           <path
@@ -52,17 +52,10 @@ export default function LoginSide({ className }: { className?: string }) {
         <p className="text-base text-rail-muted lg:mt-3 lg:text-lg">Web Management</p>
       </div>
 
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-rail-muted lg:block lg:text-base lg:text-white">
-        {BRANDS.map((brand, index) => (
-          <li
-            key={brand}
-            className="motion-safe:animate-rise lg:border-t lg:border-rail-line lg:py-4 lg:last:pb-0"
-            style={{ animationDelay: `${300 + index * 80}ms` }}
-          >
-            {brand}
-          </li>
-        ))}
-      </ul>
+      {/* Full bleed: the logos fade out at the rail's own edges, not inside its padding. */}
+      <div className="mx-[calc(var(--rail-pad)*-1)] motion-safe:animate-rise" style={{ animationDelay: "300ms" }}>
+        <BrandMarquee />
+      </div>
     </aside>
     </RailTransition>
   );

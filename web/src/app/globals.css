@@ -72,6 +72,8 @@
   --animate-rise: rise 0.9s var(--ease-out-expo) both;
   --animate-page-in: rise 0.45s var(--ease-out-expo) both;
   --animate-draw: draw 2.2s var(--ease-out-expo) both;
+  /* The login rail's brand logos, drifting left to right on a seamless loop. */
+  --animate-brand-marquee: brand-marquee 36s linear infinite;
 
   @keyframes rise {
     from {
@@ -84,6 +86,12 @@
   @keyframes draw {
     from {
       stroke-dashoffset: 1;
+    }
+  }
+
+  @keyframes brand-marquee {
+    from {
+      transform: translateX(-50%);
     }
   }
 }
