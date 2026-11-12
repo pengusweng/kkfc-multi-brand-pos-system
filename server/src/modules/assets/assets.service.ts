@@ -101,7 +101,9 @@ export class AssetsService {
 
   private logStorageError(action: string, error: unknown) {
     const detail =
-      error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
     this.logger.error(`Asset ${action} failed: ${detail}`);
   }
 
