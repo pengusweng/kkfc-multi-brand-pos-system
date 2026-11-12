@@ -8,7 +8,6 @@ import { AUDIT_KEY, NO_AUDIT_KEY } from '../audit.decorator';
  * its rollout step lands; when this is empty every action endpoint is covered.
  */
 const PENDING = new Set<string>([
-  'OrdersController', // orders
   'KitchenTicketController', // kitchen
   'KitchenFulfillmentController', // kitchen
   'MenuCatalogController', // menu

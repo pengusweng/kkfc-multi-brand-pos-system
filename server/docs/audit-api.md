@@ -138,3 +138,8 @@ Actions are added module by module as auditing is rolled out.
 | `BRAND_CREATED` | `brands` | `POST /api/brands`. Entity is the new brand. A duplicate code is `FAILED` (`DUPLICATE_RESOURCE`). |
 | `BRAND_UPDATED` | `brands` | `PATCH /api/brands/:brandId`. |
 | `BRAND_DEACTIVATED` | `brands` | `DELETE /api/brands/:brandId` (soft delete: sets `is_active` to false). |
+| `ORDER_CREATED` | `orders` | `POST /api/brands/:brandId/orders`. Entity is the new order. An idempotent retry of the same request returns the existing order and writes another `SUCCESS` row for it. A duplicate platform order is `FAILED` (`DUPLICATE_PLATFORM_ORDER`). |
+| `ORDER_CONFIRMED` | `orders` | `POST /api/brands/:brandId/orders/:orderId/confirm`. Confirming also creates the order's kitchen ticket; kitchen actions are audited separately. |
+| `ORDER_CANCELLED` | `orders` | `POST /api/brands/:brandId/orders/:orderId/cancel` (draft orders). Cancelling an already cancelled draft also succeeds and writes another `SUCCESS` row. |
+
+`POST /api/brands/:brandId/orders/:orderId/verify` is not audited: it only checks prices and availability and writes nothing.
