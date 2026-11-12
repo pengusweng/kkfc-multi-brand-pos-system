@@ -79,8 +79,6 @@ describe('Audit list HTTP API', () => {
         entity_id: true,
         outcome: true,
         reason: true,
-        before_data: true,
-        after_data: true,
         request_id: true,
         created_at: true,
       },
