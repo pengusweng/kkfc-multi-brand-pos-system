@@ -25,6 +25,24 @@ Feature: Global brand administration without employee assignments
     When a brand is deactivated
     Then leave employees active
 
+  @UT-BRND-031
+  Scenario: Cascades deactivation to the brand's menu items and recipes
+    Given an active brand with menu items and recipes
+    When it is deactivated
+    Then deactivate its active menu items and recipes at the same timestamp and leave orders unchanged
+
+  @UT-BRND-032
+  Scenario: Skips the cascade when the brand is missing or already inactive
+    Given a missing or already inactive brand
+    When deactivation loses its write
+    Then propagate P2025 without cascading
+
+  @UT-BRND-033
+  Scenario: Propagates a failed cascade step so the transaction rolls back
+    Given a failing cascade step
+    When a brand is deactivated
+    Then propagate the error so the transaction rolls back
+
   @UT-BRND-022
   Scenario: Queries only active brands by default
     Given a default lookup

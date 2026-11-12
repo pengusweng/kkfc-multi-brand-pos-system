@@ -62,12 +62,18 @@ describe('BrandsService', () => {
         update: jest.fn(),
       },
       user: { updateMany: jest.fn() },
+      menuItem: { updateMany: jest.fn() },
+      recipe: { updateMany: jest.fn() },
+      order: { updateMany: jest.fn() },
     };
     let repository: BrandsRepository;
 
     beforeEach(() => {
       for (const method of Object.values(tx.brand)) method.mockReset();
       tx.user.updateMany.mockReset().mockResolvedValue({ count: 1 });
+      tx.menuItem.updateMany.mockReset().mockResolvedValue({ count: 2 });
+      tx.recipe.updateMany.mockReset().mockResolvedValue({ count: 2 });
+      tx.order.updateMany.mockReset();
       repository = new BrandsRepository({
         ...tx,
         $transaction: (run: (client: typeof tx) => Promise<unknown>) => run(tx),
@@ -127,6 +133,54 @@ describe('BrandsService', () => {
       ).resolves.toMatchObject({ is_active: false });
       expect(tx.user.updateMany).not.toHaveBeenCalled();
     });
+
+    it('UT-BRND-031: Given an active brand with menu items and recipes, When it is deactivated, Then deactivate its active menu items and recipes at the same timestamp and leave orders unchanged', async () => {
+      tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
+      await expect(
+        repository.deleteBrand(brand.brand_id),
+      ).resolves.toMatchObject({ is_active: false });
+
+      const cascade = {
+        where: { brand_id: brand.brand_id, is_active: true },
+        data: { is_active: false, modified_at: expect.any(Date) as Date },
+      };
+      expect(tx.brand.update).toHaveBeenCalledWith(cascade);
+      expect(tx.menuItem.updateMany).toHaveBeenCalledWith(cascade);
+      expect(tx.recipe.updateMany).toHaveBeenCalledWith(cascade);
+
+      const [[{ data: brandData }]] = tx.brand.update.mock.calls as [
+        [{ data: { modified_at: Date } }],
+      ];
+      const [[{ data: menuItemData }]] = tx.menuItem.updateMany.mock.calls as [
+        [{ data: { modified_at: Date } }],
+      ];
+      const [[{ data: recipeData }]] = tx.recipe.updateMany.mock.calls as [
+        [{ data: { modified_at: Date } }],
+      ];
+      expect(menuItemData.modified_at).toBe(brandData.modified_at);
+      expect(recipeData.modified_at).toBe(brandData.modified_at);
+      expect(tx.order.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('UT-BRND-032: Given a missing or already inactive brand, When deactivation loses its write, Then propagate P2025 without cascading', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'No matching brand',
+        { code: 'P2025', clientVersion: '7.8.0' },
+      );
+      tx.brand.update.mockRejectedValue(error);
+      await expect(repository.deleteBrand(brand.brand_id)).rejects.toBe(error);
+      expect(tx.menuItem.updateMany).not.toHaveBeenCalled();
+      expect(tx.recipe.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('UT-BRND-033: Given a failing cascade step, When a brand is deactivated, Then propagate the error so the transaction rolls back', async () => {
+      const error = new Error('Menu item cascade failed');
+      tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
+      tx.menuItem.updateMany.mockRejectedValue(error);
+      await expect(repository.deleteBrand(brand.brand_id)).rejects.toBe(error);
+      expect(tx.recipe.updateMany).not.toHaveBeenCalled();
+    });
+
     it('UT-BRND-022: Given a default lookup, When a brand is retrieved, Then query only active brands', async () => {
       tx.brand.findUnique.mockResolvedValue(null);
       await expect(
