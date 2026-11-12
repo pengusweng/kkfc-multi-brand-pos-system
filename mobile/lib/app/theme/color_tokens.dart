@@ -309,6 +309,19 @@ abstract final class KkfcColors {
   static const Color statusReadyFg = success;
   static const Color statusReadySolid = successSolid;
   static const Color statusReadyCardBorder = successBorder;
+
+  // --- Availability tokens ---
+  /// Status text color for unavailable menu item on availability cards (#8C3A27)
+  static const Color availabilityUnavailableText = Color(0xFF8C3A27);
+
+  /// Warning badge fill on availability confirmation dialog (#FEF3C7)
+  static const Color availabilityWarningBg = Color(0xFFFEF3C7);
+
+  /// Warning badge icon color on availability confirmation dialog (#8A6D1C)
+  static const Color availabilityWarningIcon = Color(0xFF8A6D1C);
+
+  /// Subtle gold card border on availability confirmation dialog (#EAC775)
+  static const Color availabilityCardBorder = Color(0xFFEAC775);
 }
 
 /// Representation of a verified WCAG 2.2 AA contrast pair.

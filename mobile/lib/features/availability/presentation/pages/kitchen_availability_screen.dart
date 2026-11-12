@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
-import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/availability/presentation/widgets/availability_item_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/choose_menu_modal.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/current_menu_card.dart';
@@ -22,15 +23,17 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 /// - Search bar mirroring menu_screen.dart's CatalogSearchBar.
 /// - Category filter pills omitted.
 /// - Item cards displaying name, category · brand, and availability status.
-/// - Static 'Change' button on each item card.
+/// - Interactive 'Change' button opening confirmation dialog to toggle availability.
 /// - 'Kitchen Board' button navigating back to the kitchen board.
 class KitchenAvailabilityScreen extends ConsumerStatefulWidget {
   const KitchenAvailabilityScreen({
     super.key,
     this.showLogout = true,
+    this.onUpdateAvailability,
   });
 
   final bool showLogout;
+  final Future<void> Function(bool availability)? onUpdateAvailability;
 
   static String _roleLabelFor(UserRole? role) => switch (role) {
     UserRole.kitchenStaff => 'Kitchen Staff',
@@ -56,14 +59,6 @@ class _KitchenAvailabilityScreenState
     });
   }
 
-  static String _labelForAvailability(MenuAvailability availability) =>
-      switch (availability) {
-        MenuAvailability.available => 'Available',
-        MenuAvailability.stockout => 'Out of stock',
-        MenuAvailability.manualOff => 'Unavailable',
-        MenuAvailability.inactive => 'Inactive',
-      };
-
   @override
   Widget build(BuildContext context) {
     final activeBrand = ref.watch(activeBrandProvider);
@@ -75,7 +70,7 @@ class _KitchenAvailabilityScreenState
 
     return KkfcScaffold(
       body: ColoredBox(
-        color: const Color(0xFFF7F5EE),
+        color: KkfcColors.canvas,
         child: Column(
           children: [
             // Top App Bar reflecting kitchen board's app bar with title 'Availability'
@@ -88,7 +83,12 @@ class _KitchenAvailabilityScreenState
             // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 24.0),
+                padding: const EdgeInsets.fromLTRB(
+                  KkfcSpace.s16,
+                  KkfcSpace.s16,
+                  KkfcSpace.s16,
+                  KkfcSpace.s24,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 820.0),
@@ -117,30 +117,35 @@ class _KitchenAvailabilityScreenState
                             }
                           },
                         ),
-                        const SizedBox(height: 12.0),
+                        const SizedBox(height: KkfcSpace.s12),
 
                         // 2. Search Bar mirroring menu_screen.dart's search bar
                         const CatalogSearchBar(),
-                        const SizedBox(height: 16.0),
+                        const SizedBox(height: KkfcSpace.s16),
 
                         // 3. Menu Item Cards List
                         visibleItemsAsync.when(
                           loading: () => const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40.0),
+                            padding: EdgeInsets.symmetric(
+                              vertical: KkfcSpace.s40,
+                            ),
                             child: Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                color: Color(0xFF19293E),
+                                color: KkfcColors.ink,
                               ),
                             ),
                           ),
                           error: (error, _) => Container(
-                            padding: const EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(KkfcSpace.s20),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10.0),
+                              color: KkfcColors.surface,
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.md,
+                              ),
                               border: Border.all(
-                                color: const Color(0xFFDDD6C9),
+                                color: KkfcColors.border,
+                                width: KkfcBorderWidth.thin,
                               ),
                             ),
                             child: Column(
@@ -148,19 +153,19 @@ class _KitchenAvailabilityScreenState
                                 const Icon(
                                   Icons.wifi_off_rounded,
                                   size: 36.0,
-                                  color: Color(0xFF76849A),
+                                  color: KkfcColors.borderStrong,
                                 ),
-                                const SizedBox(height: 8.0),
+                                const SizedBox(height: KkfcSpace.s8),
                                 const Text(
                                   "Couldn't load menu items",
                                   style: TextStyle(
                                     fontFamily: KkfcFonts.ibmPlexSans,
                                     fontSize: 15.0,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF19293E),
+                                    color: KkfcColors.ink,
                                   ),
                                 ),
-                                const SizedBox(height: 8.0),
+                                const SizedBox(height: KkfcSpace.s8),
                                 TextButton(
                                   onPressed: () =>
                                       ref.invalidate(menuItemsProvider),
@@ -179,14 +184,17 @@ class _KitchenAvailabilityScreenState
                                   ref.watch(hideUnavailableProvider);
                               return Container(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 48.0,
-                                  horizontal: 16.0,
+                                  vertical: KkfcSpace.s48,
+                                  horizontal: KkfcSpace.s16,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10.0),
+                                  color: KkfcColors.surface,
+                                  borderRadius: BorderRadius.circular(
+                                    KkfcRadius.md,
+                                  ),
                                   border: Border.all(
-                                    color: const Color(0xFFDDD6C9),
+                                    color: KkfcColors.border,
+                                    width: KkfcBorderWidth.thin,
                                   ),
                                 ),
                                 child: Column(
@@ -194,9 +202,9 @@ class _KitchenAvailabilityScreenState
                                     const Icon(
                                       Icons.search_off_rounded,
                                       size: 36.0,
-                                      color: Color(0xFF76849A),
+                                      color: KkfcColors.borderStrong,
                                     ),
-                                    const SizedBox(height: 10.0),
+                                    const SizedBox(height: KkfcSpace.s8),
                                     Text(
                                       isSearching || isHidingUnavailable
                                           ? 'No items matching search'
@@ -205,7 +213,7 @@ class _KitchenAvailabilityScreenState
                                         fontFamily: KkfcFonts.ibmPlexSans,
                                         fontSize: 14.5,
                                         fontWeight: FontWeight.w500,
-                                        color: Color(0xFF586579),
+                                        color: KkfcColors.ink3,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -217,16 +225,18 @@ class _KitchenAvailabilityScreenState
                             return Column(
                               children: [
                                 for (final item in items)
-                                  _buildItemCard(
+                                  AvailabilityItemCard(
                                     item: item,
                                     brandName: activeBrand.name,
                                     channel: selectedChannel,
+                                    onUpdateAvailability:
+                                        widget.onUpdateAvailability,
                                   ),
                               ],
                             );
                           },
                         ),
-                        const SizedBox(height: 24.0),
+                        const SizedBox(height: KkfcSpace.s24),
 
                         // 4. Kitchen Board Navigation Button
                         Align(
@@ -251,10 +261,10 @@ class _KitchenAvailabilityScreenState
                               }
                             },
                             style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.white,
+                              backgroundColor: KkfcColors.surface,
                               side: const BorderSide(
-                                color: Color(0xFF586579),
-                                width: 1.0,
+                                color: KkfcColors.ink3,
+                                width: KkfcBorderWidth.thin,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8.0),
@@ -270,7 +280,7 @@ class _KitchenAvailabilityScreenState
                                 fontFamily: KkfcFonts.ibmPlexSans,
                                 fontSize: 15.0,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF19293E),
+                                color: KkfcColors.ink,
                               ),
                             ),
                           ),
@@ -283,105 +293,6 @@ class _KitchenAvailabilityScreenState
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildItemCard({
-    required MenuItem item,
-    required String brandName,
-    required MenuChannel channel,
-  }) {
-    final availability = item.availabilityFor(channel);
-    final statusLabel = _labelForAvailability(availability);
-    final isAvailable = availability == MenuAvailability.available;
-    final categoryText = (item.category != null && item.category!.isNotEmpty)
-        ? item.category!
-        : 'Rice bowl';
-
-    return Container(
-      key: ValueKey('availability-item-card-${item.id}'),
-      margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.0),
-        border: Border.all(
-          color: const Color(0xFFDDD6C9),
-          width: 1.0,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontFamily: KkfcFonts.ibmPlexSans,
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF19293E),
-                  ),
-                ),
-                const SizedBox(height: 4.0),
-                Text(
-                  '$categoryText · $brandName',
-                  style: const TextStyle(
-                    fontFamily: KkfcFonts.ibmPlexSans,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF586579),
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                Text(
-                  statusLabel,
-                  style: TextStyle(
-                    fontFamily: KkfcFonts.ibmPlexSans,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: isAvailable
-                        ? const Color(0xFF19293E)
-                        : const Color(0xFF8C3A27),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12.0),
-          OutlinedButton(
-            key: ValueKey('availability-change-button-${item.id}'),
-            onPressed: () {}, // Static first as requested
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              side: const BorderSide(
-                color: Color(0xFF586579),
-                width: 1.0,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 22.0,
-                vertical: 10.0,
-              ),
-            ),
-            child: const Text(
-              'Change',
-              style: TextStyle(
-                fontFamily: KkfcFonts.ibmPlexSans,
-                fontSize: 14.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF19293E),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

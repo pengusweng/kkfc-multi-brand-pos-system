@@ -6,6 +6,7 @@ import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/availability/presentation/pages/kitchen_availability_screen.dart';
+import 'package:mobile/features/availability/presentation/widgets/change_availability_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/kitchen_board_toolbar.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
@@ -50,6 +51,7 @@ void main() {
   Widget buildAvailabilityTestWidget({
     UserRole userRole = UserRole.kitchenStaff,
     List<MenuItem>? menuItems,
+    Future<void> Function(bool availability)? onUpdateAvailability,
   }) {
     return ProviderScope(
       overrides: [
@@ -61,7 +63,9 @@ void main() {
       ],
       child: MaterialApp(
         theme: counterTheme,
-        home: const KitchenAvailabilityScreen(),
+        home: KitchenAvailabilityScreen(
+          onUpdateAvailability: onUpdateAvailability,
+        ),
       ),
     );
   }
@@ -277,5 +281,64 @@ void main() {
       expect(find.byType(KitchenAvailabilityScreen), findsNothing);
       expect(popped, isTrue);
     });
+
+    testWidgets('tapping Change on item card opens ChangeAvailabilityDialog', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildAvailabilityTestWidget());
+      await tester.pumpAndSettle();
+
+      final changeButton = find.byKey(
+        const ValueKey('availability-change-button-gamcheon-samgyupsal'),
+      );
+      expect(changeButton, findsOneWidget);
+
+      await tester.tap(changeButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ChangeAvailabilityDialog), findsOneWidget);
+      expect(find.text('Make item unavailable?'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ChangeAvailabilityDialog),
+          matching: find.text('Gamcheon Samgyupsal Rice Bowl'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'confirming ChangeAvailabilityDialog triggers onUpdateAvailability and displays success toast',
+      (tester) async {
+        bool? updatedTo;
+        await tester.pumpWidget(
+          buildAvailabilityTestWidget(
+            onUpdateAvailability: (avail) async {
+              updatedTo = avail;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final changeButton = find.byKey(
+          const ValueKey('availability-change-button-gamcheon-samgyupsal'),
+        );
+        await tester.tap(changeButton);
+        await tester.pumpAndSettle();
+
+        final submitButton = find.byKey(
+          const ValueKey('change-availability-submit-button'),
+        );
+        await tester.tap(submitButton);
+        await tester.pumpAndSettle();
+
+        expect(updatedTo, isFalse);
+        expect(find.byType(ChangeAvailabilityDialog), findsNothing);
+        expect(
+          find.text('Gamcheon Samgyupsal Rice Bowl marked as unavailable'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
