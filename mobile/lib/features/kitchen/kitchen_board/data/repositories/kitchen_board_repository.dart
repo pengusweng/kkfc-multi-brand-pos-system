@@ -273,8 +273,7 @@ class KitchenBoardRepository {
     String? attemptId,
     String? checkerId,
   }) async {
-    final inProgressAttemptId =
-        await fetchLatestQcAttemptId(kitchenTicketId);
+    final inProgressAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
 
     var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
@@ -317,8 +316,7 @@ class KitchenBoardRepository {
     List<String>? orderItemIds,
     List<Map<String, dynamic>>? rejections,
   }) async {
-    final inProgressAttemptId =
-        await fetchLatestQcAttemptId(kitchenTicketId);
+    final inProgressAttemptId = await fetchLatestQcAttemptId(kitchenTicketId);
 
     var resolvedAttemptId = inProgressAttemptId;
     if (resolvedAttemptId == null || resolvedAttemptId.isEmpty) {
@@ -334,11 +332,13 @@ class KitchenBoardRepository {
         .toList();
 
     // If no orderItemIds were provided and rejections need resolution, query the ticket.
-    final needsItemIds = effectiveItemIds == null ||
+    final needsItemIds =
+        effectiveItemIds == null ||
         effectiveItemIds.isEmpty ||
         (rejections != null &&
-            rejections.any((r) =>
-                (r['order_item_id'] as String?)?.trim().isEmpty ?? true));
+            rejections.any(
+              (r) => (r['order_item_id'] as String?)?.trim().isEmpty ?? true,
+            ));
 
     if (needsItemIds) {
       try {
@@ -491,7 +491,9 @@ class KitchenBoardRepository {
   }) async {
     try {
       await _dio.post<Object?>(
-        _endpoint('/kitchen-fulfillment/brands/$brandId/orders/$orderId/cancel'),
+        _endpoint(
+          '/kitchen-fulfillment/brands/$brandId/orders/$orderId/cancel',
+        ),
         data: {'cancellation_reason': reason.trim()},
       );
     } on DioException catch (error) {
@@ -500,6 +502,28 @@ class KitchenBoardRepository {
         statusCode: error.response?.statusCode,
       );
     }
+  }
+
+  /// Fetches an order by [brandId] and [orderId] via
+  /// `GET /api/brands/{brandId}/orders/{orderId}`.
+  Future<Map<String, dynamic>?> fetchOrder({
+    required String brandId,
+    required String orderId,
+  }) async {
+    try {
+      final response = await _dio.get<Object?>(
+        _endpoint('/brands/$brandId/orders/$orderId'),
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      } else if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+    } catch (_) {
+      // Fallback: return null if order fetch fails or unauthorized
+    }
+    return null;
   }
 
   List<Object?> _extractTicketList(Object? body) {

@@ -76,7 +76,8 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
   final List<String> passedQcAttemptIds = [];
   final List<String> rejectedQcAttemptIds = [];
   final List<String> handedOverTicketIds = [];
-  final List<({String brandId, String orderId, String reason})> cancelledTickets = [];
+  final List<({String brandId, String orderId, String reason})>
+  cancelledTickets = [];
   final List<
     ({String attemptId, String reason, List<Map<String, dynamic>> rejections})
   >
@@ -175,24 +176,24 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     final finalRejections = (rejections != null && rejections.isNotEmpty)
         ? rejections
         : (orderItemIds != null && orderItemIds.isNotEmpty)
-            ? orderItemIds
-                .map(
-                  (id) => {
-                    'order_item_id': id,
-                    'portion_number': 1,
-                    'rejection_reason': 'INCOMPLETE',
-                    'description': reason,
-                  },
-                )
-                .toList()
-            : [
-                {
-                  'order_item_id': kitchenTicketId,
+        ? orderItemIds
+              .map(
+                (id) => {
+                  'order_item_id': id,
                   'portion_number': 1,
                   'rejection_reason': 'INCOMPLETE',
                   'description': reason,
                 },
-              ];
+              )
+              .toList()
+        : [
+            {
+              'order_item_id': kitchenTicketId,
+              'portion_number': 1,
+              'rejection_reason': 'INCOMPLETE',
+              'description': reason,
+            },
+          ];
     await rejectQcAttempt(targetAttempt, rejections: finalRejections);
   }
 
@@ -424,55 +425,46 @@ void main() {
       );
     });
 
-    test(
-      'passQcForTicket starts a new check attempt when latest attempt is FAILED',
-      () async {
-        const ticketId = '00000000-0000-4000-8000-000000000015';
-        const newAttemptId = '00000000-0000-4000-8000-000000000022';
-        final adapter = _RecordingAdapter((options) async {
-          if (options.path.endsWith('/latest')) {
-            return _jsonResponse({
-              'qc_attempt_id': 'old-failed-attempt',
-              'status': 'FAILED',
-            });
-          }
-          if (options.path.endsWith('/check')) {
-            return _jsonResponse({
-              'attempt': {
-                'qc_attempt_id': newAttemptId,
-                'status': 'IN_PROGRESS',
-              },
-            });
-          }
-          if (options.path.endsWith('/pass')) {
-            return _jsonResponse({
-              'qc_attempt_id': newAttemptId,
-              'status': 'PASSED',
-            });
-          }
-          return _jsonResponse({});
-        });
+    test('passQcForTicket starts a new check attempt when latest attempt is FAILED', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000015';
+      const newAttemptId = '00000000-0000-4000-8000-000000000022';
+      final adapter = _RecordingAdapter((options) async {
+        if (options.path.endsWith('/latest')) {
+          return _jsonResponse({
+            'qc_attempt_id': 'old-failed-attempt',
+            'status': 'FAILED',
+          });
+        }
+        if (options.path.endsWith('/check')) {
+          return _jsonResponse({
+            'attempt': {'qc_attempt_id': newAttemptId, 'status': 'IN_PROGRESS'},
+          });
+        }
+        if (options.path.endsWith('/pass')) {
+          return _jsonResponse({
+            'qc_attempt_id': newAttemptId,
+            'status': 'PASSED',
+          });
+        }
+        return _jsonResponse({});
+      });
 
-        final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-          ..httpClientAdapter = adapter;
-        final repo = KitchenBoardRepository(dio);
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
 
-        await repo.passQcForTicket(kitchenTicketId: ticketId);
+      await repo.passQcForTicket(kitchenTicketId: ticketId);
 
-        final checkRequest = adapter.requests.firstWhere(
-          (r) => r.uri.path.endsWith('/check'),
-        );
-        expect(checkRequest.method, 'POST');
+      final checkRequest = adapter.requests.firstWhere(
+        (r) => r.uri.path.endsWith('/check'),
+      );
+      expect(checkRequest.method, 'POST');
 
-        final passRequest = adapter.requests.firstWhere(
-          (r) => r.uri.path.endsWith('/pass'),
-        );
-        expect(
-          passRequest.uri.path,
-          endsWith('/qc-attempts/$newAttemptId/pass'),
-        );
-      },
-    );
+      final passRequest = adapter.requests.firstWhere(
+        (r) => r.uri.path.endsWith('/pass'),
+      );
+      expect(passRequest.uri.path, endsWith('/qc-attempts/$newAttemptId/pass'));
+    });
 
     test('handOverTicket sends POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over', () async {
       const ticketId = '00000000-0000-4000-8000-000000000014';
@@ -496,6 +488,108 @@ void main() {
         'http://localhost:3000/api/kitchen-fulfillment/$ticketId/hand-over',
       );
     });
+
+    test('fetchOrder sends GET /api/brands/{brandId}/orders/{orderId} and returns order data', () async {
+      const brandId = '00000000-0000-4000-8000-000000000001';
+      const orderId = '00000000-0000-4000-8000-000000000115';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'order_id': orderId,
+          'order_channel': 'DINE_IN',
+          'table_reference': 'Table 7',
+          'status': 'CONFIRMED',
+          'payment_status': 'PAID',
+        }),
+      );
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final order = await repo.fetchOrder(brandId: brandId, orderId: orderId);
+
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.first.method, 'GET');
+      expect(
+        adapter.requests.first.uri.toString(),
+        'http://localhost:3000/api/brands/$brandId/orders/$orderId',
+      );
+      expect(order, isNotNull);
+      expect(order!['order_channel'], 'DINE_IN');
+      expect(order['table_reference'], 'Table 7');
+    });
+  });
+
+  group('Order Channel & Kitchen Ticket', () {
+    test('tryFromApiJson parses channel and reference when order is passed instead of Takeaway fallback', () {
+      final ticket = KitchenBoardTicket.tryFromApiJson(
+        {
+          'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
+          'order_id': '00000000-0000-4000-8000-000000000115',
+          'order_code': 'AI-00015',
+          'ticket_number': 'T-015',
+          'status': 'PREPARING',
+        },
+        order: {'order_channel': 'DINE_IN', 'table_reference': 'Table 4'},
+      );
+
+      expect(ticket, isNotNull);
+      expect(ticket!.data.channel, 'Dine-in');
+      expect(ticket.data.reference, 'Table 4');
+    });
+
+    test('applyOrder passes order channel to kitchen ticket and updates display details', () {
+      final baseTicket = KitchenBoardTicket.tryFromApiJson({
+        'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
+        'order_id': '00000000-0000-4000-8000-000000000115',
+        'order_code': 'AI-00015',
+        'ticket_number': 'T-015',
+        'status': 'PREPARING',
+      })!;
+
+      // Initial ticket without order data falls back to Takeaway placeholder
+      expect(baseTicket.data.channel, 'Takeaway');
+
+      // Passing order data with GrabFood channel
+      final updatedTicket = baseTicket.applyOrder({
+        'order_channel': 'GRABFOOD',
+        'external_order_reference': 'GF-8849',
+        'payment_status': 'PAID',
+      });
+
+      expect(updatedTicket.data.channel, 'GrabFood');
+      expect(updatedTicket.data.reference, 'Ref GF-8849');
+      expect(updatedTicket.data.isDelivery, isTrue);
+    });
+
+    testWidgets(
+      'KitchenTicketCard displays order channel and chair icon for Dine-in order instead of Takeaway',
+      (tester) async {
+        final ticket = KitchenBoardTicket.tryFromApiJson(
+          {
+            'kitchen_ticket_id': '00000000-0000-4000-8000-000000000015',
+            'order_id': '00000000-0000-4000-8000-000000000115',
+            'order_code': 'AI-00015',
+            'ticket_number': 'T-015',
+            'status': 'PREPARING',
+          },
+          order: {'order_channel': 'DINE_IN', 'table_reference': 'Table 8'},
+        )!;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: kitchenTheme,
+            home: Scaffold(body: KitchenTicketCard.board(ticket: ticket.data)),
+          ),
+        );
+
+        // Verify that Dine-in · Table 8 is displayed instead of Takeaway
+        expect(find.text('Dine-in · Table 8'), findsOneWidget);
+        expect(find.text('Takeaway'), findsNothing);
+        expect(find.byIcon(Icons.chair_alt_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.shopping_bag_outlined), findsNothing);
+      },
+    );
   });
 
   group('KitchenBoardScreen & KitchenTicketStatusDialog UI', () {
@@ -1627,8 +1721,14 @@ void main() {
         expect(find.text('Fail QC and send to rework'), findsOneWidget);
         expect(find.text('Portion number'), findsOneWidget);
         expect(find.text('Reason'), findsOneWidget);
-        expect(find.byKey(const ValueKey('fail-qc-portion-field')), findsOneWidget);
-        expect(find.byKey(const ValueKey('fail-qc-reason-field')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('fail-qc-portion-field')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('fail-qc-reason-field')),
+          findsOneWidget,
+        );
 
         // 4. Click "Confirm QC failure" with empty reason -> shows error banner
         final confirmButton = find.byKey(
@@ -1664,7 +1764,10 @@ void main() {
 
         // 6. FailQcSendToReworkDialog is closed; item shows rejection note and Fail is selected
         expect(find.byType(FailQcSendToReworkDialog), findsNothing);
-        expect(find.text('Portion 2: under-cooked, missing sauce'), findsOneWidget);
+        expect(
+          find.text('Portion 2: under-cooked, missing sauce'),
+          findsOneWidget,
+        );
 
         // 7. Fail QC and rework button is now enabled
         final enabledFailQcButton = tester.widget<OutlinedButton>(
@@ -1673,7 +1776,9 @@ void main() {
         expect(enabledFailQcButton.onPressed, isNotNull);
 
         // 8. Clicking "Fail QC and rework" calls the API and moves ticket to rework
-        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-fail-qc-button')));
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-fail-qc-button')),
+        );
         await tester.pumpAndSettle();
 
         expect(repo.rejectedQcAttemptIds, contains('attempt-uuid-777'));
@@ -2341,8 +2446,14 @@ void main() {
         expect(find.byType(CancelKitchenTicketDialog), findsNothing);
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
         expect(repo.cancelledTickets.length, 1);
-        expect(repo.cancelledTickets.first.reason, 'Customer requested cancellation');
-        expect(repo.cancelledTickets.first.orderId, sampleKitchenBoardTickets.first.orderId);
+        expect(
+          repo.cancelledTickets.first.reason,
+          'Customer requested cancellation',
+        );
+        expect(
+          repo.cancelledTickets.first.orderId,
+          sampleKitchenBoardTickets.first.orderId,
+        );
         // Cancelled ticket is removed from the board
         expect(
           find.byKey(const ValueKey('kitchen-ticket-card-T-016')),
@@ -2375,13 +2486,17 @@ void main() {
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
         expect(
-          find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button')),
+          find.byKey(
+            const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+          ),
           findsNothing,
         );
         expect(find.text('Cancel ticket'), findsNothing);
 
         // Close popup
-        await tester.tap(find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')));
+        await tester.tap(
+          find.byKey(const ValueKey('kitchen-ticket-dialog-close-button')),
+        );
         await tester.pumpAndSettle();
 
         // 2. Kitchen Head: Cancel ticket button MUST exist
@@ -2392,7 +2507,9 @@ void main() {
 
         expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
         expect(
-          find.byKey(const ValueKey('kitchen-ticket-dialog-cancel-ticket-button')),
+          find.byKey(
+            const ValueKey('kitchen-ticket-dialog-cancel-ticket-button'),
+          ),
           findsOneWidget,
         );
         expect(find.text('Cancel ticket'), findsOneWidget);
@@ -2449,10 +2566,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.descendant(
-            of: reworkCard,
-            matching: find.text('Rework'),
-          ),
+          find.descendant(of: reworkCard, matching: find.text('Rework')),
           findsOneWidget,
         );
 
@@ -2460,14 +2574,18 @@ void main() {
         expect(
           find.descendant(
             of: reworkCard,
-            matching: find.byKey(const ValueKey('kitchen-ticket-qc-returned-box')),
+            matching: find.byKey(
+              const ValueKey('kitchen-ticket-qc-returned-box'),
+            ),
           ),
           findsOneWidget,
         );
         expect(
           find.descendant(
             of: reworkCard,
-            matching: find.textContaining('QC returned: Rice portion short; plate again'),
+            matching: find.textContaining(
+              'QC returned: Rice portion short; plate again',
+            ),
           ),
           findsOneWidget,
         );
@@ -2558,14 +2676,18 @@ void main() {
         expect(
           find.descendant(
             of: qcLaneCard,
-            matching: find.byKey(const ValueKey('kitchen-ticket-rework-note-box')),
+            matching: find.byKey(
+              const ValueKey('kitchen-ticket-rework-note-box'),
+            ),
           ),
           findsOneWidget,
         );
         expect(
           find.descendant(
             of: qcLaneCard,
-            matching: find.textContaining('Rework note: Replated with a full portion.'),
+            matching: find.textContaining(
+              'Rework note: Replated with a full portion.',
+            ),
           ),
           findsOneWidget,
         );
@@ -2586,7 +2708,9 @@ void main() {
         expect(
           find.descendant(
             of: find.byKey(const ValueKey('qc-dialog-rework-note-banner')),
-            matching: find.textContaining('Rework note: Replated with a full portion.'),
+            matching: find.textContaining(
+              'Rework note: Replated with a full portion.',
+            ),
           ),
           findsOneWidget,
         );
@@ -2649,14 +2773,18 @@ void main() {
         expect(
           find.descendant(
             of: pechoTile,
-            matching: find.byKey(const ValueKey('kitchen-ticket-qc-returned-box')),
+            matching: find.byKey(
+              const ValueKey('kitchen-ticket-qc-returned-box'),
+            ),
           ),
           findsOneWidget,
         );
         expect(
           find.descendant(
             of: pechoTile,
-            matching: find.textContaining('QC returned: Rice portion short; plate again'),
+            matching: find.textContaining(
+              'QC returned: Rice portion short; plate again',
+            ),
           ),
           findsOneWidget,
         );
@@ -2670,7 +2798,9 @@ void main() {
         expect(
           find.descendant(
             of: juiceTile,
-            matching: find.byKey(const ValueKey('kitchen-ticket-qc-returned-box')),
+            matching: find.byKey(
+              const ValueKey('kitchen-ticket-qc-returned-box'),
+            ),
           ),
           findsNothing,
         );
@@ -2695,7 +2825,9 @@ void main() {
         expect(
           find.descendant(
             of: reworkPechoTile,
-            matching: find.textContaining('QC returned: Rice portion short; plate again'),
+            matching: find.textContaining(
+              'QC returned: Rice portion short; plate again',
+            ),
           ),
           findsOneWidget,
         );

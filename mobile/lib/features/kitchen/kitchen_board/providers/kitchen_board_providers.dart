@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/core/models/user_role.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
@@ -119,8 +120,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
-      final tickets = await repo.fetchTodaysTickets();
+      final rawTickets = await repo.fetchTodaysTickets();
+      if (!ref.mounted) return;
       final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final tickets = await _enrichTicketsWithOrders(repo, rawTickets, prevMap);
+      if (!ref.mounted) return;
       final mergedTickets = tickets.map((t) {
         final prev = prevMap[t.kitchenTicketId];
         if (prev != null) {
@@ -168,12 +172,101 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         clearError: true,
       );
     } catch (error) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
         errorMessage: error.toString(),
       );
     }
+  }
+
+  List<KitchenBoardTicket> _preserveEnrichedDetails(
+    List<KitchenBoardTicket> tickets,
+    Map<String, KitchenBoardTicket> prevMap,
+  ) {
+    return tickets.map((t) {
+      final prev = prevMap[t.kitchenTicketId];
+      if (prev != null &&
+          prev.data.channel.isNotEmpty &&
+          prev.data.channel != 'Takeaway' &&
+          t.data.channel == 'Takeaway') {
+        return t.withChannel(
+          prev.data.channel,
+          reference:
+              prev.data.reference.isNotEmpty &&
+                  prev.data.reference != t.orderCode
+              ? prev.data.reference
+              : null,
+        );
+      }
+      return t;
+    }).toList();
+  }
+
+  Future<List<KitchenBoardTicket>> _enrichTicketsWithOrders(
+    KitchenBoardRepository repo,
+    List<KitchenBoardTicket> tickets,
+    Map<String, KitchenBoardTicket> prevMap,
+  ) async {
+    final preserved = _preserveEnrichedDetails(tickets, prevMap);
+
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    List<AssignedBrand>? cachedBrands;
+
+    Future<String?> resolveTicketBrandId(KitchenBoardTicket t) async {
+      final directId = t.data.brand.id;
+      if (uuidRegex.hasMatch(directId)) return directId;
+
+      try {
+        if (!ref.mounted) return null;
+        cachedBrands ??= await ref
+            .read(brandRepositoryProvider)
+            .getAll()
+            .timeout(const Duration(milliseconds: 300));
+        final code = t.data.brand.code.toUpperCase();
+        final match = cachedBrands!.firstWhere(
+          (b) => b.code.toUpperCase() == code,
+          orElse: () => cachedBrands!.firstWhere(
+            (b) => b.name.toLowerCase() == t.data.brand.name.toLowerCase(),
+            orElse: () => cachedBrands!.first,
+          ),
+        );
+        if (uuidRegex.hasMatch(match.id)) return match.id;
+      } catch (_) {
+        // Fallback
+      }
+      return null;
+    }
+
+    return Future.wait(
+      preserved.map((t) async {
+        if (t.orderId.isEmpty) return t;
+
+        // Skip if ticket already has a resolved non-placeholder channel or reference
+        final isPlaceholder =
+            t.data.channel == 'Takeaway' &&
+            (t.data.reference.isEmpty || t.data.reference == t.orderCode);
+        if (!isPlaceholder) return t;
+
+        try {
+          if (!ref.mounted) return t;
+          final brandId = await resolveTicketBrandId(t);
+          if (brandId == null || !ref.mounted) return t;
+          final orderData = await repo
+              .fetchOrder(brandId: brandId, orderId: t.orderId)
+              .timeout(const Duration(milliseconds: 300));
+          if (orderData != null) {
+            return t.applyOrder(orderData);
+          }
+        } catch (_) {
+          // If order fetch fails, keep ticket as is
+        }
+        return t;
+      }),
+    );
   }
 
   Future<String?> _resolveCurrentUserId() async {
@@ -203,7 +296,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
       await repo.acknowledgeTicket(kitchenTicketId, preparerId: userId);
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
@@ -254,7 +349,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
       await repo.prepareTicket(kitchenTicketId, preparerId: userId);
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
@@ -291,10 +388,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
-  Future<bool> sendToQc(
-    String kitchenTicketId, {
-    String? reworkNotes,
-  }) async {
+  Future<bool> sendToQc(String kitchenTicketId, {String? reworkNotes}) async {
     final userRole = ref.read(userRoleProvider);
     if (userRole == UserRole.supervisor) return false;
 
@@ -309,7 +403,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
       await repo.sendToQc(kitchenTicketId, preparerId: userId);
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
@@ -389,7 +485,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         attemptId: attemptId,
         checkerId: userId,
       );
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
@@ -446,7 +544,8 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
-      final effectiveReason = reason ??
+      final effectiveReason =
+          reason ??
           (rejections != null && rejections.isNotEmpty
               ? rejections.first.reason
               : 'QC failed');
@@ -460,7 +559,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         orderItemIds: orderItemIds,
         rejections: rejectionsPayload,
       );
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
@@ -546,9 +647,10 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         orderId: ticket.orderId,
         reason: reason,
       );
-      final tickets = await repo.fetchTodaysTickets();
-      final nextLoading = Set<String>.from(state.loadingTicketIds)
-        ..remove(id);
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
+      final nextLoading = Set<String>.from(state.loadingTicketIds)..remove(id);
 
       final updatedTickets = tickets
           .where((t) => t.kitchenTicketId != id)
@@ -562,8 +664,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
       );
       return true;
     } catch (error) {
-      final nextLoading = Set<String>.from(state.loadingTicketIds)
-        ..remove(id);
+      final nextLoading = Set<String>.from(state.loadingTicketIds)..remove(id);
       state = state.copyWith(
         loadingTicketIds: nextLoading,
         errorMessage: error.toString(),
@@ -582,6 +683,7 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
 
     try {
+      if (!ref.mounted) return directId;
       final brandRepo = ref.read(brandRepositoryProvider);
       final brands = await brandRepo.getAll();
       final code = ticket.data.brand.code.toUpperCase();
@@ -616,7 +718,9 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       await repo.handOverTicket(kitchenTicketId);
-      final tickets = await repo.fetchTodaysTickets();
+      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+      final rawTickets = await repo.fetchTodaysTickets();
+      final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
       final nextLoading = Set<String>.from(state.loadingTicketIds)
         ..remove(kitchenTicketId);
 
