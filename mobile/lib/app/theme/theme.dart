@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'color_schemes.dart';
 import 'semantic_colors.dart';
-import 'status_colors.dart';
 import 'typography.dart';
 import 'tokens.dart';
 
@@ -19,6 +18,7 @@ ThemeData _buildTheme(
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: KkfcFonts.schibstedGrotesk,
     colorScheme: scheme,
     textTheme: kkfcTextTheme,
     scaffoldBackgroundColor: semantic.bgCanvas,

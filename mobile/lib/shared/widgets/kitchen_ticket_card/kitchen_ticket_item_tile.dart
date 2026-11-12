@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
 class KitchenTicketItemTile extends StatelessWidget {
   const KitchenTicketItemTile({super.key, required this.item});
 
   final KitchenTicketItem item;
+
+  static String _formatFailReason(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.toLowerCase().startsWith('qc returned:')) {
+      return trimmed.substring(12).trim();
+    }
+    if (trimmed.toLowerCase().startsWith('qc returned')) {
+      return trimmed.substring(11).trim();
+    }
+    return trimmed;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +43,7 @@ class KitchenTicketItemTile extends StatelessWidget {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF102A43),
+              color: KkfcColors.ticketInk,
               height: 1.1,
             ),
           ),
@@ -46,7 +58,7 @@ class KitchenTicketItemTile extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF102A43),
+                  color: KkfcColors.ticketInk,
                   height: 1.2,
                 ),
               ),
@@ -58,7 +70,7 @@ class KitchenTicketItemTile extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF64748B),
+                      color: KkfcColors.ticketMuted,
                       height: 1.3,
                     ),
                   ),
@@ -67,15 +79,16 @@ class KitchenTicketItemTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: KkfcColors.ticketNoteBg,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0xFFFDE68A),
+                        color: KkfcColors.ticketNoteBorder,
                         width: 1,
                       ),
                     ),
@@ -84,8 +97,51 @@ class KitchenTicketItemTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF102A43),
+                        color: KkfcColors.ticketInk,
                         height: 1.25,
+                      ),
+                    ),
+                  ),
+                ),
+              if (item.failReason != null && item.failReason!.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    key: const ValueKey('kitchen-ticket-qc-returned-box'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: KkfcColors.ticketNoteBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: KkfcColors.ticketNoteBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'QC returned: ',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: KkfcColors.ticketInk,
+                            ),
+                          ),
+                          TextSpan(
+                            text: _formatFailReason(item.failReason!),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: KkfcColors.ticketInk,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

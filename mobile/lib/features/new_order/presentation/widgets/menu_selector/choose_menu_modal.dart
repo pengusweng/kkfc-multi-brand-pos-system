@@ -17,6 +17,7 @@ Future<({AssignedBrand brand, MenuChannel channel})?> showChooseMenuModal(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
+    useSafeArea: true,
     builder: (context) => ChooseMenuModal(
       brands: brands,
       initialBrand: currentBrand,
@@ -48,7 +49,11 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final maxHeight = mediaQuery.size.height * 0.88;
+
     return Container(
+      constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
@@ -56,9 +61,7 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
+          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -106,14 +109,16 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
 
               const SizedBox(height: 16.0),
 
-              // Brand & Channel Cards
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final brand in widget.brands) _buildBrandCard(brand),
-                  ],
+              // Brand & Channel Cards (Scrollable to prevent bottom overflow)
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final brand in widget.brands) _buildBrandCard(brand),
+                    ],
+                  ),
                 ),
               ),
 
@@ -126,33 +131,35 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Primary: Switch menu
-                    SizedBox(
-                      height: 48.0,
-                      width: double.infinity,
-                      child: FilledButton(
-                        key: const ValueKey('switch-menu-button'),
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          Navigator.of(context).pop((
-                            brand: _selectedBrand,
-                            channel: _selectedChannel,
-                          ));
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFA8562A,
-                          ), // Brand Brown
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          key: const ValueKey('switch-menu-button'),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.of(context).pop((
+                              brand: _selectedBrand,
+                              channel: _selectedChannel,
+                            ));
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(
+                              0xFFA8562A,
+                            ), // Brand Brown
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Switch menu',
-                          style: TextStyle(
-                            fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                          child: const Text(
+                            'Switch menu',
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -161,29 +168,31 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                     const SizedBox(height: 8.0),
 
                     // Secondary: Cancel
-                    SizedBox(
-                      height: 48.0,
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        key: const ValueKey('cancel-switch-menu-button'),
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(
-                            color: Color(0xFFDDD6C9),
-                            width: 1.0,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          key: const ValueKey('cancel-switch-menu-button'),
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(
+                              color: Color(0xFFDDD6C9),
+                              width: 1.0,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            fontFamily: KkfcFonts.ibmPlexSans,
-                            fontSize: 15.0,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF19293E),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontFamily: KkfcFonts.ibmPlexSans,
+                              fontSize: 15.0,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF19293E),
+                            ),
                           ),
                         ),
                       ),
@@ -253,13 +262,16 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                     color: Color(0xFF64748B),
                   ),
                   SizedBox(width: 8.0),
-                  Text(
-                    'Not authorized',
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                  Expanded(
+                    child: Text(
+                      'Not authorized',
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -319,13 +331,16 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
               const SizedBox(width: 12.0),
 
               // Channel label
-              Text(
-                channel.label,
-                style: TextStyle(
-                  fontFamily: KkfcFonts.ibmPlexSans,
-                  fontSize: 14.0,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: const Color(0xFF19293E),
+              Expanded(
+                child: Text(
+                  channel.label,
+                  style: TextStyle(
+                    fontFamily: KkfcFonts.ibmPlexSans,
+                    fontSize: 14.0,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: const Color(0xFF19293E),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

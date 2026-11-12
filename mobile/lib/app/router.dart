@@ -8,7 +8,7 @@ import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
 import '../features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
-import '../features/availability/presentation/pages/availability_read_only_screen.dart';
+import '../features/availability/presentation/pages/kitchen_availability_screen.dart';
 import '../features/order_entry/data/models/order_confirmed_view_data.dart';
 import '../features/order_entry/data/models/order_not_sent_view_data.dart';
 import '../features/order_entry/data/models/duplicate_platform_order_view_data.dart';
@@ -20,6 +20,7 @@ import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
 
 import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
+import '../features/kitchen/kitchen_board/presentation/pages/kitchen_board_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -40,21 +41,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.login;
       }
 
-      final isKitchenRole = role?.isKitchen ?? false;
-      final onKitchenPage = state.matchedLocation == AppRoutes.kitchenTickets;
+      final canAccessPos = role?.canAccessPos ?? true;
+      final canAccessKitchen = role?.canAccessKitchenBoard ?? false;
+      final onKitchenPage =
+          state.matchedLocation == AppRoutes.kitchenTickets ||
+          state.matchedLocation == AppRoutes.availability;
 
       if (isLoggedIn && onLogin) {
-        return isKitchenRole ? AppRoutes.kitchenTickets : AppRoutes.menu;
+        return canAccessPos ? AppRoutes.menu : AppRoutes.kitchenTickets;
       }
 
       if (isLoggedIn) {
-        // Kitchen staff / kitchen head can only see the kitchen tickets page.
-        if (isKitchenRole && !onKitchenPage) {
+        // Kitchen staff / kitchen head can only see the kitchen tickets and availability pages.
+        // Supervisors and superadmins may switch between POS and KDS.
+        if (!canAccessPos && !onKitchenPage) {
           return AppRoutes.kitchenTickets;
         }
 
-        // Users without kitchen role must never see the kitchen tickets page.
-        if (!isKitchenRole && onKitchenPage) {
+        // Roles without kitchen access must never see the kitchen tickets page.
+        if (!canAccessKitchen &&
+            state.matchedLocation == AppRoutes.kitchenTickets) {
           return AppRoutes.menu;
         }
       }
@@ -82,7 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.kitchenTickets,
-        builder: (context, state) => LoginScreen(),
+        builder: (context, state) => const KitchenBoardScreen(),
       ),
       GoRoute(
         path: AppRoutes.menu,
@@ -140,7 +146,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.availability,
-        builder: (context, state) => const AvailabilityReadOnlyScreen(),
+        builder: (context, state) => const KitchenAvailabilityScreen(),
       ),
       GoRoute(
         path: AppRoutes.orderEntry,

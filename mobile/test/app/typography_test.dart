@@ -25,6 +25,15 @@ void main() {
     expect(KkfcTypography.kdsTicket.height! * 48, closeTo(52, 0.001));
   });
 
+  test('all font tokens resolve to Schibsted_Grotesk', () {
+    expect(KkfcFonts.schibstedGrotesk, 'Schibsted_Grotesk');
+    expect(KkfcFonts.ibmPlexSans, 'Schibsted_Grotesk');
+    expect(KkfcFonts.numeric, 'Schibsted_Grotesk');
+    expect(KkfcFonts.text, 'Schibsted_Grotesk');
+    expect(KkfcFonts.mono, 'Schibsted_Grotesk');
+    expect(KkfcFonts.systemMono, 'Schibsted_Grotesk');
+  });
+
   test('every order status has an icon', () {
     for (final status in OrderStatus.values) {
       expect(statusIcon(status), isA<IconData>());

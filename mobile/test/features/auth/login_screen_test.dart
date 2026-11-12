@@ -140,6 +140,40 @@ void main() {
       expect(find.byType(LoginFormCard), findsOneWidget);
     });
 
+    testWidgets(
+      'header renders larger KKFC text and collapses KKFC and Staff POS into 1 row',
+      (tester) async {
+        await _pumpLogin(tester, size: _phone);
+
+        final kkfcFinder = find.text('KKFC');
+        final staffPosFinder = find.text('Staff POS');
+        expect(kkfcFinder, findsOneWidget);
+        expect(staffPosFinder, findsOneWidget);
+
+        // Verify KKFC has the larger size (24px in compact, vs previous 18px textLg)
+        final kkfcText = tester.widget<Text>(kkfcFinder);
+        expect(kkfcText.style?.fontSize, greaterThanOrEqualTo(24.0));
+
+        // Verify KKFC and Staff POS are in the same row/wrap container
+        final wrapFinder = find.ancestor(
+          of: kkfcFinder,
+          matching: find.byType(Wrap),
+        );
+        expect(wrapFinder, findsWidgets);
+
+        expect(
+          find.descendant(of: wrapFinder.first, matching: staffPosFinder),
+          findsOneWidget,
+        );
+
+        // Verify horizontal alignment on the same row (similar y offset)
+        final kkfcTopLeft = tester.getTopLeft(kkfcFinder);
+        final staffPosTopLeft = tester.getTopLeft(staffPosFinder);
+        expect((kkfcTopLeft.dy - staffPosTopLeft.dy).abs(), lessThan(12.0));
+        expect(staffPosTopLeft.dx, greaterThan(kkfcTopLeft.dx));
+      },
+    );
+
     testWidgets('does not overflow at 2x text scale', (tester) async {
       await _pumpLogin(tester, textScale: 2);
 

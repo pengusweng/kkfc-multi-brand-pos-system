@@ -185,6 +185,143 @@ abstract final class KkfcColors {
 
   /// `--k-on-warning-solid`: Foreground text on Gold warning-solid (#19293E, 8.43:1)
   static const Color onWarningSolid = Color(0xFF19293E);
+
+  // --- AppHeader & Shell tokens ---
+  /// Muted wordmark text on navy shell (#8C9BAE)
+  static const Color shellMutedText = Color(0xFF8C9BAE);
+
+  /// Role badge fill on navy shell (#24364D)
+  static const Color shellRoleBg = Color(0xFF24364D);
+
+  /// Role badge border on navy shell (#384B66)
+  static const Color shellRoleBorder = Color(0xFF384B66);
+
+  // --- Kitchen Ticket Card tokens ---
+  /// Deep navy ink for ticket header, quantity, and item titles (#102A43)
+  static const Color ticketInk = Color(0xFF102A43);
+
+  /// Card border and progress bar track (#E2E8F0)
+  static const Color ticketBorder = Color(0xFFE2E8F0);
+
+  /// Subtle resting card shadow (#06000000)
+  static const Color ticketShadow = Color(0x06000000);
+
+  /// Muted slate for modifiers, payment label, and brand badge border (#64748B)
+  static const Color ticketMuted = Color(0xFF64748B);
+
+  /// Secondary slate for Details link and timer tick marks (#334155)
+  static const Color ticketSubtleInk = Color(0xFF334155);
+
+  /// Medium slate for brand display name (#475569)
+  static const Color ticketBrandName = Color(0xFF475569);
+
+  /// Disabled primary button fill on ticket card (#CBD5E1)
+  static const Color ticketDisabledBg = Color(0xFFCBD5E1);
+
+  /// Progress bar fill when ticket is on time (#506176)
+  static const Color ticketAgeOnTime = Color(0xFF506176);
+
+  /// Progress bar fill when ticket is due soon (#D97706)
+  static const Color ticketAgeDueSoon = Color(0xFFD97706);
+
+  /// Progress bar fill when ticket is late (#DC2626)
+  static const Color ticketAgeLate = Color(0xFFDC2626);
+
+  /// Kitchen item note callout background (#FEF3C7)
+  static const Color ticketNoteBg = Color(0xFFFEF3C7);
+
+  /// Kitchen item note callout border (#FDE68A)
+  static const Color ticketNoteBorder = Color(0xFFFDE68A);
+
+  /// QC item Pass button fill when active (#187A42)
+  static const Color qcPassBg = successSolid;
+
+  /// QC Fail button border / text (#B3261E)
+  static const Color qcFailBorder = danger;
+
+  // --- Kitchen Ticket Status color tokens ---
+
+  // Acknowledged: darker shade of blue
+  /// Background for acknowledged status badge/tint (#D8E6F5)
+  static const Color statusAcknowledgedBg = Color(0xFFD8E6F5);
+
+  /// Border for acknowledged status badge (#8EB5E0)
+  static const Color statusAcknowledgedBorder = Color(0xFF8EB5E0);
+
+  /// Foreground ink / text for acknowledged status (darker blue, #0D3B66)
+  static const Color statusAcknowledgedFg = Color(0xFF0D3B66);
+
+  /// Solid / accent color for acknowledged ticket (#104477)
+  static const Color statusAcknowledgedSolid = Color(0xFF104477);
+
+  /// Card border for acknowledged status (#8EB5E0)
+  static const Color statusAcknowledgedCardBorder = Color(0xFF8EB5E0);
+
+  // Preparing: lighter shade of blue
+  /// Background for preparing status badge/tint (#EDF7FF)
+  static const Color statusPreparingBg = Color(0xFFEDF7FF);
+
+  /// Border for preparing status badge (#BAE6FD)
+  static const Color statusPreparingBorder = Color(0xFFBAE6FD);
+
+  /// Foreground ink / text for preparing status (lighter blue, #0369A1)
+  static const Color statusPreparingFg = Color(0xFF0369A1);
+
+  /// Solid / accent color for preparing ticket (#0284C7)
+  static const Color statusPreparingSolid = Color(0xFF0284C7);
+
+  /// Card border for preparing status (#BAE6FD)
+  static const Color statusPreparingCardBorder = Color(0xFFBAE6FD);
+
+  // Rework: copper / amber status
+  /// Background for rework badge/box (#FBF6EF)
+  static const Color reworkBg = Color(0xFFFBF6EF);
+
+  /// Border for rework badge/box (#DCBFA9)
+  static const Color reworkBorder = Color(0xFFDCBFA9);
+
+  /// Foreground ink / text for rework (#8A4621)
+  static const Color reworkText = Color(0xFF8A4621);
+
+  /// Solid / accent fill for rework (#8A4621)
+  static const Color reworkSolid = Color(0xFF8A4621);
+
+  /// Card border for rework status (#DCBFA9)
+  static const Color reworkCardBorder = Color(0xFFDCBFA9);
+
+  // Queued: slate status
+  static const Color statusQueuedBg = neutralBg;
+  static const Color statusQueuedBorder = neutralBorder;
+  static const Color statusQueuedFg = neutral;
+  static const Color statusQueuedSolid = neutralSolid;
+  static const Color statusQueuedCardBorder = ticketBorder;
+
+  // Checking (QC Check): violet status
+  static const Color statusCheckingBg = reviewBg;
+  static const Color statusCheckingBorder = reviewBorder;
+  static const Color statusCheckingFg = review;
+  static const Color statusCheckingSolid = reviewSolid;
+  static const Color statusCheckingCardBorder = reviewBorder;
+
+  // Ready: green status
+  static const Color statusReadyBg = successBg;
+  static const Color statusReadyBorder = successBorder;
+  static const Color statusReadyFg = success;
+  static const Color statusReadySolid = successSolid;
+  static const Color statusReadyCardBorder = successBorder;
+
+  // --- Availability tokens ---
+  /// Status text color for unavailable menu item on availability cards (#8C3A27)
+  static const Color availabilityUnavailableText = Color(0xFF8C3A27);
+
+  /// Warning badge fill on availability confirmation dialog (#FEF3C7)
+  static const Color availabilityWarningBg = Color(0xFFFEF3C7);
+
+  /// Warning badge icon color on availability confirmation dialog (#8A6D1C)
+  static const Color availabilityWarningIcon = Color(0xFF8A6D1C);
+
+  /// Subtle gold card border on availability confirmation dialog (#EAC775)
+  static const Color availabilityCardBorder = Color(0xFFEAC775);
 }
 
 /// Representation of a verified WCAG 2.2 AA contrast pair.

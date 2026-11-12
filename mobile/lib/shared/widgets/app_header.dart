@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/shared/menu_channel_mapping.dart';
 import 'package:mobile/shared/widgets/logout_button.dart';
+import 'package:mobile/shared/widgets/wave_accents.dart';
+import 'package:mobile/shared/widgets/workspace_switcher.dart';
 
 /// The application top bar matching the KKFC POS design system.
 ///
-/// Kept purely stateless: only the `'KKFC POS'` wordmark is constant,
-/// while the section title, role badge, and actions vary depending
+/// Section title, role badge, and actions vary depending
 /// on the logged-in user's role.
-class AppHeader extends StatelessWidget implements PreferredSizeWidget {
+class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   const AppHeader({
     super.key,
     this.title = 'Orders',
     this.titleWidget,
-    this.role = 'Cashier Staff',
+    this.role,
     this.onRoleTap,
     this.leading,
     this.trailing,
@@ -25,6 +28,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.padding,
     this.backgroundColor,
     this.showLogout = true,
+    this.showWaveAccents = true,
     // Legacy MenuHeader compatibility properties
     this.compact,
     this.channel,
@@ -67,6 +71,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   /// Whether to display the logout button on the right side of the header.
   final bool showLogout;
 
+  /// Whether to display the subtle copper wave/arc accents on the navy shell header.
+  final bool showWaveAccents;
+
   /// Legacy compatibility property from MenuHeader.
   final bool? compact;
 
@@ -86,8 +93,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(height);
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveRole = staffRole ?? role;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userRole = ref.watch(userRoleProvider);
+    final fallbackRole = userRole?.displayName ?? 'Cashier Staff';
+    final effectiveRole = staffRole ?? role ?? fallbackRole;
     final isCompact = compact ?? (MediaQuery.sizeOf(context).width < 600);
     final channelWidget = (channel != null && onChannelChanged != null)
         ? ChannelTabs(
@@ -118,14 +127,20 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   const SizedBox(width: KkfcSpace.s12),
                 ],
                 if (!isCompact) ...[
-                  const Text(
-                    'KKFC POS',
-                    style: TextStyle(
-                      fontFamily: KkfcFonts.ibmPlexSans,
-                      fontSize: KkfcTextSizes.textXs,
-                      fontWeight: KkfcFontWeights.bold,
-                      letterSpacing: 1.0,
-                      color: Color(0xFF8C9BAE),
+                  Image.asset(
+                    'assets/images/logo_light.png',
+                    height: 26.0,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'KKFC POS',
+                    errorBuilder: (context, error, stackTrace) => const Text(
+                      'KKFC POS',
+                      style: TextStyle(
+                        fontFamily: KkfcFonts.ibmPlexSans,
+                        fontSize: KkfcTextSizes.textXs,
+                        fontWeight: KkfcFontWeights.bold,
+                        letterSpacing: 1.0,
+                        color: KkfcColors.shellMutedText,
+                      ),
                     ),
                   ),
                   const SizedBox(width: KkfcSpace.s16),
@@ -161,10 +176,11 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const WorkspaceSwitcher(),
                 ...?actions,
                 if (trailing != null)
                   trailing!
-                else if (effectiveRole != null && effectiveRole.isNotEmpty)
+                else if (effectiveRole.isNotEmpty)
                   Flexible(
                     child: AppHeaderRoleChip(
                       role: effectiveRole,
@@ -202,7 +218,29 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       content = SizedBox(height: height, child: headerRow);
     }
 
-    return Material(color: backgroundColor ?? KkfcColors.shell, child: content);
+    final background = backgroundColor ?? KkfcColors.shell;
+    final isNavy = background == KkfcColors.shell;
+
+    Widget headerBody = content;
+    if (showWaveAccents && isNavy) {
+      headerBody = Stack(
+        fit: StackFit.passthrough,
+        children: [
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: isCompact ? 180.0 : 260.0,
+            child: const IgnorePointer(
+              child: CustomPaint(painter: HeaderWavesPainter()),
+            ),
+          ),
+          content,
+        ],
+      );
+    }
+
+    return Material(color: background, child: headerBody);
   }
 }
 
@@ -223,9 +261,9 @@ class AppHeaderRoleChip extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: const Color(0xFF24364D),
+            color: KkfcColors.shellRoleBg,
             borderRadius: BorderRadius.circular(KkfcRadius.pill),
-            border: Border.all(color: const Color(0xFF384B66), width: 1.0),
+            border: Border.all(color: KkfcColors.shellRoleBorder, width: 1.0),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -241,12 +279,6 @@ class AppHeaderRoleChip extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: Colors.white,
               ),
             ],
           ),

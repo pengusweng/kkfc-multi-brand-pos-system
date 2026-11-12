@@ -151,7 +151,8 @@ final visibleMenuItemsProvider =
               final matchesQuery =
                   query.isEmpty ||
                   i.name.toLowerCase().contains(query) ||
-                  i.description.toLowerCase().contains(query);
+                  i.description.toLowerCase().contains(query) ||
+                  (i.category ?? '').toLowerCase().contains(query);
               final matchesAvailability =
                   !hideUnavailable ||
                   i.availabilityFor(currentChannel) ==

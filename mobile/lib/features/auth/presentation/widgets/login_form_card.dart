@@ -104,20 +104,6 @@ class LoginFormCard extends StatelessWidget {
               onPressed: onSubmit,
             ),
             const SizedBox(height: KkfcSpace.space4), // 16.0
-            // Web Management Link
-            Center(
-              child: GestureDetector(
-                onTap: onWebManagementTap,
-                child: Text(
-                  'Use Web Management instead',
-                  style: KkfcTypography.textMd.copyWith(
-                    color: KkfcColors.ink,
-                    decoration: TextDecoration.underline,
-                    fontWeight: KkfcFontWeights.medium,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),

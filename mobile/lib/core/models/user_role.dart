@@ -22,7 +22,65 @@ enum UserRole {
     return null;
   }
 
+  /// User-friendly display label (e.g. 'Cashier Staff', 'Supervisor').
+  String get displayName => switch (this) {
+    UserRole.superadmin => 'Superadmin',
+    UserRole.manager => 'Manager',
+    UserRole.recipeManager => 'Recipe Manager',
+    UserRole.supervisor => 'Supervisor',
+    UserRole.kitchenHead => 'Kitchen Head',
+    UserRole.inventoryStaff => 'Inventory Staff',
+    UserRole.kitchenStaff => 'Kitchen Staff',
+    UserRole.cashierStaff => 'Cashier Staff',
+  };
+
   /// Whether this role is an authorized kitchen workspace role.
   bool get isKitchen =>
-      this == UserRole.kitchenHead || this == UserRole.kitchenStaff;
+      this == UserRole.kitchenHead ||
+      this == UserRole.kitchenStaff ||
+      this == UserRole.supervisor;
+
+  /// Whether this role is authorized to pass QC checks on the kitchen board.
+  bool get canPassQc =>
+      this == UserRole.superadmin ||
+      this == UserRole.manager ||
+      this == UserRole.supervisor ||
+      this == UserRole.kitchenHead;
+
+  /// Whether this role may switch between the POS (menu/orders) workspace and
+  /// the kitchen display (KDS) workspace.
+  bool get canSwitchWorkspace =>
+      this == UserRole.superadmin || this == UserRole.supervisor;
+
+  /// Whether this role is allowed to open the kitchen board page.
+  bool get canAccessKitchenBoard => isKitchen || this == UserRole.superadmin;
+
+  /// Whether this role is allowed to open POS pages (menu, orders, etc.).
+  bool get canAccessPos => !isKitchen || this == UserRole.supervisor;
+
+  /// Whether this role is authorized to cancel tickets.
+  /// Allowed roles: SUPERADMIN, MANAGER, SUPERVISOR, and KITCHEN_HEAD.
+  bool get canCancelTicket =>
+      this == UserRole.superadmin ||
+      this == UserRole.manager ||
+      this == UserRole.supervisor ||
+      this == UserRole.kitchenHead;
+
+  /// Whether this role operates in read-only mode on the kitchen board,
+  /// with the sole exception of quality control (QC) checks.
+  bool get isKitchenReadOnlyExceptQc => this == UserRole.supervisor;
+
+  /// Whether this role can change or advance ticket status on the kitchen board.
+  ///
+  /// Supervisors are in read-only mode across all lanes except for QC check.
+  /// Kitchen staff cannot pass QC checks.
+  bool canChangeTicketStatus({required bool isQcCheck}) {
+    if (this == UserRole.supervisor) {
+      return isQcCheck;
+    }
+    if (isQcCheck) {
+      return canPassQc;
+    }
+    return true;
+  }
 }

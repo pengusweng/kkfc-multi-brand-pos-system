@@ -8,6 +8,7 @@ class TokenStore {
 
   static const _key = 'access_token';
   static const _roleKey = 'user_role';
+  static const _userIdKey = 'user_id';
 
   final FlutterSecureStorage _storage;
 
@@ -29,12 +30,29 @@ class TokenStore {
     } catch (_) {}
   }
 
+  Future<String?> readUserId() async {
+    try {
+      return await _storage.read(key: _userIdKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> writeUserId(String userId) async {
+    try {
+      await _storage.write(key: _userIdKey, value: userId);
+    } catch (_) {}
+  }
+
   Future<void> clear() async {
     try {
       await _storage.delete(key: _key);
     } catch (_) {}
     try {
       await _storage.delete(key: _roleKey);
+    } catch (_) {}
+    try {
+      await _storage.delete(key: _userIdKey);
     } catch (_) {}
   }
 }
