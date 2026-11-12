@@ -6,6 +6,10 @@ Demo: **12 November 2026 (Asia/Singapore)**. This guide uses the existing NestJS
 
 ## 1. Code preparation
 
+For resetting all existing account passwords after deployment, follow
+[PASSWORD-RESET.md](PASSWORD-RESET.md). That guide has the one-time Render
+command and the cleanup steps; normal seeding does not overwrite passwords.
+
 - [x] **DONE** — API listens on `0.0.0.0` and Render's `PORT` (`server/src/main.ts`).
 - [x] **DONE** — Public `GET /api/health` checks PostgreSQL with `SELECT 1`. Returns 200 for success and 503 for failure without exposing connection details (`server/src/health.controller.ts`).
 - [x] **DONE** — Health controller registered in `server/src/app.module.ts`.

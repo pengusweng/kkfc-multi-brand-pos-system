@@ -14,6 +14,8 @@
     "seed-test.ts",
     "mobile-pos-fixtures.ts",
     "seed.check.ts",
+    "reset-passwords.ts",
+    "reset-passwords.check.ts",
     "../src/database/database.config.ts"
   ]
 }
