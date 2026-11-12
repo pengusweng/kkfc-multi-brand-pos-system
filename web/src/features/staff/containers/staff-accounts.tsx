@@ -11,7 +11,7 @@ import StaffFilterBar from "../components/organisms/staff-filter-bar";
 import Pagination from "@/src/components/ui/molecules/pagination";
 import StaffTable from "../components/organisms/staff-table";
 import { useDeactivateStaff } from "../hooks/useDeactivateStaff";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useDebouncedValue } from "@/src/hooks/useDebouncedValue";
 import { USERS_PAGE_SIZE, useUsers } from "../hooks/useUsers";
 import type { UserRole } from "../schemas/userSchema";
 import { nextSort, toStaffMember, type StaffMember, type StaffSort, type StaffStatusFilter } from "../utils/staff";

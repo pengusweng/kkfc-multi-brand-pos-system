@@ -25,20 +25,33 @@ export class AuditService {
     ) {
       throw new BadRequestException('Invalid audit log query.');
     }
-    const { page, limit, action, outcome } = validated;
+    const { page, limit, action, outcome, search, from, to } = validated;
+    // YYYY-MM-DD strings compare in calendar order.
+    if (from !== undefined && to !== undefined && from > to) {
+      throw new BadRequestException('from must be on or before to.');
+    }
     const skip = (page - 1) * limit;
     assertValidPagination(skip, this.logger);
-    const { logs, total } = await this.repository.findAll(
+    const { logs, total, counts } = await this.repository.findAll(
       {
         ...(action !== undefined ? { action } : {}),
-        ...(outcome !== undefined ? { outcome } : {}),
+        ...(search !== undefined ? { search } : {}),
+        ...(from !== undefined ? { from } : {}),
+        ...(to !== undefined ? { to } : {}),
       },
+      outcome,
       skip,
       limit,
     );
     return {
       data: logs,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        counts,
+      },
     };
   }
 }

@@ -17,14 +17,14 @@ Feature: Additional audit unit coverage
     Test Case ID: UT-AUDIT-001
     Given an internal caller without pagination options
     When audit history is requested
-    Then page 1 with limit 10 and zero-page metadata is returned for an empty history
+    Then page 1 with limit 10, zero-page metadata, and zero per-outcome counts are returned for an empty history
 
   # Jest: server/src/modules/audit/tests/audit.service.spec.ts
   # Context: AuditService defensive boundaries
   @UT-AUDIT-002
   Scenario: Reject invalid internal audit queries before database access
     Test Case ID: UT-AUDIT-002
-    Given an invalid internal query or an overflowing pagination offset
+    Given an invalid internal query, an invalid search or date, a reversed date range, or an overflowing pagination offset
     When audit history is requested
     Then a bad-request error is returned before database access
 

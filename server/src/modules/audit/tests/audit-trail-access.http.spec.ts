@@ -61,37 +61,22 @@ describe('Audit trail access logging', () => {
   const view = (query = '') =>
     fetch(`${url}${query}`, { headers: { Authorization: 'Bearer token' } });
 
-  it('IT-AUDIT-013: Given a superadmin, When they view the audit trail with valid and invalid filters, Then audit the valid view only', async () => {
+  it('IT-AUDIT-013: Given a superadmin, When they view the audit trail with valid and invalid filters, Then no audit rows are written', async () => {
     const valid = await view('?action=ORDER_CONFIRMED&outcome=DENIED');
     const invalid = await view('?limit=1000');
 
     expect([valid.status, invalid.status]).toEqual([200, 400]);
-    expect(audit.rows()).toEqual([
-      {
-        actor_id: actorId,
-        action: 'AUDIT_LOGS_VIEWED',
-        entity_type: 'audit_logs',
-        entity_id: null,
-        outcome: 'SUCCESS',
-        request_id: valid.headers.get('x-request-id'),
-      },
-    ]);
+    expect(service.findAll).toHaveBeenCalledTimes(1);
+    expect(audit.rows()).toEqual([]);
   });
 
-  it('IT-AUDIT-014: Given a manager, When they try to view the audit trail, Then audit a DENIED row and return nothing', async () => {
+  it('IT-AUDIT-014: Given a manager, When they try to view the audit trail, Then it is denied without reading or writing audit rows', async () => {
     role = UserRole.MANAGER;
 
     const response = await view();
 
     expect(response.status).toBe(403);
     expect(service.findAll).not.toHaveBeenCalled();
-    expect(audit.rows()).toEqual([
-      expect.objectContaining({
-        actor_id: actorId,
-        action: 'AUDIT_LOGS_VIEWED',
-        outcome: 'DENIED',
-        reason: 'ACCESS_DENIED',
-      }),
-    ]);
+    expect(audit.rows()).toEqual([]);
   });
 });

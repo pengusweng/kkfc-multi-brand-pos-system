@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePin } from "@/src/features/pin/hooks/usePin";
 import type { StaffMember } from "../../utils/staff";
-import DetailRow from "../molecules/detail-row";
+import DetailRow from "@/src/components/ui/molecules/detail-row";
 import StaffIdentity from "../molecules/staff-identity";
 
 type StaffDetailModalProps = {

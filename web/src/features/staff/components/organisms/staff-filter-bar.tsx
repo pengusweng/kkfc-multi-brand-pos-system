@@ -3,7 +3,7 @@
 import type { UserRole } from "../../schemas/userSchema";
 import type { StaffStatusFilter } from "../../utils/staff";
 import RoleSelect from "../molecules/role-select";
-import StaffSearchField from "../molecules/staff-search-field";
+import SearchField from "@/src/components/ui/molecules/search-field";
 import StatusFilter from "../molecules/status-filter";
 
 type StaffFilterBarProps = {
@@ -29,7 +29,7 @@ export default function StaffFilterBar({
 }: StaffFilterBarProps) {
   return (
     <div className="mt-6 flex flex-col gap-3 rounded-xl border border-hairline bg-card p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-3 md:px-4">
-      <StaffSearchField value={query} onChange={onQueryChange} />
+      <SearchField label="Search name or username" value={query} onChange={onQueryChange} />
       <RoleSelect value={role} onChange={onRoleChange} />
       <StatusFilter value={status} onChange={onStatusChange} counts={counts} />
       <p aria-live="polite" className="text-sm text-ink-muted tabular-nums sm:ml-auto">
