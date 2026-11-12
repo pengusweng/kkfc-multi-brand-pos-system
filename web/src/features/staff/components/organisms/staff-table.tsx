@@ -12,6 +12,7 @@ type StaffTableProps = {
   sort: StaffSort;
   onSort: (field: StaffSortField) => void;
   loading?: boolean;
+  refreshing?: boolean;
   skeletonRows?: number;
   emptyMessage?: string;
   footer?: ReactNode;
@@ -23,6 +24,7 @@ export default function StaffTable({
   sort,
   onSort,
   loading = false,
+  refreshing = false,
   skeletonRows,
   emptyMessage = "No staff accounts yet.",
   footer,
@@ -31,6 +33,7 @@ export default function StaffTable({
     <DataTable
       columnCount={COLUMN_COUNT}
       loading={loading}
+      refreshing={refreshing}
       loadingLabel="Loading staff accounts…"
       skeletonRows={skeletonRows}
       skeletonRow={(i) => <StaffSkeletonRow index={i} />}

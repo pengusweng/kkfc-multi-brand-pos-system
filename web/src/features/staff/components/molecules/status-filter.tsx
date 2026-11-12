@@ -1,4 +1,5 @@
 import type { StaffStatusFilter } from "../../utils/staff";
+import { useId } from "react";
 import FilterChip from "@/src/components/ui/atoms/filter-chip";
 
 const FILTERS: { value: StaffStatusFilter; label: string }[] = [
@@ -14,8 +15,10 @@ type StatusFilterProps = {
 };
 
 export default function StatusFilter({ value, onChange, counts }: StatusFilterProps) {
+  const pillId = useId();
+
   return (
-    <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
+    <div role="group" aria-label="Filter by status" className="isolate flex flex-wrap gap-2">
       {FILTERS.map((filter) => (
         <FilterChip
           key={filter.value}
@@ -23,6 +26,7 @@ export default function StatusFilter({ value, onChange, counts }: StatusFilterPr
           count={counts[filter.value]}
           selected={value === filter.value}
           onClick={() => onChange(filter.value)}
+          pillId={pillId}
         />
       ))}
     </div>

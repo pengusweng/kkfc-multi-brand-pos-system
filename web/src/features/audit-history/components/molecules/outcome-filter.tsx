@@ -1,3 +1,4 @@
+import { useId } from "react";
 import FilterChip from "@/src/components/ui/atoms/filter-chip";
 import type { AuditOutcomeCounts, AuditOutcomeFilter } from "../../schemas/auditLogSchema";
 
@@ -15,8 +16,10 @@ type OutcomeFilterProps = {
 };
 
 export default function OutcomeFilter({ value, onChange, counts }: OutcomeFilterProps) {
+  const pillId = useId();
+
   return (
-    <div role="group" aria-label="Filter by outcome" className="flex flex-wrap gap-2">
+    <div role="group" aria-label="Filter by outcome" className="isolate flex flex-wrap gap-2">
       {FILTERS.map((filter) => (
         <FilterChip
           key={filter.value}
@@ -24,6 +27,7 @@ export default function OutcomeFilter({ value, onChange, counts }: OutcomeFilter
           count={counts[filter.value]}
           selected={value === filter.value}
           onClick={() => onChange(filter.value)}
+          pillId={pillId}
         />
       ))}
     </div>

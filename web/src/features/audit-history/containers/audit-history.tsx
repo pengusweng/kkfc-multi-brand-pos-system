@@ -82,7 +82,8 @@ export default function AuditHistoryPage() {
           setViewing(entry);
           setModalOpen(true);
         }}
-        loading={isPending || isPlaceholderData}
+        loading={isPending}
+        refreshing={isPlaceholderData}
         skeletonRows={entries.length || AUDIT_PAGE_SIZE}
         emptyMessage={emptyMessage}
         footer={
