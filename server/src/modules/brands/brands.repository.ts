@@ -95,9 +95,43 @@ export class BrandsRepository {
   }
 
   async deleteBrand(brandId: string) {
-    return this.prisma.brand.update({
-      where: { brand_id: brandId, is_active: true },
-      data: { is_active: false, modified_at: new Date() },
+    const now = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const brand = await tx.brand.update({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: now,
+        },
+      });
+
+      await tx.menuItem.updateMany({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: now,
+        },
+      });
+
+      await tx.recipe.updateMany({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: now,
+        },
+      });
+
+      return brand;
     });
   }
 }
