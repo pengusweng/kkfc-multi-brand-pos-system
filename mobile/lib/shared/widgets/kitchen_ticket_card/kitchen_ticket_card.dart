@@ -185,12 +185,14 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                             color: KkfcColors.reworkText,
                           ),
                           SizedBox(width: 4),
-                          Text(
-                            'Rework',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: KkfcColors.reworkText,
+                          Flexible(
+                            child: Text(
+                              'Rework',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: KkfcColors.reworkText,
+                              ),
                             ),
                           ),
                         ],
@@ -225,12 +227,14 @@ class _KitchenTicketCardState extends State<KitchenTicketCard> {
                             color: statusColors.foreground,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            _statusLabelFor(widget.ticket.status),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: statusColors.foreground,
+                          Flexible(
+                            child: Text(
+                              _statusLabelFor(widget.ticket.status),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: statusColors.foreground,
+                              ),
                             ),
                           ),
                         ],
