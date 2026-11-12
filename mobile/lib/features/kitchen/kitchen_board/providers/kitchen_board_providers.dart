@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/models/brand_models.dart';
@@ -86,13 +87,30 @@ class KitchenBoardState {
 }
 
 class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
+  StreamSubscription<List<KitchenBoardTicket>>? _ticketStreamSubscription;
+  CancelToken? _streamCancelToken;
+  Future<void> _processingChain = Future<void>.value();
+
+  void _cancelTicketStream() {
+    _streamCancelToken?.cancel('Disposed or refreshed');
+    _streamCancelToken = null;
+    final sub = _ticketStreamSubscription;
+    _ticketStreamSubscription = null;
+    if (sub != null) {
+      unawaited(sub.cancel());
+    }
+  }
+
   @override
   KitchenBoardState build() {
+    ref.onDispose(_cancelTicketStream);
+
     // Automatically refresh kitchen tickets whenever the user logs in or switches accounts
     ref.listen<String?>(sessionTokenProvider, (previous, next) {
       if (next != null && next != previous) {
         refresh(force: true);
       } else if (next == null && previous != null) {
+        _cancelTicketStream();
         state = const KitchenBoardState(isLoading: false, tickets: []);
       }
     });
@@ -112,73 +130,126 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
   }
 
   Future<void> _fetch({required bool isRefresh}) async {
+    _cancelTicketStream();
+
     state = state.copyWith(
       isLoading: !isRefresh,
       isRefreshing: isRefresh,
       clearError: true,
     );
 
-    try {
-      final repo = ref.read(kitchenBoardRepositoryProvider);
-      final rawTickets = await repo.fetchTodaysTickets();
-      if (!ref.mounted) return;
-      final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
-      final tickets = await _enrichTicketsWithOrders(repo, rawTickets, prevMap);
-      if (!ref.mounted) return;
-      final mergedTickets = tickets.map((t) {
-        final prev = prevMap[t.kitchenTicketId];
-        if (prev != null) {
-          final returnedReason = t.qcReturnedReason ?? prev.qcReturnedReason;
-          final notes = t.reworkNotes ?? prev.reworkNotes;
-          final mergedItems = t.data.items.map((item) {
-            final prevItem = prev.data.items
-                .cast<KitchenTicketItem?>()
-                .firstWhere(
-                  (p) =>
-                      p != null &&
-                      ((item.orderItemId != null &&
-                              item.orderItemId == p.orderItemId) ||
-                          p.name == item.name),
-                  orElse: () => null,
-                );
-            if (item.failReason == null && prevItem?.failReason != null) {
-              return item.copyWith(failReason: prevItem!.failReason);
-            }
-            return item;
-          }).toList();
+    final repo = ref.read(kitchenBoardRepositoryProvider);
+    final cancelToken = CancelToken();
+    _streamCancelToken = cancelToken;
+    final firstEmissionCompleter = Completer<void>();
 
-          if (returnedReason != null ||
-              notes != null ||
-              mergedItems != t.data.items) {
-            return t.copyWith(
+    void completeIfPending() {
+      if (!firstEmissionCompleter.isCompleted) {
+        firstEmissionCompleter.complete();
+      }
+    }
+
+    cancelToken.whenCancel.then((_) => completeIfPending());
+
+    _ticketStreamSubscription = repo
+        .watchTodaysTickets(cancelToken: cancelToken)
+        .listen(
+          (rawTickets) {
+            _processingChain = _processingChain.then((_) async {
+              if (!ref.mounted || cancelToken.isCancelled) {
+                completeIfPending();
+                return;
+              }
+              try {
+                await _applyIncomingTickets(repo, rawTickets);
+              } catch (error) {
+                if (ref.mounted && !cancelToken.isCancelled) {
+                  state = state.copyWith(
+                    isLoading: false,
+                    isRefreshing: false,
+                    errorMessage: error.toString(),
+                  );
+                }
+              } finally {
+                completeIfPending();
+              }
+            });
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            _processingChain = _processingChain.then((_) {
+              if (ref.mounted && !cancelToken.isCancelled) {
+                state = state.copyWith(
+                  isLoading: false,
+                  isRefreshing: false,
+                  errorMessage: error.toString(),
+                );
+              }
+              completeIfPending();
+            });
+          },
+          onDone: () {
+            _processingChain = _processingChain.then((_) {
+              completeIfPending();
+            });
+          },
+        );
+
+    await firstEmissionCompleter.future;
+  }
+
+  Future<void> _applyIncomingTickets(
+    KitchenBoardRepository repo,
+    List<KitchenBoardTicket> rawTickets,
+  ) async {
+    final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
+    final tickets = await _enrichTicketsWithOrders(repo, rawTickets, prevMap);
+    if (!ref.mounted) return;
+    final mergedTickets = tickets.map((t) {
+      final prev = prevMap[t.kitchenTicketId];
+      if (prev != null) {
+        final returnedReason = t.qcReturnedReason ?? prev.qcReturnedReason;
+        final notes = t.reworkNotes ?? prev.reworkNotes;
+        final mergedItems = t.data.items.map((item) {
+          final prevItem = prev.data.items
+              .cast<KitchenTicketItem?>()
+              .firstWhere(
+                (p) =>
+                    p != null &&
+                    ((item.orderItemId != null &&
+                            item.orderItemId == p.orderItemId) ||
+                        p.name == item.name),
+                orElse: () => null,
+              );
+          if (item.failReason == null && prevItem?.failReason != null) {
+            return item.copyWith(failReason: prevItem!.failReason);
+          }
+          return item;
+        }).toList();
+
+        if (returnedReason != null ||
+            notes != null ||
+            mergedItems != t.data.items) {
+          return t.copyWith(
+            qcReturnedReason: returnedReason,
+            reworkNotes: notes,
+            data: t.data.copyWith(
               qcReturnedReason: returnedReason,
               reworkNotes: notes,
-              data: t.data.copyWith(
-                qcReturnedReason: returnedReason,
-                reworkNotes: notes,
-                items: mergedItems,
-              ),
-            );
-          }
+              items: mergedItems,
+            ),
+          );
         }
-        return t;
-      }).toList();
+      }
+      return t;
+    }).toList();
 
-      state = state.copyWith(
-        tickets: mergedTickets,
-        updatedAt: DateTime.now(),
-        isLoading: false,
-        isRefreshing: false,
-        clearError: true,
-      );
-    } catch (error) {
-      if (!ref.mounted) return;
-      state = state.copyWith(
-        isLoading: false,
-        isRefreshing: false,
-        errorMessage: error.toString(),
-      );
-    }
+    state = state.copyWith(
+      tickets: mergedTickets,
+      updatedAt: DateTime.now(),
+      isLoading: false,
+      isRefreshing: false,
+      clearError: true,
+    );
   }
 
   List<KitchenBoardTicket> _preserveEnrichedDetails(
