@@ -163,9 +163,12 @@ void main() {
       expect(find.text('2'), findsOneWidget);
 
       // Enter kitchen note
-      await tester.ensureVisible(find.byType(TextField));
+      final kitchenNoteFinder = find.byKey(
+        const ValueKey('customize-kitchen-note-field'),
+      );
+      await tester.ensureVisible(kitchenNoteFinder);
       await tester.enterText(
-        find.byType(TextField),
+        kitchenNoteFinder,
         'Extra crispy pork please',
       );
       await tester.pumpAndSettle();
@@ -240,7 +243,14 @@ void main() {
       // Quantity stepper and Kitchen Note ARE present
       expect(find.text('Quantity'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('customize-quantity-field')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('customize-kitchen-note-field')),
+        findsOneWidget,
+      );
 
       // Base price is shown
       expect(find.text('₱75.00'), findsWidgets);
@@ -252,7 +262,10 @@ void main() {
       expect(find.text('₱150.00'), findsOneWidget);
 
       // Enter kitchen note
-      await tester.enterText(find.byType(TextField), 'Less ice');
+      await tester.enterText(
+        find.byKey(const ValueKey('customize-kitchen-note-field')),
+        'Less ice',
+      );
       await tester.pumpAndSettle();
 
       // Submit
@@ -269,6 +282,201 @@ void main() {
       expect(cart.first.quantity, 2);
       expect(cart.first.kitchenNote, 'Less ice');
       expect(cart.first.totalCentavos(MenuChannel.dineIn), 15000);
+    },
+  );
+
+  testWidgets(
+    'ItemCustomizationDialog allows user to type desired quantity directly into quantity field',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showItemCustomizationDialog(
+                    context,
+                    item: testItem,
+                    channel: MenuChannel.dineIn,
+                    brandName: 'Gamcheon',
+                  ),
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      final quantityField = find.byKey(
+        const ValueKey('customize-quantity-field'),
+      );
+      expect(quantityField, findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('₱220.00'), findsWidgets);
+
+      // Type "5" into the quantity field
+      await tester.enterText(quantityField, '5');
+      await tester.pumpAndSettle();
+
+      // Total price should update immediately to ₱1,100.00 (220 * 5)
+      expect(find.text('₱1,100.00'), findsOneWidget);
+
+      // Submit
+      await tester.tap(find.text('Add to order'));
+      await tester.pumpAndSettle();
+
+      final cart = container.read(cartProvider);
+      expect(cart.length, 1);
+      expect(cart.first.quantity, 5);
+      expect(cart.first.totalCentavos(MenuChannel.dineIn), 110000);
+    },
+  );
+
+  testWidgets(
+    'ItemCustomizationDialog clamps quantity to minimum 1 when typing 0 upon submission',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showItemCustomizationDialog(
+                    context,
+                    item: testItem,
+                    channel: MenuChannel.dineIn,
+                    brandName: 'Gamcheon',
+                  ),
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      final quantityField = find.byKey(
+        const ValueKey('customize-quantity-field'),
+      );
+      await tester.enterText(quantityField, '0');
+      await tester.pumpAndSettle();
+
+      // Tap submit: should clamp to minimum 1
+      await tester.tap(find.text('Add to order'));
+      await tester.pumpAndSettle();
+
+      final cart = container.read(cartProvider);
+      expect(cart.length, 1);
+      expect(cart.first.quantity, 1);
+      expect(cart.first.totalCentavos(MenuChannel.dineIn), 22000);
+    },
+  );
+
+  testWidgets(
+    'Holding stepper button continually increases and decreases quantity',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showItemCustomizationDialog(
+                    context,
+                    item: testItem,
+                    channel: MenuChannel.dineIn,
+                    brandName: 'Gamcheon',
+                  ),
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      final incFinder = find.byKey(
+        const ValueKey('customize-quantity-increment'),
+      );
+      final decFinder = find.byKey(
+        const ValueKey('customize-quantity-decrement'),
+      );
+
+      await tester.ensureVisible(incFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsOneWidget);
+
+      // 1. Hold increment button
+      final incGesture = await tester.startGesture(tester.getCenter(incFinder));
+      await tester.pump();
+      // First step on tap down -> 2
+      expect(find.text('2'), findsOneWidget);
+
+      // Advance by hold delay (350ms)
+      await tester.pump(const Duration(milliseconds: 350));
+      // First repeat tick (+80ms) -> 3
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('3'), findsOneWidget);
+
+      // Second repeat tick (+80ms) -> 4
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('4'), findsOneWidget);
+
+      // Release hold
+      await incGesture.up();
+      await tester.pumpAndSettle();
+
+      // Total price is now 220 * 4 = ₱880.00
+      expect(find.text('₱880.00'), findsOneWidget);
+
+      // 2. Hold decrement button
+      final decGesture = await tester.startGesture(tester.getCenter(decFinder));
+      await tester.pump();
+      // First step on tap down -> 3
+      expect(find.text('3'), findsOneWidget);
+
+      // Advance by hold delay (350ms)
+      await tester.pump(const Duration(milliseconds: 350));
+      // First repeat tick (+80ms) -> 2
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('2'), findsOneWidget);
+
+      // Second repeat tick (+80ms) -> 1
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('1'), findsOneWidget);
+
+      // Third repeat tick (+80ms) -> cannot go below 1, remains 1
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('1'), findsOneWidget);
+
+      // Release hold
+      await decGesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text('₱220.00'), findsWidgets);
     },
   );
 }

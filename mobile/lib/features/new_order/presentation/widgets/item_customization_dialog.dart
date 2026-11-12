@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_item_modifier_repository.dart';
+import 'package:mobile/features/new_order/presentation/widgets/customization_quantity_stepper.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Shows the item customization modal popup matching the visual design.
@@ -441,45 +442,11 @@ class _ItemCustomizationDialogState
                                 color: Color(0xFF19293E),
                               ),
                             ),
-                            Row(
-                              children: [
-                                _StepperButton(
-                                  icon: Icons.remove,
-                                  enabled: _quantity > 1,
-                                  onTap: () {
-                                    if (_quantity > 1) {
-                                      HapticFeedback.lightImpact();
-                                      setState(() => _quantity--);
-                                    }
-                                  },
-                                ),
-                                SizedBox(
-                                  width: 44,
-                                  child: Center(
-                                    child: Text(
-                                      '$_quantity',
-                                      style: const TextStyle(
-                                        fontFamily: KkfcFonts.ibmPlexSans,
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF19293E),
-                                        fontFeatures: [
-                                          FontFeature.tabularFigures(),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                _StepperButton(
-                                  icon: Icons.add,
-                                  enabled: true,
-                                  isDarkBorder: true,
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    setState(() => _quantity++);
-                                  },
-                                ),
-                              ],
+                            CustomizationQuantityStepper(
+                              quantity: _quantity,
+                              onChanged: (newQuantity) {
+                                setState(() => _quantity = newQuantity);
+                              },
                             ),
                           ],
                         ),
@@ -510,6 +477,7 @@ class _ItemCustomizationDialogState
                         ),
                         const SizedBox(height: 8),
                         TextField(
+                          key: const ValueKey('customize-kitchen-note-field'),
                           controller: _kitchenNoteController,
                           maxLines: 2,
                           maxLength: 100,
@@ -815,54 +783,6 @@ class _CheckboxOptionTile extends StatelessWidget {
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({
-    required this.icon,
-    required this.onTap,
-    this.enabled = true,
-    this.isDarkBorder = false,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool enabled;
-  final bool isDarkBorder;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(
-          color: isDarkBorder
-              ? const Color(0xFF76849A)
-              : const Color(0xFFDDD6C9),
-          width: 1.0,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8.0),
-          onTap: enabled ? onTap : null,
-          child: Center(
-            child: Icon(
-              icon,
-              size: 16,
-              color: enabled
-                  ? const Color(0xFF19293E)
-                  : const Color(0xFFA0AAB5),
-            ),
           ),
         ),
       ),
