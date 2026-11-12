@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
@@ -16,6 +20,7 @@ export const SIGNED_URL_EXPIRY_SECONDS = 300;
 
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private readonly client: S3Client;
   private readonly bucket: string;
 
@@ -154,8 +159,11 @@ export class StorageService {
         privateKey,
         dateLessThan: new Date(Date.now() + expiresIn * 1000).toISOString(),
       });
-    } catch {
-      // Never fall back to S3 or expose private key/parser details to callers.
+    } catch (error) {
+      // Never fall back to S3 or expose private key/parser details to callers; the server log gets the reason.
+      this.logger.error(
+        `CloudFront signing failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new ServiceUnavailableException(
         'CloudFront download signing is not configured correctly',
       );

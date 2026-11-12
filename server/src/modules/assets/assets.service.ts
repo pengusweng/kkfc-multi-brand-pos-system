@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   PayloadTooLargeException,
   ServiceUnavailableException,
@@ -25,6 +26,8 @@ export interface AssetUpload {
 
 @Injectable()
 export class AssetsService {
+  private readonly logger = new Logger(AssetsService.name);
+
   constructor(private readonly storage: StorageService) {}
 
   async upload(userId: string, file?: AssetUpload, expires = true) {
@@ -90,9 +93,18 @@ export class AssetsService {
         downloadUrl,
         expiresIn: expires ? SIGNED_URL_EXPIRY_SECONDS : null,
       };
-    } catch {
+    } catch (error) {
+      this.logStorageError('upload', error);
       throw new ServiceUnavailableException('Asset storage is unavailable');
     }
+  }
+
+  private logStorageError(action: string, error: unknown) {
+    const detail =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    this.logger.error(`Asset ${action} failed: ${detail}`);
   }
 
   async download(userId: string, key: string, expires = true) {
@@ -113,6 +125,7 @@ export class AssetsService {
       };
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
+      this.logStorageError('download', error);
       throw new ServiceUnavailableException('Asset storage is unavailable');
     }
   }
