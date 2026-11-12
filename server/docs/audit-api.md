@@ -125,4 +125,6 @@ Actions are added module by module as auditing is rolled out.
 
 | Action | Entity | Endpoint |
 | --- | --- | --- |
-| _None yet._ | | |
+| `AUTH_LOGIN` | `users` | `POST /api/auth/login`. Actor and entity are the logged-in user. A wrong username or password is `DENIED` (`INVALID_CREDENTIALS`) with a null actor; usernames are not stored. |
+| `AUTH_LOGOUT` | `user_sessions` | `POST /api/auth/logout`. Entity is the ended session. |
+| `AUTH_LOGOUT_ALL` | `users` | `POST /api/auth/logout-all`. Entity is the user whose sessions were ended. |
