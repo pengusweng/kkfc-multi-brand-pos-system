@@ -940,13 +940,17 @@ void main() {
         );
         expect(find.text('Refresh'), findsOneWidget);
 
-        // 3. All 4 lane headers
+        // 3. All 6 lane headers
         expect(find.text('Queued'), findsOneWidget);
+        expect(find.text('Acknowledged'), findsOneWidget);
         expect(find.text('Preparing'), findsOneWidget);
+        expect(find.text('Rework'), findsOneWidget);
         expect(find.text('QC check'), findsOneWidget);
         expect(find.text('Ready'), findsOneWidget);
 
-        // 4. Empty QC check lane message
+        // 4. Empty lane messages
+        expect(find.text('Nothing acknowledged'), findsOneWidget);
+        expect(find.text('Nothing in rework'), findsOneWidget);
         expect(find.text('Nothing waiting for QC'), findsOneWidget);
 
         // 5. Three KitchenTicketCard components
@@ -1447,6 +1451,7 @@ void main() {
           matching: find.text('Details'),
         );
         expect(readyDetails, findsOneWidget);
+        await tester.ensureVisible(readyDetails);
         await tester.tap(readyDetails);
         await tester.pumpAndSettle();
 
@@ -1470,6 +1475,7 @@ void main() {
         expect(tester.widget<FilledButton>(qcAction).onPressed, isNotNull);
 
         // Tap QC Check button to open QC check modal
+        await tester.ensureVisible(qcAction);
         await tester.tap(qcAction);
         await tester.pumpAndSettle();
 
@@ -1571,6 +1577,7 @@ void main() {
         expect(filledButton.onPressed, isNull);
 
         // Tap the disabled button - does not call any API or open dialog
+        await tester.ensureVisible(passButtonFinder);
         await tester.tap(passButtonFinder);
         await tester.pumpAndSettle();
         expect(find.byType(KitchenTicketStatusDialog), findsNothing);
@@ -1580,6 +1587,7 @@ void main() {
           of: card,
           matching: find.text('Details'),
         );
+        await tester.ensureVisible(detailsFinder);
         await tester.tap(detailsFinder);
         await tester.pumpAndSettle();
 
@@ -1625,6 +1633,7 @@ void main() {
         expect(filledButton.onPressed, isNotNull);
 
         // Tapping opens the QC check popup
+        await tester.ensureVisible(qcCardButton);
         await tester.tap(qcCardButton);
         await tester.pumpAndSettle();
 
@@ -1753,6 +1762,7 @@ void main() {
           of: card,
           matching: find.byType(FilledButton),
         );
+        await tester.ensureVisible(qcCardButton);
         await tester.tap(qcCardButton);
         await tester.pumpAndSettle();
 
@@ -1910,7 +1920,7 @@ void main() {
       },
     );
 
-    test('KitchenBoardState.ticketsForLane prioritizes REWORKING tickets at the top of Preparing lane', () {
+    test('KitchenBoardState.ticketsForLane routes REWORKING tickets to rework lane and PREPARING tickets to preparing lane', () {
       final samplePreparing = sampleKitchenBoardTickets.firstWhere(
         (t) => t.lane == KitchenBoardLane.preparing,
       );
@@ -1947,13 +1957,15 @@ void main() {
         tickets: [normalPrep1, normalPrep2, reworkTicket],
       );
 
-      final laneTickets = state.ticketsForLane(KitchenBoardLane.preparing);
-      expect(laneTickets.length, 3);
-      // Rework ticket must be prioritized at index 0 (top of column)
-      expect(laneTickets[0].kitchenTicketId, 'prep-rework');
-      expect(laneTickets[0].data.status, KkfcStatus.reworking);
-      expect(laneTickets[1].kitchenTicketId, 'prep-1');
-      expect(laneTickets[2].kitchenTicketId, 'prep-2');
+      final reworkTickets = state.ticketsForLane(KitchenBoardLane.rework);
+      expect(reworkTickets.length, 1);
+      expect(reworkTickets[0].kitchenTicketId, 'prep-rework');
+      expect(reworkTickets[0].data.status, KkfcStatus.reworking);
+
+      final prepTickets = state.ticketsForLane(KitchenBoardLane.preparing);
+      expect(prepTickets.length, 2);
+      expect(prepTickets[0].kitchenTicketId, 'prep-1');
+      expect(prepTickets[1].kitchenTicketId, 'prep-2');
     });
 
     testWidgets(
@@ -1986,6 +1998,7 @@ void main() {
         // 1. Open QC check dialog
         final qcCheckButton = find.widgetWithText(FilledButton, 'QC check');
         expect(qcCheckButton, findsOneWidget);
+        await tester.ensureVisible(qcCheckButton);
         await tester.tap(qcCheckButton);
         await tester.pumpAndSettle();
 
@@ -2108,6 +2121,7 @@ void main() {
         // 1. Click "Hand over" button on ticket card in Ready lane
         final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
         expect(handOverButton, findsOneWidget);
+        await tester.ensureVisible(handOverButton);
         await tester.tap(handOverButton);
         await tester.pumpAndSettle();
 
@@ -2236,6 +2250,7 @@ void main() {
         // 1. Click "Hand over" button on ticket card in Ready lane
         final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
         expect(handOverButton, findsOneWidget);
+        await tester.ensureVisible(handOverButton);
         await tester.tap(handOverButton);
         await tester.pumpAndSettle();
 
@@ -2348,6 +2363,7 @@ void main() {
         // 1. Click "Hand over" button on delivery ticket card
         final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
         expect(handOverButton, findsOneWidget);
+        await tester.ensureVisible(handOverButton);
         await tester.tap(handOverButton);
         await tester.pumpAndSettle();
 
@@ -2910,22 +2926,25 @@ void main() {
           ),
         );
 
-        // 1. Verify Lane Priority: rework tickets are always highest priority (at the top)
+        // 1. Verify Lane: rework tickets are in rework lane
         final mixedState = KitchenBoardState(
           tickets: [normalPreparingTicket, reworkTicket],
         );
+        final reworkLaneTickets = mixedState.ticketsForLane(
+          KitchenBoardLane.rework,
+        );
+        expect(reworkLaneTickets.first.data.ticketNumber, 'T-015');
         final preparingLaneTickets = mixedState.ticketsForLane(
           KitchenBoardLane.preparing,
         );
-        expect(preparingLaneTickets.first.data.ticketNumber, 'T-015');
-        expect(preparingLaneTickets.last.data.ticketNumber, 'T-099');
+        expect(preparingLaneTickets.first.data.ticketNumber, 'T-099');
 
         var currentTickets = [reworkTicket];
         final repo = _FakeKitchenBoardRepository(() async => currentTickets);
 
         await pumpBoard(tester, repository: repo);
 
-        // 2. Ticket card in Preparing lane matches reference design
+        // 2. Ticket card in Rework lane matches reference design
         final reworkCard = find.byKey(
           const ValueKey('kitchen-ticket-card-T-015'),
         );
@@ -2972,6 +2991,7 @@ void main() {
         expect(openReworkButton, findsOneWidget);
 
         // 3. Clicking "Open rework" opens KitchenTicketStatusDialog with KitchenTicketReworkView
+        await tester.ensureVisible(openReworkButton);
         await tester.tap(openReworkButton);
         await tester.pumpAndSettle();
 
@@ -3071,6 +3091,7 @@ void main() {
           of: qcLaneCard,
           matching: find.widgetWithText(FilledButton, 'QC check'),
         );
+        await tester.ensureVisible(qcCardButton);
         await tester.tap(qcCardButton);
         await tester.pumpAndSettle();
 
@@ -3184,6 +3205,7 @@ void main() {
           of: card,
           matching: find.widgetWithText(FilledButton, 'Open rework'),
         );
+        await tester.ensureVisible(openReworkButton);
         await tester.tap(openReworkButton);
         await tester.pumpAndSettle();
 
@@ -3205,6 +3227,40 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'kitchen board is scrollable sideways horizontally across all 6 columns',
+      (tester) async {
+        final repo = _FakeKitchenBoardRepository(
+          () async => sampleKitchenBoardTickets,
+        );
+
+        await pumpBoard(tester, repository: repo);
+
+        final horizontalScrollView = find.byKey(
+          const ValueKey('kitchen-board-horizontal-scroll-view'),
+        );
+        expect(horizontalScrollView, findsOneWidget);
+
+        // All 6 lane headers exist in the tree
+        expect(find.text('Queued'), findsOneWidget);
+        expect(find.text('Acknowledged'), findsOneWidget);
+        expect(find.text('Preparing'), findsOneWidget);
+        expect(find.text('Rework'), findsOneWidget);
+        expect(find.text('QC check'), findsOneWidget);
+        expect(find.text('Ready'), findsOneWidget);
+
+        // Scroll sideways horizontally
+        await tester.drag(horizontalScrollView, const Offset(-500, 0));
+        await tester.pumpAndSettle();
+
+        // Verify Ready column card T-014 is visible and present
+        final readyCard = find.byKey(
+          const ValueKey('kitchen-ticket-card-T-014'),
+        );
+        expect(readyCard, findsOneWidget);
       },
     );
   });
