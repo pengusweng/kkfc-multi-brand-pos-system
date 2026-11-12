@@ -133,3 +133,5 @@ Actions are added module by module as auditing is rolled out.
 | `USER_DEACTIVATED` | `users` | `DELETE /api/users/:id` (deactivates the account). |
 | `USERS_LISTED` | `users` | `GET /api/users` (sensitive read; entity is null). |
 | `USER_VIEWED` | `users` | `GET /api/users/:id`. Entity is the viewed user, also when looked up by username. |
+| `PIN_CREATED` | `user_pin_credentials` | `POST /api/pin`. Entity is the PIN owner (the actor). An existing PIN is `FAILED` (`EXISTING_PIN_FOUND`). |
+| `PIN_UPDATED` | `user_pin_credentials` | `PATCH /api/pin`. A wrong current password is `DENIED` (`INVALID_CREDENTIALS`). PINs and passwords are never stored. |

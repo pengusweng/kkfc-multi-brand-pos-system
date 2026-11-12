@@ -21,6 +21,10 @@ import {
 } from './docs/pin.docs';
 import { PIN_ROLES } from './pin.roles';
 import { PinService } from './pin.service';
+import { Audit, type AuditResolver } from '../../shared/audit/audit.decorator';
+
+// A PIN credential is keyed by its owner, who is always the session user.
+const pinOwner: AuditResolver = (request) => request.session?.user?.user_id;
 
 @Controller('pin')
 @PinDocs()
@@ -30,6 +34,11 @@ export class PinController {
   constructor(private readonly pinService: PinService) {}
 
   @Post()
+  @Audit({
+    action: 'PIN_CREATED',
+    entity: 'user_pin_credentials',
+    id: pinOwner,
+  })
   @Header('Cache-Control', 'no-store')
   @CreatePinDocs()
   create(@Body() dto: CreatePinDTO, @Req() request: AuthenticatedRequest) {
@@ -44,6 +53,11 @@ export class PinController {
   }
 
   @Patch()
+  @Audit({
+    action: 'PIN_UPDATED',
+    entity: 'user_pin_credentials',
+    id: pinOwner,
+  })
   @Header('Cache-Control', 'no-store')
   @UpdatePinDocs()
   update(@Body() dto: UpdatePinDTO, @Req() request: AuthenticatedRequest) {
