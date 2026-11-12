@@ -36,18 +36,20 @@ class KitchenBoardState {
   int get activeCount => tickets.length;
 
   List<KitchenBoardTicket> ticketsForLane(KitchenBoardLane lane) {
-    return tickets.where((t) {
-      final effectiveLane = switch (t.rawStatus.toUpperCase()) {
-        'QUEUED' => KitchenBoardLane.queued,
-        'ACKNOWLEDGED' => KitchenBoardLane.acknowledged,
-        'PREPARING' => KitchenBoardLane.preparing,
-        'REWORKING' => KitchenBoardLane.rework,
-        'FOR_CHECKING' || 'CHECKING' => KitchenBoardLane.qcCheck,
-        'READY' => KitchenBoardLane.ready,
-        _ => t.lane,
-      };
-      return effectiveLane == lane;
-    }).toList(growable: false);
+    return tickets
+        .where((t) {
+          final effectiveLane = switch (t.rawStatus.toUpperCase()) {
+            'QUEUED' => KitchenBoardLane.queued,
+            'ACKNOWLEDGED' => KitchenBoardLane.acknowledged,
+            'PREPARING' => KitchenBoardLane.preparing,
+            'REWORKING' => KitchenBoardLane.rework,
+            'FOR_CHECKING' || 'CHECKING' => KitchenBoardLane.qcCheck,
+            'READY' => KitchenBoardLane.ready,
+            _ => t.lane,
+          };
+          return effectiveLane == lane;
+        })
+        .toList(growable: false);
   }
 
   KitchenBoardState copyWith({

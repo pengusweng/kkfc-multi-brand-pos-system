@@ -176,14 +176,23 @@ void main() {
 
         // On phone, brands are centered horizontally in the middle of the header
         final brandsRect = tester.getRect(brandsFinder);
-        expect((brandsRect.center.dx - (_phone.width / 2)).abs(), lessThan(10.0));
+        expect(
+          (brandsRect.center.dx - (_phone.width / 2)).abs(),
+          lessThan(10.0),
+        );
 
         // 2. Check wide layout (desktop)
         await _pumpLogin(tester, size: _desktop);
 
-        final desktopLogoFinder = find.byKey(const ValueKey('brand-panel-logo'));
-        final desktopTitleFinder = find.byKey(const ValueKey('brand-panel-title'));
-        final desktopBrandsFinder = find.byKey(const ValueKey('brand-panel-brands'));
+        final desktopLogoFinder = find.byKey(
+          const ValueKey('brand-panel-logo'),
+        );
+        final desktopTitleFinder = find.byKey(
+          const ValueKey('brand-panel-title'),
+        );
+        final desktopBrandsFinder = find.byKey(
+          const ValueKey('brand-panel-brands'),
+        );
 
         expect(desktopLogoFinder, findsOneWidget);
         expect(desktopTitleFinder, findsOneWidget);
@@ -196,7 +205,10 @@ void main() {
         // On desktop, brands are situated in the middle of the header
         final desktopBrandsRect = tester.getRect(desktopBrandsFinder);
         final desktopLogoRect = tester.getRect(desktopLogoFinder);
-        expect((desktopBrandsRect.center.dx - (_desktop.width / 2)).abs(), lessThan(30.0));
+        expect(
+          (desktopBrandsRect.center.dx - (_desktop.width / 2)).abs(),
+          lessThan(30.0),
+        );
         expect(desktopLogoRect.left, lessThan(desktopBrandsRect.left));
       },
     );

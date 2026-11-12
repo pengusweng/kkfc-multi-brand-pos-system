@@ -50,14 +50,9 @@ class BrandPanel extends StatelessWidget {
                       ),
                       Expanded(
                         flex: 2,
-                        child: Center(
-                          child: _buildBrands(context),
-                        ),
+                        child: Center(child: _buildBrands(context)),
                       ),
-                      const Expanded(
-                        flex: 1,
-                        child: SizedBox.shrink(),
-                      ),
+                      const Expanded(flex: 1, child: SizedBox.shrink()),
                     ],
                   ),
           ),
@@ -80,9 +75,7 @@ class BrandPanel extends StatelessWidget {
           semanticLabel: 'KKFC',
           errorBuilder: (context, error, stackTrace) => Text(
             'KKFC',
-            style: (compact
-                    ? KkfcTypography.text2xl
-                    : KkfcTypography.text3xl)
+            style: (compact ? KkfcTypography.text2xl : KkfcTypography.text3xl)
                 .copyWith(
                   color: Colors.white,
                   fontWeight: KkfcFontWeights.bold,
@@ -93,9 +86,7 @@ class BrandPanel extends StatelessWidget {
         Text(
           'Multi-brand POS',
           key: const ValueKey('brand-panel-title'),
-          style: (compact
-                  ? KkfcTypography.textMd
-                  : KkfcTypography.textBase)
+          style: (compact ? KkfcTypography.textMd : KkfcTypography.textBase)
               .copyWith(
                 color: Colors.white.withValues(alpha: 0.95),
                 fontWeight: KkfcFontWeights.bold,
