@@ -34,6 +34,12 @@ import {
 import { FindOrdersDTO } from './dto/find-orders.dto';
 import { KitchenTicketChanges } from '../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 import { OrdersService } from './orders.service';
+import {
+  Audit,
+  fromParam,
+  fromResult,
+  NoAudit,
+} from '../../../shared/audit/audit.decorator';
 
 @Controller('brands/:brandId/orders')
 @OrdersDocs()
@@ -72,6 +78,12 @@ export class OrdersController {
 
   @CreateOrderDocs()
   @Post()
+  @Audit({
+    action: 'ORDER_CREATED',
+    snapshot: 'create',
+    entity: 'orders',
+    id: fromResult('order_id'),
+  })
   create(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: CreateOrderDTO,
@@ -82,6 +94,7 @@ export class OrdersController {
 
   @VerifyOrderDocs()
   @Post(':orderId/verify')
+  @NoAudit('read-only price and availability check; writes nothing')
   @HttpCode(200)
   verify(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -93,6 +106,12 @@ export class OrdersController {
 
   @ConfirmOrderDocs()
   @Post(':orderId/confirm')
+  @Audit({
+    action: 'ORDER_CONFIRMED',
+    snapshot: 'update',
+    entity: 'orders',
+    id: fromParam('orderId'),
+  })
   @HttpCode(200)
   async confirm(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -113,6 +132,12 @@ export class OrdersController {
 
   @CancelOrderDocs()
   @Post(':orderId/cancel')
+  @Audit({
+    action: 'ORDER_CANCELLED',
+    snapshot: 'update',
+    entity: 'orders',
+    id: fromParam('orderId'),
+  })
   @HttpCode(200)
   cancel(
     @Param('brandId', ParseUUIDPipe) brandId: string,

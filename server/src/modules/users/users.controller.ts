@@ -30,6 +30,16 @@ import { FindUsersDTO } from './dto/find-users.dto';
 import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import {
+  Audit,
+  type AuditResolver,
+  fromParam,
+  fromResult,
+} from '../../shared/audit/audit.decorator';
+
+// GET /users/:id accepts a username, so prefer the resolved user's ID.
+const viewedUser: AuditResolver = (request, result) =>
+  fromResult('user_id')(request, result) ?? fromParam('id')(request);
 
 @Controller('users')
 @UsersDocs()
@@ -38,6 +48,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Audit({
+    action: 'USER_CREATED',
+    snapshot: 'create',
+    entity: 'users',
+    id: fromResult('user_id'),
+  })
   @UseGuards(PinGuard)
   @CreateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
@@ -52,6 +68,7 @@ export class UsersController {
   }
 
   @Get()
+  @Audit({ action: 'USERS_LISTED', entity: 'users' })
   @FindAllUsersDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async findAll(@Query() query: FindUsersDTO) {
@@ -59,6 +76,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Audit({ action: 'USER_VIEWED', entity: 'users', id: viewedUser })
   @FindOneUserDocs()
   async findOne(
     @Param('id') usernameOrUserId: string,
@@ -69,6 +87,12 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'USER_UPDATED',
+    snapshot: 'update',
+    entity: 'users',
+    id: fromParam('id'),
+  })
   @UpdateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(PinGuard)
@@ -85,6 +109,12 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'USER_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'users',
+    id: fromParam('id'),
+  })
   @DeleteUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(PinGuard)

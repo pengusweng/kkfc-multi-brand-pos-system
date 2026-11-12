@@ -28,6 +28,7 @@ import {
 } from './docs/kitchen-ticket.docs';
 import { FindKitchenTicketsDTO } from './dto/find-kitchen-tickets.dto';
 import { KitchenTicketService } from './kitchen-ticket.service';
+import { Audit, fromParam } from '../../../shared/audit/audit.decorator';
 import { Observable } from 'rxjs';
 
 @Controller('kitchen-ticket')
@@ -103,6 +104,12 @@ export class KitchenTicketController {
   }
 
   @Patch(':id/preparer')
+  @Audit({
+    action: 'KITCHEN_TICKET_PREPARER_ASSIGNED',
+    snapshot: 'update',
+    entity: 'kitchen_tickets',
+    id: fromParam('id'),
+  })
   @AssignKitchenTicketPreparerDocs()
   async claimPerparer(
     @Param('id', ParseUUIDPipe) kitchenTicketId: string,
@@ -115,6 +122,12 @@ export class KitchenTicketController {
   }
 
   @Patch(':id/checker')
+  @Audit({
+    action: 'KITCHEN_TICKET_CHECKER_ASSIGNED',
+    snapshot: 'update',
+    entity: 'kitchen_tickets',
+    id: fromParam('id'),
+  })
   @AssignKitchenTicketCheckerDocs()
   @Roles(
     UserRole.MANAGER,

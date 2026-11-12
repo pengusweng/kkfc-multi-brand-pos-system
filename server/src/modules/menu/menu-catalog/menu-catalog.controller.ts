@@ -1,3 +1,4 @@
+import { Audit, fromResult } from '../../../shared/audit/audit.decorator';
 import {
   Body,
   Controller,
@@ -28,6 +29,12 @@ export class MenuCatalogController {
   constructor(private readonly menuCatalogService: MenuCatalogService) {}
 
   @Post()
+  @Audit({
+    action: 'MENU_CATALOG_ENTRY_CREATED',
+    snapshot: 'create',
+    entity: 'menu_items',
+    id: fromResult('menu_item_id'),
+  })
   @CreateMenuCatalogDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async create(@Body() dto: MenuCatalogSetupDTO) {

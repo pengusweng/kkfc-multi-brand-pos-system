@@ -22,6 +22,11 @@ import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../shared/audit/audit.decorator';
+import {
   BrandsDocs,
   CreateBrandDocs,
   FindOneBrandDocs,
@@ -46,6 +51,12 @@ export class BrandsController {
   ) {}
 
   @Post()
+  @Audit({
+    action: 'BRAND_CREATED',
+    snapshot: 'create',
+    entity: 'brands',
+    id: fromResult('brand_id'),
+  })
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
@@ -84,6 +95,12 @@ export class BrandsController {
   }
 
   @Patch(':brandId')
+  @Audit({
+    action: 'BRAND_UPDATED',
+    snapshot: 'update',
+    entity: 'brands',
+    id: fromParam('brandId'),
+  })
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
@@ -110,6 +127,12 @@ export class BrandsController {
   }
 
   @Delete(':brandId')
+  @Audit({
+    action: 'BRAND_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'brands',
+    id: fromParam('brandId'),
+  })
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERADMIN)
   @DeleteBrandDocs()

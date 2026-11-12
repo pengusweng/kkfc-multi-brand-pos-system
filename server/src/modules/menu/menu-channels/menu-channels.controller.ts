@@ -1,3 +1,8 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import {
@@ -41,6 +46,12 @@ export class MenuChannelsController {
   constructor(private readonly menuChannelsService: MenuChannelsService) {}
 
   @Post()
+  @Audit({
+    action: 'MENU_ITEM_CHANNEL_CREATED',
+    snapshot: 'create',
+    entity: 'menu_item_channels',
+    id: fromResult('menu_item_channel_id'),
+  })
   @CreateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async create(@Body() dto: CreateMenuChannelDTO) {
@@ -76,6 +87,12 @@ export class MenuChannelsController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'MENU_ITEM_CHANNEL_UPDATED',
+    snapshot: 'update',
+    entity: 'menu_item_channels',
+    id: fromParam('id'),
+  })
   @UpdateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async update(
@@ -86,6 +103,12 @@ export class MenuChannelsController {
   }
 
   @Patch('reactivate/:id')
+  @Audit({
+    action: 'MENU_ITEM_CHANNEL_REACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_channels',
+    id: fromParam('id'),
+  })
   @ReactivateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
@@ -93,6 +116,12 @@ export class MenuChannelsController {
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'MENU_ITEM_CHANNEL_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_channels',
+    id: fromParam('id'),
+  })
   @DeleteMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {

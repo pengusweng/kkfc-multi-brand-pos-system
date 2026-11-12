@@ -136,6 +136,8 @@ export async function cleanupCatalogFixture(
     select: { user_id: true },
   });
   const userIds = users.map((user) => user.user_id);
+  // Audited requests reference fixture users as actors (FK, no cascade).
+  await prisma.auditLog.deleteMany({ where: { actor_id: { in: userIds } } });
   await prisma.userSession.deleteMany({ where: { user_id: { in: userIds } } });
   await prisma.userPinCredential.deleteMany({
     where: { user_id: { in: userIds } },

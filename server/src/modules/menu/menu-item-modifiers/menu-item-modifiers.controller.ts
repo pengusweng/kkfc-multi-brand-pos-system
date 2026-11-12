@@ -1,3 +1,8 @@
+import {
+  Audit,
+  fromParam,
+  fromResult,
+} from '../../../shared/audit/audit.decorator';
 import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
 import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import {
@@ -42,6 +47,12 @@ export class MenuItemModifiersController {
   ) {}
 
   @Post()
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_CREATED',
+    snapshot: 'create',
+    entity: 'menu_item_modifiers',
+    id: fromResult('menu_item_modifier_id'),
+  })
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
@@ -81,6 +92,12 @@ export class MenuItemModifiersController {
   }
 
   @Patch(':id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_UPDATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @UpdateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
   async update(
@@ -91,6 +108,12 @@ export class MenuItemModifiersController {
   }
 
   @Patch('reactivate/:id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_REACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @ReactivateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
@@ -98,6 +121,12 @@ export class MenuItemModifiersController {
   }
 
   @Delete(':id')
+  @Audit({
+    action: 'MENU_ITEM_MODIFIER_DEACTIVATED',
+    snapshot: 'update',
+    entity: 'menu_item_modifiers',
+    id: fromParam('id'),
+  })
   @DeleteMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
