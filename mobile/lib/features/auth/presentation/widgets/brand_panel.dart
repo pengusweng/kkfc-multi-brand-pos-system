@@ -3,8 +3,8 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/shared/widgets/wave_accents.dart';
 
-/// Top navy header displaying the KKFC brand, Staff POS title,
-/// and brand labels with decorative wave arcs.
+/// Top navy header displaying the KKFC logo, Multi-brand POS title,
+/// and brand labels situated in the middle with decorative wave arcs.
 class BrandPanel extends StatelessWidget {
   const BrandPanel({super.key, required this.compact});
 
@@ -29,47 +29,79 @@ class BrandPanel extends StatelessWidget {
               horizontal: compact ? KkfcSpace.space4 : KkfcSpace.space6,
               vertical: compact ? KkfcSpace.space3 : KkfcSpace.space4,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: KkfcSpace.space3,
-                  runSpacing: KkfcSpace.space1,
-                  children: [
-                    Text(
-                      'KKFC',
-                      style:
-                          (compact
-                                  ? KkfcTypography.text2xl
-                                  : KkfcTypography.text3xl)
-                              .copyWith(
-                                color: Colors.white,
-                                fontWeight: KkfcFontWeights.bold,
-                                letterSpacing: 1.5,
-                              ),
-                    ),
-                    Text(
-                      'Staff POS',
-                      style:
-                          (compact
-                                  ? KkfcTypography.textBase
-                                  : KkfcTypography.textLg)
-                              .copyWith(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontWeight: KkfcFontWeights.regular,
-                              ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                _buildBrands(context),
-              ],
-            ),
+            child: compact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildBranding(context),
+                      const SizedBox(height: KkfcSpace.space2),
+                      Center(child: _buildBrands(context)),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildBranding(context),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Center(
+                          child: _buildBrands(context),
+                        ),
+                      ),
+                      const Expanded(
+                        flex: 1,
+                        child: SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBranding(BuildContext context) {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: KkfcSpace.space3,
+      runSpacing: KkfcSpace.space1,
+      children: [
+        Image.asset(
+          'assets/images/logo_light.png',
+          key: const ValueKey('brand-panel-logo'),
+          height: compact ? 22.0 : 26.0,
+          fit: BoxFit.contain,
+          semanticLabel: 'KKFC',
+          errorBuilder: (context, error, stackTrace) => Text(
+            'KKFC',
+            style: (compact
+                    ? KkfcTypography.text2xl
+                    : KkfcTypography.text3xl)
+                .copyWith(
+                  color: Colors.white,
+                  fontWeight: KkfcFontWeights.bold,
+                  letterSpacing: 1.5,
+                ),
+          ),
+        ),
+        Text(
+          'Multi-brand POS',
+          key: const ValueKey('brand-panel-title'),
+          style: (compact
+                  ? KkfcTypography.textMd
+                  : KkfcTypography.textBase)
+              .copyWith(
+                color: Colors.white.withValues(alpha: 0.95),
+                fontWeight: KkfcFontWeights.bold,
+              ),
+        ),
+      ],
     );
   }
 
@@ -79,9 +111,12 @@ class BrandPanel extends StatelessWidget {
       fontWeight: KkfcFontWeights.regular,
     );
 
-    if (compact) {
-      return Wrap(
-        spacing: KkfcSpace.space2,
+    return KeyedSubtree(
+      key: const ValueKey('brand-panel-brands'),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: compact ? KkfcSpace.space2 : KkfcSpace.space3,
         runSpacing: 2,
         children: [
           Text('Gamcheon', style: brandStyle),
@@ -90,18 +125,7 @@ class BrandPanel extends StatelessWidget {
           Text('·', style: brandStyle),
           Text('King Kungs Kafé', style: brandStyle),
         ],
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('Gamcheon', style: brandStyle),
-        const SizedBox(width: KkfcSpace.space4),
-        Text("Aurelia's Inasal", style: brandStyle),
-        const SizedBox(width: KkfcSpace.space4),
-        Text('King Kungs Kafé', style: brandStyle),
-      ],
+      ),
     );
   }
 }

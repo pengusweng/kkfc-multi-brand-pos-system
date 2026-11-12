@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/data/models/login_status.dart';
@@ -141,36 +142,62 @@ void main() {
     });
 
     testWidgets(
-      'header renders larger KKFC text and collapses KKFC and Staff POS into 1 row',
+      'header renders logo_light.png, bold Multi-brand POS title, and brands in middle of header',
       (tester) async {
+        // 1. Check compact layout (phone)
         await _pumpLogin(tester, size: _phone);
 
-        final kkfcFinder = find.text('KKFC');
-        final staffPosFinder = find.text('Staff POS');
-        expect(kkfcFinder, findsOneWidget);
-        expect(staffPosFinder, findsOneWidget);
+        final logoFinder = find.byKey(const ValueKey('brand-panel-logo'));
+        final titleFinder = find.byKey(const ValueKey('brand-panel-title'));
+        final brandsFinder = find.byKey(const ValueKey('brand-panel-brands'));
 
-        // Verify KKFC has the larger size (24px in compact, vs previous 18px textLg)
-        final kkfcText = tester.widget<Text>(kkfcFinder);
-        expect(kkfcText.style?.fontSize, greaterThanOrEqualTo(24.0));
+        expect(logoFinder, findsOneWidget);
+        expect(titleFinder, findsOneWidget);
+        expect(brandsFinder, findsOneWidget);
 
-        // Verify KKFC and Staff POS are in the same row/wrap container
-        final wrapFinder = find.ancestor(
-          of: kkfcFinder,
-          matching: find.byType(Wrap),
-        );
-        expect(wrapFinder, findsWidgets);
-
+        // Logo uses logo_light.png
+        final logoImage = tester.widget<Image>(logoFinder);
         expect(
-          find.descendant(of: wrapFinder.first, matching: staffPosFinder),
-          findsOneWidget,
+          (logoImage.image as AssetImage).assetName,
+          'assets/images/logo_light.png',
         );
 
-        // Verify horizontal alignment on the same row (similar y offset)
-        final kkfcTopLeft = tester.getTopLeft(kkfcFinder);
-        final staffPosTopLeft = tester.getTopLeft(staffPosFinder);
-        expect((kkfcTopLeft.dy - staffPosTopLeft.dy).abs(), lessThan(12.0));
-        expect(staffPosTopLeft.dx, greaterThan(kkfcTopLeft.dx));
+        // Title is "Multi-brand POS", bold, and slightly smaller than previous textBase (16) -> textMd (14)
+        expect(find.text('Multi-brand POS'), findsOneWidget);
+        expect(find.text('Staff POS'), findsNothing);
+        final titleWidget = tester.widget<Text>(titleFinder);
+        expect(titleWidget.style?.fontWeight, KkfcFontWeights.bold);
+        expect(titleWidget.style?.fontSize, KkfcTextSizes.textMd);
+
+        // Brands are rendered with bullet separators
+        expect(find.text('Gamcheon'), findsOneWidget);
+        expect(find.text("Aurelia's Inasal"), findsOneWidget);
+        expect(find.text('King Kungs Kafé'), findsOneWidget);
+
+        // On phone, brands are centered horizontally in the middle of the header
+        final brandsRect = tester.getRect(brandsFinder);
+        expect((brandsRect.center.dx - (_phone.width / 2)).abs(), lessThan(10.0));
+
+        // 2. Check wide layout (desktop)
+        await _pumpLogin(tester, size: _desktop);
+
+        final desktopLogoFinder = find.byKey(const ValueKey('brand-panel-logo'));
+        final desktopTitleFinder = find.byKey(const ValueKey('brand-panel-title'));
+        final desktopBrandsFinder = find.byKey(const ValueKey('brand-panel-brands'));
+
+        expect(desktopLogoFinder, findsOneWidget);
+        expect(desktopTitleFinder, findsOneWidget);
+        expect(desktopBrandsFinder, findsOneWidget);
+
+        final desktopTitleWidget = tester.widget<Text>(desktopTitleFinder);
+        expect(desktopTitleWidget.style?.fontWeight, KkfcFontWeights.bold);
+        expect(desktopTitleWidget.style?.fontSize, KkfcTextSizes.textBase);
+
+        // On desktop, brands are situated in the middle of the header
+        final desktopBrandsRect = tester.getRect(desktopBrandsFinder);
+        final desktopLogoRect = tester.getRect(desktopLogoFinder);
+        expect((desktopBrandsRect.center.dx - (_desktop.width / 2)).abs(), lessThan(30.0));
+        expect(desktopLogoRect.left, lessThan(desktopBrandsRect.left));
       },
     );
 
