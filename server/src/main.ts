@@ -23,7 +23,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, () =>
     SwaggerModule.createDocument(app, swaggerConfig),
   );
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
   const localUrl = new URL(await app.getUrl());
   localUrl.hostname = 'localhost';
   localUrl.pathname = `/${apiPrefix}`;

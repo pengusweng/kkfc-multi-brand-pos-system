@@ -158,14 +158,25 @@ export const TEST_BRANDS = [
 ];
 
 export async function seedUsers(prisma: Prisma.TransactionClient) {
-  if (!/^[0-9]{4}$/.test(TEST_PIN)) {
+  const hostedPassword = process.env.DEMO_SEED_PASSWORD;
+  const hostedPin = process.env.DEMO_SEED_PIN;
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!hostedPassword || !hostedPin)
+  ) {
+    throw new Error(
+      'Hosted demo seeding requires DEMO_SEED_PASSWORD and DEMO_SEED_PIN.',
+    );
+  }
+  const effectivePin = hostedPin ?? TEST_PIN;
+  if (!/^[0-9]{4}$/.test(effectivePin)) {
     throw new Error('Seed PIN must contain exactly four digits.');
   }
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
     const { password, ...data } = user;
     const values = {
       ...data,
-      password_hash: await argon2.hash(password),
+      password_hash: await argon2.hash(hostedPassword ?? password),
       is_active: true,
     };
     const savedUser = await prisma.user.upsert({
@@ -179,7 +190,7 @@ export async function seedUsers(prisma: Prisma.TransactionClient) {
         update: {},
         create: {
           user_id: savedUser.user_id,
-          pin_hash: await argon2.hash(TEST_PIN),
+          pin_hash: await argon2.hash(effectivePin),
         },
       });
     }

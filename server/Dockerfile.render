@@ -1,0 +1,20 @@
+# Demo image: retain Prisma CLI, ts-node, migrations, and synthetic fixtures.
+# The normal Dockerfile intentionally has a smaller runtime without these tools.
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --include=dev
+
+# .dockerignore excludes local environment files and node_modules.
+COPY . .
+RUN npm run build
+
+ENV NODE_ENV=production
+EXPOSE 3000
+USER node
+
+# Credentials are supplied at runtime through Render environment settings.
+# Failed migrations/seeding prevent the API from starting against an empty schema.
+CMD ["npm", "run", "start:demo"]
