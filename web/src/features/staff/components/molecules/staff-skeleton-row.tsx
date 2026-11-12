@@ -1,6 +1,6 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { CLUSTER } from "../../utils/table-columns";
-import SkeletonBar from "../atoms/skeleton-bar";
+import SkeletonBar from "@/src/components/ui/atoms/skeleton-bar";
 
 // Varied widths so a stack of rows reads as a list of names, not a grid.
 const WIDTHS = [

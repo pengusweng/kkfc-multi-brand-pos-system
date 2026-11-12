@@ -8,7 +8,7 @@ import CreateStaffModal from "../components/organisms/create-staff-modal";
 import EditStaffModal from "../components/organisms/edit-staff-modal";
 import StaffDetailModal from "../components/organisms/staff-detail-modal";
 import StaffFilterBar from "../components/organisms/staff-filter-bar";
-import StaffPagination from "../components/molecules/staff-pagination";
+import Pagination from "@/src/components/ui/molecules/pagination";
 import StaffTable from "../components/organisms/staff-table";
 import { useDeactivateStaff } from "../hooks/useDeactivateStaff";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -84,7 +84,7 @@ export default function StaffAccounts() {
         emptyMessage={emptyMessage}
         footer={
           total > 0 ? (
-            <StaffPagination
+            <Pagination
               page={page}
               pageSize={USERS_PAGE_SIZE}
               total={total}
