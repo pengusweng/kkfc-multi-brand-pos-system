@@ -704,7 +704,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     return directId;
   }
 
-  Future<bool> handOverTicket(String kitchenTicketId) async {
+  Future<bool> handOverTicket(
+    String kitchenTicketId, {
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
+  }) async {
     final userRole = ref.read(userRoleProvider);
     if (userRole == UserRole.supervisor) return false;
 
@@ -717,7 +721,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
 
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
-      await repo.handOverTicket(kitchenTicketId);
+      await repo.handOverTicket(
+        kitchenTicketId,
+        photos: photos,
+        imgKeys: imgKeys,
+      );
       final prevMap = {for (final t in state.tickets) t.kitchenTicketId: t};
       final rawTickets = await repo.fetchTodaysTickets();
       final tickets = _preserveEnrichedDetails(rawTickets, prevMap);
@@ -747,7 +755,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     }
   }
 
-  Future<bool> performTicketAction(KitchenBoardTicket ticket) async {
+  Future<bool> performTicketAction(
+    KitchenBoardTicket ticket, {
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
+  }) async {
     final raw = ticket.rawStatus.toUpperCase();
     final isQcLane =
         raw == 'FOR_CHECKING' ||
@@ -796,7 +808,11 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
         ticket.data.status == KkfcStatus.ready ||
         ticket.lane == KitchenBoardLane.ready;
     if (isReady) {
-      return handOverTicket(ticket.kitchenTicketId);
+      return handOverTicket(
+        ticket.kitchenTicketId,
+        photos: photos,
+        imgKeys: imgKeys,
+      );
     }
 
     final id = ticket.kitchenTicketId;
@@ -810,7 +826,12 @@ class KitchenBoardNotifier extends Notifier<KitchenBoardState> {
     try {
       final repo = ref.read(kitchenBoardRepositoryProvider);
       final userId = await _resolveCurrentUserId();
-      await repo.advanceTicket(ticket, preparerId: userId);
+      await repo.advanceTicket(
+        ticket,
+        preparerId: userId,
+        photos: photos,
+        imgKeys: imgKeys,
+      );
       final tickets = await repo.fetchTodaysTickets();
       final nextLoading = Set<String>.from(state.loadingTicketIds)..remove(id);
       state = state.copyWith(

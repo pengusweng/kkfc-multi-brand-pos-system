@@ -11,6 +11,7 @@ import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticke
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/handed_over_success_dialog.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_body.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_dialog_header.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_qc_view.dart';
 import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_rework_view.dart';
@@ -31,6 +32,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.isActionLoading = false,
     this.isActionEnabled = true,
     this.onAction,
+    this.onHandover,
     this.onFail,
     this.onReject,
     this.onReworkDone,
@@ -39,6 +41,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
     this.onClose,
     this.imagePicker,
     this.onPickImage,
+    this.initialPhotos,
   });
 
   final KitchenBoardTicket ticket;
@@ -49,6 +52,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final bool isActionLoading;
   final bool isActionEnabled;
   final VoidCallback? onAction;
+  final Future<void> Function(List<HandoverPhotoEvidence> photos)? onHandover;
   final VoidCallback? onFail;
   final Future<void> Function(List<QcItemRejection> rejections)? onReject;
   final Future<void> Function(String? reworkNotes)? onReworkDone;
@@ -57,6 +61,7 @@ class KitchenTicketStatusDialog extends StatelessWidget {
   final VoidCallback? onClose;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
+  final List<HandoverPhotoEvidence>? initialPhotos;
 
   static const double _maxDialogWidth = 480.0;
 
@@ -174,8 +179,10 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     isActionLoading: isActionLoading,
                     isActionEnabled: isActionEnabled,
                     onHandover: onAction,
+                    onHandoverWithPhotos: onHandover,
                     imagePicker: imagePicker,
                     onPickImage: onPickImage,
+                    initialPhotos: initialPhotos,
                   ),
                 )
               else if (isRework)
@@ -384,6 +391,7 @@ Future<void> showKitchenTicketStatusDialog(
   bool? isActionEnabled,
   ImagePicker? imagePicker,
   Future<XFile?> Function(ImageSource source)? onPickImage,
+  List<HandoverPhotoEvidence>? initialPhotos,
 }) {
   return showDialog<void>(
     context: context,
@@ -424,6 +432,7 @@ Future<void> showKitchenTicketStatusDialog(
             isActionEnabled: effectiveActionEnabled,
             imagePicker: imagePicker,
             onPickImage: onPickImage,
+            initialPhotos: initialPhotos,
             onClose: () => Navigator.of(dialogContext).maybePop(),
             showCancelTicketButton: canCancel,
             onCancelTicket: (effectiveActionEnabled && canCancel)
@@ -488,6 +497,29 @@ Future<void> showKitchenTicketStatusDialog(
                           );
                       if (success && dialogContext.mounted) {
                         Navigator.of(dialogContext).maybePop();
+                      }
+                    }
+                  }
+                : null,
+            onHandover: effectiveActionEnabled
+                ? (photos) async {
+                    final success = await ref
+                        .read(kitchenBoardProvider.notifier)
+                        .handOverTicket(
+                          currentTicket.kitchenTicketId,
+                          photos: photos,
+                        );
+
+                    if (success && dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                      if (context.mounted) {
+                        final handedOverTime =
+                            KitchenBoardState.formatTimeOfDay(DateTime.now());
+                        await showHandedOverSuccessDialog(
+                          context,
+                          ticket: currentTicket,
+                          handedOverAtLabel: handedOverTime,
+                        );
                       }
                     }
                   }

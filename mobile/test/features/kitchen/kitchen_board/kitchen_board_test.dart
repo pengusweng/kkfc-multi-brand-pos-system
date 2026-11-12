@@ -197,9 +197,18 @@ class _FakeKitchenBoardRepository extends KitchenBoardRepository {
     await rejectQcAttempt(targetAttempt, rejections: finalRejections);
   }
 
+  final handedOverPhotos = <String, List<HandoverPhotoEvidence>>{};
+
   @override
-  Future<void> handOverTicket(String kitchenTicketId) async {
+  Future<void> handOverTicket(
+    String kitchenTicketId, {
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
+  }) async {
     handedOverTicketIds.add(kitchenTicketId);
+    if (photos != null) {
+      handedOverPhotos[kitchenTicketId] = photos;
+    }
   }
 
   @override
@@ -489,6 +498,68 @@ void main() {
       );
     });
 
+    test('handOverTicket sends POST with FormData files for delivery orders with photo evidence', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000014';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'HANDED_OVER',
+        }),
+      );
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final photo = HandoverPhotoEvidence(
+        name: 'package_sealed.png',
+        bytes: Uint8List.fromList([1, 2, 3, 4]),
+      );
+
+      await repo.handOverTicket(ticketId, photos: [photo]);
+
+      expect(adapter.requests, hasLength(1));
+      final request = adapter.requests.first;
+      expect(request.method, 'POST');
+      expect(
+        request.uri.toString(),
+        'http://localhost:3000/api/kitchen-fulfillment/$ticketId/hand-over',
+      );
+      expect(request.data, isA<FormData>());
+      final formData = request.data as FormData;
+      expect(formData.files, hasLength(1));
+      expect(formData.files.first.key, 'files');
+      expect(formData.files.first.value.filename, 'package_sealed.png');
+      expect(formData.files.first.value.contentType?.mimeType, 'image/png');
+    });
+
+    test('handOverTicket normalizes photo extension and defaults content type to image/jpeg if missing extension', () async {
+      const ticketId = '00000000-0000-4000-8000-000000000014';
+      final adapter = _RecordingAdapter(
+        (_) async => _jsonResponse({
+          'kitchen_ticket_id': ticketId,
+          'status': 'HANDED_OVER',
+        }),
+      );
+
+      final dio = Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
+        ..httpClientAdapter = adapter;
+      final repo = KitchenBoardRepository(dio);
+
+      final photo = HandoverPhotoEvidence(
+        name: 'camera_capture',
+        bytes: Uint8List.fromList([1, 2, 3]),
+      );
+
+      await repo.handOverTicket(ticketId, photos: [photo]);
+
+      final request = adapter.requests.first;
+      final formData = request.data as FormData;
+      expect(formData.files.first.key, 'files');
+      expect(formData.files.first.value.filename, 'camera_capture.jpg');
+      expect(formData.files.first.value.contentType?.mimeType, 'image/jpeg');
+    });
+
     test('fetchOrder sends GET /api/brands/{brandId}/orders/{orderId} and returns order data', () async {
       const brandId = '00000000-0000-4000-8000-000000000001';
       const orderId = '00000000-0000-4000-8000-000000000115';
@@ -599,6 +670,7 @@ void main() {
       Size size = const Size(1280, 900),
       double textScale = 1.0,
       UserRole role = UserRole.kitchenHead,
+      Future<XFile?> Function(ImageSource source)? onPickImage,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
@@ -623,7 +695,7 @@ void main() {
                   .copyWith(textScaler: TextScaler.linear(textScale)),
               child: child!,
             ),
-            home: const KitchenBoardScreen(),
+            home: KitchenBoardScreen(onPickImage: onPickImage),
           ),
         ),
       );
@@ -2029,6 +2101,89 @@ void main() {
         // Close bottom sheet
         await tester.tap(find.text('Take photo'));
         await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Handover UI flow (Delivery ticket): attaching photo enables Confirm handover and passes photos to repo.handOverTicket and opens success dialog',
+      (tester) async {
+        final deliveryTicket = sampleKitchenBoardTickets
+            .firstWhere((t) => t.data.ticketNumber == 'T-014')
+            .copyWith(lane: KitchenBoardLane.ready, rawStatus: 'READY');
+
+        final repo = _FakeKitchenBoardRepository(() async => [deliveryTicket]);
+
+        final validPngBytes = base64Decode(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        );
+
+        await pumpBoard(
+          tester,
+          repository: repo,
+          role: UserRole.kitchenHead,
+          onPickImage: (source) async => XFile.fromData(
+            validPngBytes,
+            name: 'delivery_proof.png',
+            path: 'delivery_proof.png',
+            mimeType: 'image/png',
+          ),
+        );
+
+        // 1. Click "Hand over" button on delivery ticket card
+        final handOverButton = find.widgetWithText(FilledButton, 'Hand over');
+        expect(handOverButton, findsOneWidget);
+        await tester.tap(handOverButton);
+        await tester.pumpAndSettle();
+
+        // 2. Dialog is opened
+        expect(find.byType(KitchenTicketStatusDialog), findsOneWidget);
+
+        // 3. Tick all 3 checkboxes
+        await tester.tap(find.text('All 2 items match the ticket'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cutlery, napkins and condiments included'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Packaging sealed'));
+        await tester.pumpAndSettle();
+
+        // Button disabled, prompting photo
+        final footerButton = find.byKey(
+          const ValueKey('kitchen-ticket-handover-confirm-button'),
+        );
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNull);
+        expect(find.text('Add the photo to hand over'), findsOneWidget);
+
+        // 4. Attach photo
+        await tester.tap(
+          find.byKey(
+            const ValueKey('kitchen-ticket-handover-add-photo-button'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Button now enabled with "Confirm handover"
+        expect(find.text('Attached'), findsOneWidget);
+        expect(tester.widget<FilledButton>(footerButton).onPressed, isNotNull);
+        expect(find.text('Confirm handover'), findsOneWidget);
+
+        // 5. Confirm handover
+        await tester.tap(footerButton);
+        await tester.pumpAndSettle();
+
+        // Verifies repo.handOverTicket was called WITH the attached photo!
+        expect(
+          repo.handedOverTicketIds,
+          contains(deliveryTicket.kitchenTicketId),
+        );
+        expect(repo.handedOverPhotos[deliveryTicket.kitchenTicketId], isNotNull);
+        expect(
+          repo.handedOverPhotos[deliveryTicket.kitchenTicketId]!.first.name,
+          'delivery_proof.png',
+        );
+
+        // Status dialog closed and HandedOverSuccessDialog opened
+        expect(find.byType(KitchenTicketStatusDialog), findsNothing);
+        expect(find.byType(HandedOverSuccessDialog), findsOneWidget);
       },
     );
 

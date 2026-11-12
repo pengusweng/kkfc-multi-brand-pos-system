@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/user_role.dart';
@@ -19,10 +20,14 @@ class KitchenBoardScreen extends ConsumerStatefulWidget {
     super.key,
     this.showLogout = true,
     this.onTicketDetails,
+    this.imagePicker,
+    this.onPickImage,
   });
 
   final bool showLogout;
   final ValueChanged<KitchenBoardTicket>? onTicketDetails;
+  final ImagePicker? imagePicker;
+  final Future<XFile?> Function(ImageSource source)? onPickImage;
 
   static String _roleLabelFor(UserRole? role) => switch (role) {
     UserRole.kitchenStaff => 'Kitchen Staff',
@@ -194,12 +199,16 @@ class _KitchenBoardScreenState extends ConsumerState<KitchenBoardScreen>
                               showKitchenTicketStatusDialog(
                                 context,
                                 ticket: ticket,
+                                imagePicker: widget.imagePicker,
+                                onPickImage: widget.onPickImage,
                               ),
                           onTicketDetails:
                               widget.onTicketDetails ??
                               (ticket) => showKitchenTicketStatusDialog(
                                 context,
                                 ticket: ticket,
+                                imagePicker: widget.imagePicker,
+                                onPickImage: widget.onPickImage,
                               ),
                         ),
                       ),

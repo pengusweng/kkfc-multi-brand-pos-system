@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_lane.dart';
 import 'package:mobile/features/kitchen/kitchen_board/data/models/kitchen_board_ticket.dart';
+import 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
+
+export 'package:mobile/features/kitchen/kitchen_board/presentation/widgets/ticket_status_dialog/kitchen_ticket_handover_photo_card.dart'
+    show HandoverPhotoEvidence;
 
 class KitchenBoardException implements Exception {
   const KitchenBoardException(this.message, {this.statusCode});
@@ -412,10 +416,72 @@ class KitchenBoardRepository {
 
   /// Hands over a ready ticket via
   /// `POST /api/kitchen-fulfillment/{kitchenTicketId}/hand-over`.
-  Future<void> handOverTicket(String kitchenTicketId) async {
+  ///
+  /// For delivery orders (foodpanda / GrabFood), photo evidence files are
+  /// uploaded via multipart/form-data under the field name `'files'`.
+  Future<void> handOverTicket(
+    String kitchenTicketId, {
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
+  }) async {
     try {
+      dynamic data;
+      if (photos != null && photos.isNotEmpty) {
+        final formData = FormData();
+        for (final photo in photos) {
+          var filename = photo.name.trim();
+          if (filename.isEmpty) {
+            filename = 'handover_evidence.jpg';
+          }
+          final lower = filename.toLowerCase();
+          final isPng = lower.endsWith('.png');
+          final isJpg = lower.endsWith('.jpg') || lower.endsWith('.jpeg');
+          if (!isPng && !isJpg) {
+            filename = '$filename.jpg';
+          }
+          final contentType = filename.toLowerCase().endsWith('.png')
+              ? DioMediaType('image', 'png')
+              : DioMediaType('image', 'jpeg');
+
+          if (photo.bytes != null && photo.bytes!.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'files',
+                MultipartFile.fromBytes(
+                  photo.bytes!,
+                  filename: filename,
+                  contentType: contentType,
+                ),
+              ),
+            );
+          } else if (photo.path != null && photo.path!.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'files',
+                await MultipartFile.fromFile(
+                  photo.path!,
+                  filename: filename,
+                  contentType: contentType,
+                ),
+              ),
+            );
+          }
+        }
+        if (imgKeys != null && imgKeys.isNotEmpty) {
+          for (final key in imgKeys) {
+            formData.fields.add(MapEntry('img_keys[]', key));
+          }
+        }
+        if (formData.files.isNotEmpty || formData.fields.isNotEmpty) {
+          data = formData;
+        }
+      } else if (imgKeys != null && imgKeys.isNotEmpty) {
+        data = {'img_keys': imgKeys};
+      }
+
       await _dio.post<Object?>(
         _endpoint('/kitchen-fulfillment/$kitchenTicketId/hand-over'),
+        data: data,
       );
     } on DioException catch (error) {
       throw KitchenBoardException(
@@ -429,6 +495,8 @@ class KitchenBoardRepository {
   Future<void> advanceTicket(
     KitchenBoardTicket ticket, {
     String? preparerId,
+    List<HandoverPhotoEvidence>? photos,
+    List<String>? imgKeys,
   }) async {
     final id = ticket.kitchenTicketId;
     final raw = ticket.rawStatus.toUpperCase();
@@ -466,19 +534,9 @@ class KitchenBoardRepository {
       return;
     }
 
-    final actionPath = switch (raw) {
-      'READY' => '/kitchen-fulfillment/$id/hand-over',
-      _ => null,
-    };
-    if (actionPath == null) return;
-
-    try {
-      await _dio.post<Object?>(_endpoint(actionPath));
-    } on DioException catch (error) {
-      throw KitchenBoardException(
-        _errorMessage(error),
-        statusCode: error.response?.statusCode,
-      );
+    if (raw == 'READY' || ticket.data.status == KkfcStatus.ready) {
+      await handOverTicket(id, photos: photos, imgKeys: imgKeys);
+      return;
     }
   }
 
