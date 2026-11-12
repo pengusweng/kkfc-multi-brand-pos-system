@@ -124,7 +124,11 @@ class KitchenTicketQcDialogFooter extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 18, color: passForeground),
+                        Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: passForeground,
+                        ),
                         const SizedBox(width: KkfcSpace.s8),
                         Flexible(
                           child: Text(

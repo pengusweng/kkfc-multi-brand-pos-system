@@ -101,7 +101,9 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                         ? 'All items passed'
                         : (isHandover
                               ? 'Confirm handover'
-                              : ticket.lane.actionLabelFor(ticket.data.status)))));
+                              : ticket.lane.actionLabelFor(
+                                  ticket.data.status,
+                                )))));
     final resolvedStatusLabel =
         statusLabel ??
         (isAcknowledged
@@ -191,7 +193,8 @@ class KitchenTicketStatusDialog extends StatelessWidget {
                     ticket: ticket,
                     isActionLoading: isActionLoading,
                     isActionEnabled: isActionEnabled,
-                    onReworkDone: onReworkDone ??
+                    onReworkDone:
+                        onReworkDone ??
                         (reworkNotes) async {
                           onAction?.call();
                         },

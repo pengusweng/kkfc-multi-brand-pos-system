@@ -53,37 +53,37 @@ class KitchenTicketDialogHeader extends StatelessWidget {
 
     final subtitle = isHandover
         ? 'HANDOVER'
-        : (isQc
-            ? 'QUALITY CHECK'
-            : (isRework ? 'REWORK' : 'TICKET DETAILS'));
+        : (isQc ? 'QUALITY CHECK' : (isRework ? 'REWORK' : 'TICKET DETAILS'));
 
-    final badgeIcon = statusIcon ??
+    final badgeIcon =
+        statusIcon ??
         (isRework
             ? Icons.sync_rounded
             : (isAcknowledged
-                ? Icons.visibility_outlined
-                : (isPreparing
-                    ? Icons.local_fire_department_rounded
-                    : lane.icon)));
+                  ? Icons.visibility_outlined
+                  : (isPreparing
+                        ? Icons.local_fire_department_rounded
+                        : lane.icon)));
     final statusColors = isRework
         ? KkfcTicketStatusColors.reworking
         : (isAcknowledged
-            ? KkfcTicketStatusColors.acknowledged
-            : (isPreparing
-                ? KkfcTicketStatusColors.preparing
-                : (isQc
-                    ? KkfcTicketStatusColors.checking
-                    : (isHandover
-                        ? KkfcTicketStatusColors.ready
-                        : KkfcTicketStatusColors.queued))));
+              ? KkfcTicketStatusColors.acknowledged
+              : (isPreparing
+                    ? KkfcTicketStatusColors.preparing
+                    : (isQc
+                          ? KkfcTicketStatusColors.checking
+                          : (isHandover
+                                ? KkfcTicketStatusColors.ready
+                                : KkfcTicketStatusColors.queued))));
     final badgeForeground = statusColors.foreground;
     final badgeBackground = statusColors.background;
     final badgeBorder = statusColors.border;
 
     final effectiveStatusLabel =
-        isRework && (statusLabel == 'Preparing' || statusLabel == 'TICKET DETAILS')
-            ? 'Rework'
-            : statusLabel;
+        isRework &&
+            (statusLabel == 'Preparing' || statusLabel == 'TICKET DETAILS')
+        ? 'Rework'
+        : statusLabel;
 
     return Container(
       width: double.infinity,

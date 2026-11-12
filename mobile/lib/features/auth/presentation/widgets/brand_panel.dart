@@ -40,24 +40,26 @@ class BrandPanel extends StatelessWidget {
                   children: [
                     Text(
                       'KKFC',
-                      style: (compact
-                              ? KkfcTypography.text2xl
-                              : KkfcTypography.text3xl)
-                          .copyWith(
-                        color: Colors.white,
-                        fontWeight: KkfcFontWeights.bold,
-                        letterSpacing: 1.5,
-                      ),
+                      style:
+                          (compact
+                                  ? KkfcTypography.text2xl
+                                  : KkfcTypography.text3xl)
+                              .copyWith(
+                                color: Colors.white,
+                                fontWeight: KkfcFontWeights.bold,
+                                letterSpacing: 1.5,
+                              ),
                     ),
                     Text(
                       'Staff POS',
-                      style: (compact
-                              ? KkfcTypography.textBase
-                              : KkfcTypography.textLg)
-                          .copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontWeight: KkfcFontWeights.regular,
-                      ),
+                      style:
+                          (compact
+                                  ? KkfcTypography.textBase
+                                  : KkfcTypography.textLg)
+                              .copyWith(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontWeight: KkfcFontWeights.regular,
+                              ),
                     ),
                   ],
                 ),

@@ -2175,7 +2175,10 @@ void main() {
           repo.handedOverTicketIds,
           contains(deliveryTicket.kitchenTicketId),
         );
-        expect(repo.handedOverPhotos[deliveryTicket.kitchenTicketId], isNotNull);
+        expect(
+          repo.handedOverPhotos[deliveryTicket.kitchenTicketId],
+          isNotNull,
+        );
         expect(
           repo.handedOverPhotos[deliveryTicket.kitchenTicketId]!.first.name,
           'delivery_proof.png',

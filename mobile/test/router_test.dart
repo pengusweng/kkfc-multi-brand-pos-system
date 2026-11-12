@@ -29,26 +29,25 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
-  testWidgets(
-    'supervisor login reroutes from login to the menu page',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            initialTokenProvider.overrideWithValue('mock-supervisor-token'),
-            initialRoleProvider.overrideWithValue(UserRole.supervisor),
-          ],
-          child: const App(),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('supervisor login reroutes from login to the menu page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          initialTokenProvider.overrideWithValue('mock-supervisor-token'),
+          initialRoleProvider.overrideWithValue(UserRole.supervisor),
+        ],
+        child: const App(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // Supervisor defaults to the menu screen, but retains switcher in header
-      expect(find.byType(MenuScreen), findsOneWidget);
-      expect(find.byType(KitchenBoardScreen), findsNothing);
-      expect(find.text('Supervisor'), findsOneWidget);
-    },
-  );
+    // Supervisor defaults to the menu screen, but retains switcher in header
+    expect(find.byType(MenuScreen), findsOneWidget);
+    expect(find.byType(KitchenBoardScreen), findsNothing);
+    expect(find.text('Supervisor'), findsOneWidget);
+  });
 
   testWidgets(
     'kitchen staff login reroutes from login to the kitchen tickets page',

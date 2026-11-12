@@ -28,33 +28,40 @@ void main() {
   }
 
   group('KkfcTicketStatusColors & theme token declarations', () {
-    test('acknowledged and preparing have distinctly different shades of blue', () {
-      final ackColors = KkfcTicketStatusColors.forStatus(KkfcStatus.acknowledged);
-      final prepColors = KkfcTicketStatusColors.forStatus(KkfcStatus.preparing);
+    test(
+      'acknowledged and preparing have distinctly different shades of blue',
+      () {
+        final ackColors = KkfcTicketStatusColors.forStatus(
+          KkfcStatus.acknowledged,
+        );
+        final prepColors = KkfcTicketStatusColors.forStatus(
+          KkfcStatus.preparing,
+        );
 
-      // Acknowledged is darker blue
-      expect(ackColors.foreground, KkfcColors.statusAcknowledgedFg);
-      expect(ackColors.background, KkfcColors.statusAcknowledgedBg);
-      expect(ackColors.border, KkfcColors.statusAcknowledgedBorder);
-      expect(ackColors.accent, KkfcColors.statusAcknowledgedSolid);
+        // Acknowledged is darker blue
+        expect(ackColors.foreground, KkfcColors.statusAcknowledgedFg);
+        expect(ackColors.background, KkfcColors.statusAcknowledgedBg);
+        expect(ackColors.border, KkfcColors.statusAcknowledgedBorder);
+        expect(ackColors.accent, KkfcColors.statusAcknowledgedSolid);
 
-      // Preparing is lighter blue
-      expect(prepColors.foreground, KkfcColors.statusPreparingFg);
-      expect(prepColors.background, KkfcColors.statusPreparingBg);
-      expect(prepColors.border, KkfcColors.statusPreparingBorder);
-      expect(prepColors.accent, KkfcColors.statusPreparingSolid);
+        // Preparing is lighter blue
+        expect(prepColors.foreground, KkfcColors.statusPreparingFg);
+        expect(prepColors.background, KkfcColors.statusPreparingBg);
+        expect(prepColors.border, KkfcColors.statusPreparingBorder);
+        expect(prepColors.accent, KkfcColors.statusPreparingSolid);
 
-      // Foreground and background shades must be distinct
-      expect(ackColors.foreground, isNot(equals(prepColors.foreground)));
-      expect(ackColors.background, isNot(equals(prepColors.background)));
-      expect(ackColors.accent, isNot(equals(prepColors.accent)));
+        // Foreground and background shades must be distinct
+        expect(ackColors.foreground, isNot(equals(prepColors.foreground)));
+        expect(ackColors.background, isNot(equals(prepColors.background)));
+        expect(ackColors.accent, isNot(equals(prepColors.accent)));
 
-      // Verify darker vs lighter luminance
-      expect(
-        ackColors.foreground.computeLuminance(),
-        lessThan(prepColors.foreground.computeLuminance()),
-      );
-    });
+        // Verify darker vs lighter luminance
+        expect(
+          ackColors.foreground.computeLuminance(),
+          lessThan(prepColors.foreground.computeLuminance()),
+        );
+      },
+    );
 
     test('rework colors use theme tokens without color literals', () {
       final rework = KkfcTicketStatusColors.forStatus(KkfcStatus.reworking);
@@ -87,9 +94,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketCard.board(ticket: ackTicket),
-          ),
+          home: Scaffold(body: KitchenTicketCard.board(ticket: ackTicket)),
         ),
       );
 
@@ -110,9 +115,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketCard.board(ticket: ackTicket),
-          ),
+          home: Scaffold(body: KitchenTicketCard.board(ticket: ackTicket)),
         ),
       );
 
@@ -138,9 +141,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketCard.board(ticket: prepTicket),
-          ),
+          home: Scaffold(body: KitchenTicketCard.board(ticket: prepTicket)),
         ),
       );
 
@@ -161,9 +162,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketCard.board(ticket: ticket),
-          ),
+          home: Scaffold(body: KitchenTicketCard.board(ticket: ticket)),
         ),
       );
 
@@ -173,88 +172,90 @@ void main() {
   });
 
   group('KitchenTicketDialogHeader status badge coloring', () {
-    testWidgets('acknowledged ticket dialog header uses darker blue badge colors', (
-      tester,
-    ) async {
-      final ackTicket = KitchenBoardTicket(
-        kitchenTicketId: 'kt-1',
-        orderId: 'order-1',
-        orderCode: 'ORD-001',
-        lane: KitchenBoardLane.preparing,
-        rawStatus: 'ACKNOWLEDGED',
-        data: makeTicket(status: KkfcStatus.acknowledged),
-      );
+    testWidgets(
+      'acknowledged ticket dialog header uses darker blue badge colors',
+      (tester) async {
+        final ackTicket = KitchenBoardTicket(
+          kitchenTicketId: 'kt-1',
+          orderId: 'order-1',
+          orderCode: 'ORD-001',
+          lane: KitchenBoardLane.preparing,
+          rawStatus: 'ACKNOWLEDGED',
+          data: makeTicket(status: KkfcStatus.acknowledged),
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketDialogHeader(
-              ticket: ackTicket,
-              statusLabel: 'Acknowledged',
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: KitchenTicketDialogHeader(
+                ticket: ackTicket,
+                statusLabel: 'Acknowledged',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final badgeFinder = find.byKey(
-        const ValueKey('kitchen-ticket-dialog-status-badge'),
-      );
-      expect(badgeFinder, findsOneWidget);
+        final badgeFinder = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
+        expect(badgeFinder, findsOneWidget);
 
-      final container = tester.widget<Container>(badgeFinder);
-      final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color, KkfcColors.statusAcknowledgedBg);
-      expect(
-        (decoration.border as Border).top.color,
-        KkfcColors.statusAcknowledgedBorder,
-      );
+        final container = tester.widget<Container>(badgeFinder);
+        final decoration = container.decoration as BoxDecoration;
+        expect(decoration.color, KkfcColors.statusAcknowledgedBg);
+        expect(
+          (decoration.border as Border).top.color,
+          KkfcColors.statusAcknowledgedBorder,
+        );
 
-      final text = tester.widget<Text>(
-        find.descendant(of: badgeFinder, matching: find.text('Acknowledged')),
-      );
-      expect(text.style?.color, KkfcColors.statusAcknowledgedFg);
-    });
+        final text = tester.widget<Text>(
+          find.descendant(of: badgeFinder, matching: find.text('Acknowledged')),
+        );
+        expect(text.style?.color, KkfcColors.statusAcknowledgedFg);
+      },
+    );
 
-    testWidgets('preparing ticket dialog header uses lighter blue badge colors', (
-      tester,
-    ) async {
-      final prepTicket = KitchenBoardTicket(
-        kitchenTicketId: 'kt-2',
-        orderId: 'order-2',
-        orderCode: 'ORD-002',
-        lane: KitchenBoardLane.preparing,
-        rawStatus: 'PREPARING',
-        data: makeTicket(status: KkfcStatus.preparing),
-      );
+    testWidgets(
+      'preparing ticket dialog header uses lighter blue badge colors',
+      (tester) async {
+        final prepTicket = KitchenBoardTicket(
+          kitchenTicketId: 'kt-2',
+          orderId: 'order-2',
+          orderCode: 'ORD-002',
+          lane: KitchenBoardLane.preparing,
+          rawStatus: 'PREPARING',
+          data: makeTicket(status: KkfcStatus.preparing),
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: KitchenTicketDialogHeader(
-              ticket: prepTicket,
-              statusLabel: 'Preparing',
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: KitchenTicketDialogHeader(
+                ticket: prepTicket,
+                statusLabel: 'Preparing',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final badgeFinder = find.byKey(
-        const ValueKey('kitchen-ticket-dialog-status-badge'),
-      );
-      expect(badgeFinder, findsOneWidget);
+        final badgeFinder = find.byKey(
+          const ValueKey('kitchen-ticket-dialog-status-badge'),
+        );
+        expect(badgeFinder, findsOneWidget);
 
-      final container = tester.widget<Container>(badgeFinder);
-      final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color, KkfcColors.statusPreparingBg);
-      expect(
-        (decoration.border as Border).top.color,
-        KkfcColors.statusPreparingBorder,
-      );
+        final container = tester.widget<Container>(badgeFinder);
+        final decoration = container.decoration as BoxDecoration;
+        expect(decoration.color, KkfcColors.statusPreparingBg);
+        expect(
+          (decoration.border as Border).top.color,
+          KkfcColors.statusPreparingBorder,
+        );
 
-      final text = tester.widget<Text>(
-        find.descendant(of: badgeFinder, matching: find.text('Preparing')),
-      );
-      expect(text.style?.color, KkfcColors.statusPreparingFg);
-    });
+        final text = tester.widget<Text>(
+          find.descendant(of: badgeFinder, matching: find.text('Preparing')),
+        );
+        expect(text.style?.color, KkfcColors.statusPreparingFg);
+      },
+    );
   });
 }

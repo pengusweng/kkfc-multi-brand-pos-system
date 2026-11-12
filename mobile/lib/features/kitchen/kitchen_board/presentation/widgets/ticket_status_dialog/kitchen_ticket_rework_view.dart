@@ -22,7 +22,8 @@ class KitchenTicketReworkView extends StatefulWidget {
   final Future<void> Function(String? reworkNotes) onReworkDone;
 
   @override
-  State<KitchenTicketReworkView> createState() => _KitchenTicketReworkViewState();
+  State<KitchenTicketReworkView> createState() =>
+      _KitchenTicketReworkViewState();
 }
 
 class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
@@ -172,8 +173,7 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                             required currentLength,
                             required isFocused,
                             maxLength,
-                          }) =>
-                              null,
+                          }) => null,
                           style: const TextStyle(
                             fontFamily: KkfcFonts.ibmPlexSans,
                             fontSize: KkfcTextSizes.textBase,
@@ -193,21 +193,27 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                             filled: true,
                             fillColor: KkfcColors.surface,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.sm,
+                              ),
                               borderSide: const BorderSide(
                                 color: KkfcColors.border,
                                 width: KkfcBorderWidth.thin,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.sm,
+                              ),
                               borderSide: const BorderSide(
                                 color: KkfcColors.border,
                                 width: KkfcBorderWidth.thin,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                              borderRadius: BorderRadius.circular(
+                                KkfcRadius.sm,
+                              ),
                               borderSide: const BorderSide(
                                 color: KkfcColors.focus,
                                 width: KkfcBorderWidth.thick,
@@ -244,9 +250,11 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                           ),
                         ),
                         const SizedBox(height: KkfcSpace.s12),
-                        for (var i = 0;
-                            i < widget.ticket.data.items.length;
-                            i++) ...[
+                        for (
+                          var i = 0;
+                          i < widget.ticket.data.items.length;
+                          i++
+                        ) ...[
                           if (i > 0) const SizedBox(height: 14),
                           KitchenTicketItemTile(
                             item: _resolveItemWithFailReason(
@@ -308,11 +316,7 @@ class _KitchenTicketReworkViewState extends State<KitchenTicketReworkView> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.check_rounded,
-                          size: 18,
-                          color: foreground,
-                        ),
+                        Icon(Icons.check_rounded, size: 18, color: foreground),
                         const SizedBox(width: KkfcSpace.s8),
                         Flexible(
                           child: Text(

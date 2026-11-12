@@ -73,9 +73,12 @@ enum KitchenBoardLane {
   /// Resolves the primary CTA label shown on a ticket card in this lane.
   String actionLabelFor(KkfcStatus status) => switch (this) {
     KitchenBoardLane.queued => 'Acknowledge',
-    KitchenBoardLane.preparing => status == KkfcStatus.reworking
-        ? 'Open rework'
-        : (status == KkfcStatus.acknowledged ? 'Start Preparing' : 'Send to QC'),
+    KitchenBoardLane.preparing =>
+      status == KkfcStatus.reworking
+          ? 'Open rework'
+          : (status == KkfcStatus.acknowledged
+                ? 'Start Preparing'
+                : 'Send to QC'),
     KitchenBoardLane.qcCheck => 'QC check',
     KitchenBoardLane.ready => 'Hand over',
   };

@@ -31,7 +31,7 @@ class KitchenTicketHandoverView extends StatefulWidget {
   final bool isActionEnabled;
   final VoidCallback? onHandover;
   final Future<void> Function(List<HandoverPhotoEvidence> photos)?
-      onHandoverWithPhotos;
+  onHandoverWithPhotos;
   final ImagePicker? imagePicker;
   final Future<XFile?> Function(ImageSource source)? onPickImage;
   final List<HandoverPhotoEvidence>? initialPhotos;
@@ -89,8 +89,8 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
         final resolvedName = rawName.isNotEmpty
             ? rawName
             : (file.path.trim().isNotEmpty
-                ? file.path.trim().split('/').last.split(r'\').last
-                : 'evidence.png');
+                  ? file.path.trim().split('/').last.split(r'\').last
+                  : 'evidence.png');
         setState(() {
           _photos.add(
             HandoverPhotoEvidence(
@@ -172,8 +172,8 @@ class _KitchenTicketHandoverViewState extends State<KitchenTicketHandoverView> {
         final resolvedName = rawName.isNotEmpty
             ? rawName
             : (picked.path.trim().isNotEmpty
-                ? picked.path.trim().split('/').last.split(r'\').last
-                : 'evidence.jpg');
+                  ? picked.path.trim().split('/').last.split(r'\').last
+                  : 'evidence.jpg');
         setState(() {
           _photos.add(
             HandoverPhotoEvidence(

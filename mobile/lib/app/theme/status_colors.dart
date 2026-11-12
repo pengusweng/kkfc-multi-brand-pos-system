@@ -157,7 +157,8 @@ class KkfcStatusColors extends ThemeExtension<KkfcStatusColors> {
     acknowledged: KkfcTone(
       bg: KkfcColors.statusAcknowledgedBg, // darker blue tint (#D8E6F5)
       fg: KkfcColors.statusAcknowledgedFg, // darker blue text (#0D3B66)
-      border: KkfcColors.statusAcknowledgedBorder, // darker blue border (#8EB5E0)
+      border:
+          KkfcColors.statusAcknowledgedBorder, // darker blue border (#8EB5E0)
     ),
     preparing: KkfcTone(
       bg: KkfcColors.statusPreparingBg, // lighter blue tint (#EDF7FF)

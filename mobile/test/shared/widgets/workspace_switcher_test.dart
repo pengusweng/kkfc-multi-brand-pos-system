@@ -47,9 +47,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          userRoleProvider.overrideWith(() => _FixedRole(role)),
-        ],
+        overrides: [userRoleProvider.overrideWith(() => _FixedRole(role))],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -104,7 +102,9 @@ void main() {
     expect(router.routeInformationProvider.value.uri.path, AppRoutes.menu);
   });
 
-  testWidgets('KITCHEN_HEAD defaults to kitchenTickets on login', (tester) async {
+  testWidgets('KITCHEN_HEAD defaults to kitchenTickets on login', (
+    tester,
+  ) async {
     final container = ProviderContainer(
       overrides: [
         sessionProvider.overrideWith((ref) => true),
@@ -135,9 +135,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: AppHeaderRoleChip(role: 'Supervisor'),
-        ),
+        home: Scaffold(body: AppHeaderRoleChip(role: 'Supervisor')),
       ),
     );
 

@@ -39,7 +39,9 @@ class KitchenTicketQcItemCard extends StatelessWidget {
         color: KkfcColors.surface,
         borderRadius: BorderRadius.circular(KkfcRadius.md),
         border: Border.all(
-          color: isPassed == false ? KkfcColors.dangerBorder : KkfcColors.border,
+          color: isPassed == false
+              ? KkfcColors.dangerBorder
+              : KkfcColors.border,
           width: KkfcBorderWidth.thin,
         ),
       ),

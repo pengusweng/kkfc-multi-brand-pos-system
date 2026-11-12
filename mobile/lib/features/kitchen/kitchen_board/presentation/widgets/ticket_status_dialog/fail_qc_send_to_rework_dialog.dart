@@ -148,9 +148,14 @@ class _FailQcSendToReworkDialogState
     final bool success;
     if (widget.onConfirm != null) {
       if (widget.onConfirm is Future<bool> Function(QcItemRejection)) {
-        success = await (widget.onConfirm as Future<bool> Function(QcItemRejection))(rejection);
+        success =
+            await (widget.onConfirm as Future<bool> Function(QcItemRejection))(
+              rejection,
+            );
       } else if (widget.onConfirm is Future<bool> Function(String)) {
-        success = await (widget.onConfirm as Future<bool> Function(String))(reason);
+        success = await (widget.onConfirm as Future<bool> Function(String))(
+          reason,
+        );
       } else {
         final dynamic res = (widget.onConfirm as dynamic)(rejection);
         success = res is Future ? await res : (res == true);
@@ -317,7 +322,9 @@ class _FailQcSendToReworkDialogState
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError && (_errorMessage?.contains('portion') ?? false)
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('portion') ?? false)
                           ? KkfcColors.dangerBorder
                           : KkfcColors.border,
                       width: KkfcBorderWidth.thin,
@@ -326,7 +333,9 @@ class _FailQcSendToReworkDialogState
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError && (_errorMessage?.contains('portion') ?? false)
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('portion') ?? false)
                           ? KkfcColors.danger
                           : KkfcColors.focus,
                       width: KkfcBorderWidth.thick,
@@ -382,7 +391,9 @@ class _FailQcSendToReworkDialogState
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError && (_errorMessage?.contains('reason') ?? false)
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('reason') ?? false)
                           ? KkfcColors.dangerBorder
                           : KkfcColors.border,
                       width: KkfcBorderWidth.thin,
@@ -391,7 +402,9 @@ class _FailQcSendToReworkDialogState
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(KkfcRadius.sm),
                     borderSide: BorderSide(
-                      color: hasError && (_errorMessage?.contains('reason') ?? false)
+                      color:
+                          hasError &&
+                              (_errorMessage?.contains('reason') ?? false)
                           ? KkfcColors.danger
                           : KkfcColors.focus,
                       width: KkfcBorderWidth.thick,
