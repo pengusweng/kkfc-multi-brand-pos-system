@@ -39,6 +39,7 @@ import { RejectQcAttemptDTO } from './dto/reject-qc-attempt.dto';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { Audit, fromParam } from '../../../shared/audit/audit.decorator';
 
 @Controller('kitchen-fulfillment')
 @KitchenFulfillmentDocs()
@@ -57,6 +58,11 @@ export class KitchenFulfillmentController {
   ) {}
 
   @Post(':kitchenTicketId/acknowledge')
+  @Audit({
+    action: 'KITCHEN_TICKET_ACKNOWLEDGED',
+    entity: 'kitchen_tickets',
+    id: fromParam('kitchenTicketId'),
+  })
   @HttpCode(200)
   @AcknowledgeDocs()
   async acknowledge(
@@ -66,6 +72,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post(':kitchenTicketId/prepare')
+  @Audit({
+    action: 'KITCHEN_TICKET_PREPARATION_STARTED',
+    entity: 'kitchen_tickets',
+    id: fromParam('kitchenTicketId'),
+  })
   @HttpCode(200)
   @PrepareDocs()
   async prepare(
@@ -79,6 +90,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post(':kitchenTicketId/for-checking')
+  @Audit({
+    action: 'KITCHEN_TICKET_SENT_FOR_CHECKING',
+    entity: 'kitchen_tickets',
+    id: fromParam('kitchenTicketId'),
+  })
   @HttpCode(200)
   @ForCheckingDocs()
   async forChecking(
@@ -92,6 +108,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post(':kitchenTicketId/check')
+  @Audit({
+    action: 'KITCHEN_TICKET_CHECK_STARTED',
+    entity: 'kitchen_tickets',
+    id: fromParam('kitchenTicketId'),
+  })
   @HttpCode(200)
   @CheckDocs()
   @Roles(
@@ -111,6 +132,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post('qc-attempts/:attemptId/pass')
+  @Audit({
+    action: 'KITCHEN_QC_PASSED',
+    entity: 'kitchen_ticket_qc_attempts',
+    id: fromParam('attemptId'),
+  })
   @HttpCode(200)
   @PassQcDocs()
   @Roles(
@@ -130,6 +156,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post('qc-attempts/:attemptId/reject')
+  @Audit({
+    action: 'KITCHEN_QC_REJECTED',
+    entity: 'kitchen_ticket_qc_attempts',
+    id: fromParam('attemptId'),
+  })
   @HttpCode(200)
   @RejectQcDocs()
   @Roles(
@@ -151,6 +182,11 @@ export class KitchenFulfillmentController {
   }
 
   @Post(':kitchenTicketId/hand-over')
+  @Audit({
+    action: 'KITCHEN_TICKET_HANDED_OVER',
+    entity: 'kitchen_tickets',
+    id: fromParam('kitchenTicketId'),
+  })
   @HttpCode(200)
   @HandOverDocs()
   @UseInterceptors(
@@ -186,6 +222,12 @@ export class KitchenFulfillmentController {
   }
 
   @Post('brands/:brandId/orders/:orderId/cancel')
+  // Same action as the draft cancel so one filter finds every cancellation.
+  @Audit({
+    action: 'ORDER_CANCELLED',
+    entity: 'orders',
+    id: fromParam('orderId'),
+  })
   @HttpCode(200)
   @CancelDocs()
   @Roles(

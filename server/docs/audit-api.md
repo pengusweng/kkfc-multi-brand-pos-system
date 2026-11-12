@@ -143,3 +143,20 @@ Actions are added module by module as auditing is rolled out.
 | `ORDER_CANCELLED` | `orders` | `POST /api/brands/:brandId/orders/:orderId/cancel` (draft orders). Cancelling an already cancelled draft also succeeds and writes another `SUCCESS` row. |
 
 `POST /api/brands/:brandId/orders/:orderId/verify` is not audited: it only checks prices and availability and writes nothing.
+
+Kitchen actions:
+
+| Action | Entity | Endpoint |
+| --- | --- | --- |
+| `KITCHEN_TICKET_PREPARER_ASSIGNED` | `kitchen_tickets` | `PATCH /api/kitchen-ticket/:id/preparer`. A ticket that already has a preparer is `FAILED` (`KITCHEN_TICKET_PREPARER_ALREADY_ASSIGNED`). |
+| `KITCHEN_TICKET_CHECKER_ASSIGNED` | `kitchen_tickets` | `PATCH /api/kitchen-ticket/:id/checker`. |
+| `KITCHEN_TICKET_ACKNOWLEDGED` | `kitchen_tickets` | `POST /api/kitchen-fulfillment/:kitchenTicketId/acknowledge`. |
+| `KITCHEN_TICKET_PREPARATION_STARTED` | `kitchen_tickets` | `POST /api/kitchen-fulfillment/:kitchenTicketId/prepare`. |
+| `KITCHEN_TICKET_SENT_FOR_CHECKING` | `kitchen_tickets` | `POST /api/kitchen-fulfillment/:kitchenTicketId/for-checking`. |
+| `KITCHEN_TICKET_CHECK_STARTED` | `kitchen_tickets` | `POST /api/kitchen-fulfillment/:kitchenTicketId/check` (opens a QC attempt). |
+| `KITCHEN_QC_PASSED` | `kitchen_ticket_qc_attempts` | `POST /api/kitchen-fulfillment/qc-attempts/:attemptId/pass`. Entity is the QC attempt. |
+| `KITCHEN_QC_REJECTED` | `kitchen_ticket_qc_attempts` | `POST /api/kitchen-fulfillment/qc-attempts/:attemptId/reject`. Entity is the QC attempt; rejection details are not stored in the audit row. |
+| `KITCHEN_TICKET_HANDED_OVER` | `kitchen_tickets` | `POST /api/kitchen-fulfillment/:kitchenTicketId/hand-over`. |
+| `ORDER_CANCELLED` | `orders` | `POST /api/kitchen-fulfillment/brands/:brandId/orders/:orderId/cancel` (confirmed orders; also cancels the kitchen ticket). Uses the same action as the draft cancel, so `action=ORDER_CANCELLED` lists every cancellation. |
+
+Status conflicts are `FAILED` (for example `KITCHEN_TICKET_INVALID_STATUS`), and acting on a ticket assigned to someone else is `DENIED` (for example `KITCHEN_TICKET_PREPARER_MISMATCH`). Kitchen ticket and QC reads, including the ticket stream, are not audited.
