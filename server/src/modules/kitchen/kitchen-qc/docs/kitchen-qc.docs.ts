@@ -45,7 +45,7 @@ export function KitchenQcDocs() {
     ApiResponse({
       status: 403,
       description:
-        'Requires SUPERADMIN, MANAGER, SUPERVISOR, KITCHEN_HEAD, or KITCHEN_STAFF.',
+        'Requires SUPERADMIN, SUPERVISOR, KITCHEN_HEAD, or KITCHEN_STAFF.',
     }),
   );
 }

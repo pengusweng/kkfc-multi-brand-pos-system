@@ -130,7 +130,7 @@ describe('Menu items HTTP endpoints', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERADMIN;
     callerBrand = brandId;
     auth.validateSession.mockImplementation(() =>
       Promise.resolve({
@@ -305,7 +305,7 @@ describe('Menu items HTTP endpoints', () => {
   });
 
   it.each(mutations)(
-    'IT-MI-003: delegates $verb $path for an assigned manager',
+    'IT-MI-003: delegates $verb $path for an assigned superadmin',
     async ({ verb, path, handler, body, status }) => {
       const response = await fetch(url + path, {
         method: verb,
@@ -357,7 +357,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([...mutations, ...reads])(
-    'IT-MI-006: allows shared-access managers for $verb $path',
+    'IT-MI-006: allows shared-access superadmins for $verb $path',
     async ({ verb, path, handler, body }) => {
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
@@ -376,9 +376,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each(
-    Object.values(UserRole).filter(
-      (value) => value !== UserRole.SUPERADMIN && value !== UserRole.MANAGER,
-    ),
+    Object.values(UserRole).filter((value) => value !== UserRole.SUPERADMIN),
   )('IT-MI-007: denies mutations to %s', async (callerRole) => {
     role = callerRole;
     for (const { verb, path, handler, body } of mutations) {
@@ -605,6 +603,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it('IT-MI-018: reserves the all-brands listing for superadmins', async () => {
+    role = UserRole.SUPERVISOR;
     expect((await fetch(url, { headers })).status).toBe(403);
     expect(service.findAll).not.toHaveBeenCalled();
     expect((await fetch(url)).status).toBe(401);
@@ -680,11 +679,14 @@ describe('Menu items HTTP endpoints', () => {
       },
     );
 
-    it.each(
-      Object.values(UserRole).filter(
-        (value) => value !== UserRole.CASHIER_STAFF,
-      ),
-    )('IT-MI-022: allows %s', async (allowedRole) => {
+    it.each([
+      UserRole.SUPERADMIN,
+      UserRole.RECIPE_MANAGER,
+      UserRole.SUPERVISOR,
+      UserRole.KITCHEN_HEAD,
+      UserRole.KITCHEN_STAFF,
+      UserRole.INVENTORY_STAFF,
+    ])('IT-MI-022: allows %s', async (allowedRole) => {
       role = allowedRole;
       if (role === UserRole.SUPERADMIN || role === UserRole.RECIPE_MANAGER)
         callerBrand = otherBrandId;
@@ -704,7 +706,6 @@ describe('Menu items HTTP endpoints', () => {
     });
 
     it.each([
-      UserRole.MANAGER,
       UserRole.SUPERVISOR,
       UserRole.KITCHEN_HEAD,
       UserRole.KITCHEN_STAFF,

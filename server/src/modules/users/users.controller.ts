@@ -56,7 +56,7 @@ export class UsersController {
   })
   @UseGuards(PinGuard)
   @CreateUserDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async create(
     @Body() dto: CreateUserDTO,
     @Req() request: AuthenticatedRequest,
@@ -70,7 +70,7 @@ export class UsersController {
   @Get()
   @Audit({ action: 'USERS_LISTED', entity: 'users' })
   @FindAllUsersDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async findAll(@Query() query: FindUsersDTO) {
     return this.usersService.findAllUsers(query);
   }
@@ -94,7 +94,7 @@ export class UsersController {
     id: fromParam('id'),
   })
   @UpdateUserDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -116,7 +116,7 @@ export class UsersController {
     id: fromParam('id'),
   })
   @DeleteUserDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   @UseGuards(PinGuard)
   async delete(
     @Param('id', ParseUUIDPipe) id: string,

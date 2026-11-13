@@ -7,7 +7,7 @@ Feature: Paginated handoff list and actor history endpoints
   @IT-HAND-001
   Scenario: Allow authorized roles to list handoffs
     Test Case ID: IT-HAND-001
-    Given a valid session for a superadmin, manager, or kitchen head
+    Given a valid session for a superadmin or kitchen head
     When the handoff list or actor history endpoint is requested without pagination parameters
     Then the corresponding service receives offset zero and limit ten and the actor ID for actor history
     And the response contains the handoffs, signed image URLs, and total
@@ -15,7 +15,7 @@ Feature: Paginated handoff list and actor history endpoints
   @IT-HAND-002
   Scenario: Deny all other roles
     Test Case ID: IT-HAND-002
-    Given a valid session with a role other than superadmin, manager, or kitchen head
+    Given a valid session with a role other than superadmin or kitchen head
     When the handoff list or actor history endpoint is requested
     Then the response is 403 ACCESS_DENIED and the service is not called
 

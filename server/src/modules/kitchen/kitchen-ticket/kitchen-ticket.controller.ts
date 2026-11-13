@@ -36,7 +36,6 @@ import { Observable } from 'rxjs';
 @UseGuards(Authenticated, RolesGuard)
 @Roles(
   UserRole.SUPERADMIN,
-  UserRole.MANAGER,
   UserRole.SUPERVISOR,
   UserRole.KITCHEN_STAFF,
   UserRole.KITCHEN_HEAD,
@@ -46,12 +45,7 @@ export class KitchenTicketController {
 
   @Get()
   @FindAllKitchenTicketsDocs()
-  @Roles(
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD, UserRole.SUPERVISOR)
   async findAll(@Query() query: PaginationDTO) {
     return this.kitchenTicketService.findAll(
       (query.page - 1) * query.limit,
@@ -129,12 +123,7 @@ export class KitchenTicketController {
     id: fromParam('id'),
   })
   @AssignKitchenTicketCheckerDocs()
-  @Roles(
-    UserRole.MANAGER,
-    UserRole.SUPERADMIN,
-    UserRole.SUPERVISOR,
-    UserRole.KITCHEN_HEAD,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.SUPERVISOR, UserRole.KITCHEN_HEAD)
   async claimChecker(
     @Param('id', ParseUUIDPipe) kitchenTicketId: string,
     @Body('checker_id', ParseUUIDPipe) checkerId: string,

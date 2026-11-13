@@ -3,15 +3,15 @@ Documentation     Feature: Catalog and order API workflows using isolated Postgr
 Resource          ../resources/orders_keywords.resource
 Suite Setup       An isolated catalog fixture is loaded
 Suite Teardown    Delete All Sessions
-Test Setup        A manager has created a unique menu item
+Test Setup        A superadmin has created a unique menu item
 
 *** Test Cases ***
-E2E-MCH-001: Manager persists a platform channel lifecycle
+E2E-MCH-001: Superadmin persists a platform channel lifecycle
     [Tags]    E2E    CATALOG    E2E-MCH-001
-    Given the manager creates a GrabFood override
-    When the manager changes the channel price to 150
+    Given the superadmin creates a GrabFood override
+    When the superadmin changes the channel price to 150
     Then the saved channel price is 150
-    When the manager deactivates and reactivates the channel
+    When the superadmin deactivates and reactivates the channel
     Then the saved channel is available
 
 E2E-ORD-001: Cashier creates verifies and confirms an order
@@ -37,15 +37,15 @@ E2E-ORD-003: Duplicate platform references cannot create a second order
     When the cashier submits another ID with the same normalized platform references
     Then the HTTP response status should be 409
 
-E2E-MCH-002: Managers can inspect and update channels across brands
+E2E-MCH-002: Supervisors can inspect channels but not change them
     [Tags]    E2E    CATALOG    E2E-MCH-002
-    Given the manager creates a GrabFood override
-    When another manager reads and changes the channel
-    Then the channel change is visible to the original manager
+    Given the superadmin creates a GrabFood override
+    When a supervisor reads the channel but cannot change it
+    Then the channel is unchanged for the superadmin
 
 E2E-ASSET-001: Menu image association survives a read and downloads from storage
     [Documentation]    Requires a configured test S3 bucket and working download signing configuration.
     [Tags]    E2E    CATALOG    storage    E2E-ASSET-001
-    Given an authenticated catalog user exists    0
-    When the manager attaches a valid PNG to the menu item
+    Given an authenticated catalog user exists    2
+    When the superadmin attaches a valid PNG to the menu item
     Then the stored image can be retrieved through an owner download URL

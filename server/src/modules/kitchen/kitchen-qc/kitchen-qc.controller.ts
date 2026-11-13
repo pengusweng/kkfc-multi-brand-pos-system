@@ -27,7 +27,6 @@ import { KitchenQcService } from './kitchen-qc.service';
 @UseGuards(Authenticated, RolesGuard)
 @Roles(
   UserRole.SUPERADMIN,
-  UserRole.MANAGER,
   UserRole.SUPERVISOR,
   UserRole.KITCHEN_HEAD,
   UserRole.KITCHEN_STAFF,

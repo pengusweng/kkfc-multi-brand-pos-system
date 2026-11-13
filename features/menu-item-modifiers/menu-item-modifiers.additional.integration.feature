@@ -40,27 +40,27 @@ Feature: Additional menu item modifiers integration coverage
   # Jest: server/src/modules/menu/menu-item-modifiers/tests/menu-item-modifiers.http.spec.ts
   # Context: Menu item modifiers HTTP endpoints
   @IT-MIM-004
-  Scenario: Allow managers to access modifier assignments
+  Scenario: Allow superadmins to access modifier assignments
     Test Case ID: IT-MIM-004
-    Given an authenticated manager and an assignment under a fixture brand
+    Given an authenticated superadmin and an assignment under a fixture brand
     When the assignment endpoint is requested
     Then the response is 200 and the service handler runs once
 
   # Jest: server/src/modules/menu/menu-item-modifiers/tests/menu-item-modifiers.http.spec.ts
   # Context: Menu item modifiers HTTP endpoints
   @IT-MIM-005
-  Scenario: Allow managers to access assignments across brands
+  Scenario: Allow superadmins to access assignments across brands
     Test Case ID: IT-MIM-005
-    Given an authenticated manager with another legacy fixture brand value
+    Given an authenticated superadmin with another legacy fixture brand value
     When an assignment endpoint is requested
     Then shared brand access permits the operation
 
   # Jest: server/src/modules/menu/menu-item-modifiers/tests/menu-item-modifiers.http.spec.ts
   # Context: Menu item modifiers HTTP endpoints
   @IT-MIM-006
-  Scenario: Allow managers to access assignments across brands
+  Scenario: Allow superadmins to access assignments across brands
     Test Case ID: IT-MIM-006
-    Given an authenticated manager without relying on a fixture brand assignment
+    Given an authenticated superadmin without relying on a fixture brand assignment
     When an assignment endpoint is requested
     Then shared brand access permits the operation
 
@@ -106,7 +106,7 @@ Feature: Additional menu item modifiers integration coverage
   Scenario: Resolves unavailable assignments so their owner can reactivate them
     Test Case ID: IT-MIM-011
     Given an unavailable modifier assignment
-    When an authorized manager requests reactivation
+    When an authorized superadmin requests reactivation
     Then the assignment remains resolvable and reactivation returns 200
 
   # Jest: server/src/modules/menu/menu-item-modifiers/tests/menu-item-modifiers.http.spec.ts

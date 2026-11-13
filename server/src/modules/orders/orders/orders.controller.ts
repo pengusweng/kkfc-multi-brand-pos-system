@@ -44,12 +44,7 @@ import {
 @Controller('brands/:brandId/orders')
 @OrdersDocs()
 @UseGuards(Authenticated, RolesGuard)
-@Roles(
-  UserRole.SUPERVISOR,
-  UserRole.CASHIER_STAFF,
-  UserRole.MANAGER,
-  UserRole.SUPERADMIN,
-)
+@Roles(UserRole.SUPERVISOR, UserRole.CASHIER_STAFF, UserRole.SUPERADMIN)
 export class OrdersController {
   constructor(
     private readonly orders: OrdersService,
@@ -69,7 +64,6 @@ export class OrdersController {
   @Get(':orderId')
   @Roles(
     UserRole.CASHIER_STAFF,
-    UserRole.MANAGER,
     UserRole.SUPERVISOR,
     UserRole.SUPERADMIN,
     UserRole.KITCHEN_HEAD,

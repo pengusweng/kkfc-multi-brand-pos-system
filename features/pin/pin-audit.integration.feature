@@ -12,7 +12,7 @@ Feature: PIN audit logging
   @IT-PIN-024
   Scenario: Audit setting and changing a PIN
     Test Case ID: IT-PIN-024
-    Given a manager
+    Given a supervisor
     When they set a PIN and then change it with their password
     Then PIN_CREATED and PIN_UPDATED SUCCESS rows name their own credential
     And no row contains either PIN or the password
@@ -22,7 +22,7 @@ Feature: PIN audit logging
   @IT-PIN-025
   Scenario: Audit a duplicate PIN and a wrong password
     Test Case ID: IT-PIN-025
-    Given a manager who already has a PIN and supplies a wrong password
+    Given a supervisor who already has a PIN and supplies a wrong password
     When they set a PIN and then change it
     Then PIN_CREATED is FAILED with EXISTING_PIN_FOUND and PIN_UPDATED is DENIED with INVALID_CREDENTIALS
 

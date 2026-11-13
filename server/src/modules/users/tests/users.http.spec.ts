@@ -95,7 +95,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     await app?.close();
   });
 
-  it.each([UserRole.MANAGER, UserRole.SUPERADMIN])(
+  it.each([UserRole.SUPERADMIN])(
     'IT-USER-011: lists all users for %s',
     async (role) => {
       currentRole = role;
@@ -127,7 +127,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(service.createUser).not.toHaveBeenCalled();
   });
   it.each([
-    { role: UserRole.MANAGER, status: 403 },
+    { role: UserRole.SUPERVISOR, status: 403 },
     { role: UserRole.SUPERADMIN, status: 200 },
   ])(
     'IT-USER-014: protects superadmins over HTTP for $role',
@@ -179,28 +179,9 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(response.status).toBe(400);
     const body = (await response.json()) as { message: string[] };
     expect(body.message).toEqual([expect.stringContaining('CASHIER_STAFF')]);
-    expect(body.message[0]).toContain('MANAGER');
+    expect(body.message[0]).toContain('SUPERVISOR');
     expect(body.message[0]).not.toMatch(/OWNER|ORDER_STAFF|KITCHEN_PREPARER/);
     expect(service.createUser).not.toHaveBeenCalled();
-  });
-
-  it('IT-USER-016: allows managers to update and deactivate users across brands', async () => {
-    currentRole = UserRole.MANAGER;
-    const dto = { first_name: 'Updated' };
-    expect(
-      (
-        await fetch(`${url}/${userId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dto),
-        })
-      ).status,
-    ).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(userId, dto, false);
-    expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
-      200,
-    );
-    expect(service.deleteUser).toHaveBeenCalledWith(userId, false);
   });
 
   it('IT-USER-001: creates a user when requested by a SUPERADMIN with valid payload', async () => {
@@ -339,7 +320,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     '?role=',
     '?role=OWNER',
     '?role=cashier_staff',
-    '?role=MANAGER&role=CASHIER_STAFF',
+    '?role=SUPERVISOR&role=CASHIER_STAFF',
     '?sortBy=password_hash',
     '?sortBy=NAME',
     '?sortBy=',
@@ -442,7 +423,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     { username: 'a'.repeat(17) },
     { first_name: '' },
     { password: '123' },
-    { role: UserRole.MANAGER },
+    { role: UserRole.SUPERVISOR },
     { brand_id: brandId },
     { brand_id: null },
     { is_active: false },
@@ -484,9 +465,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   );
 
   it.each(
-    Object.values(UserRole).filter(
-      (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
-    ),
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
   )(
     'IT-USER-010: restricts staff role %s to reading users across brands',
     async (role) => {
@@ -512,11 +491,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-021: delegates superadmin requests to the current service contracts', async () => {
     currentRole = UserRole.SUPERADMIN;
     const payload = {
-      username: 'new_manager',
+      username: 'new_supervisor',
       first_name: 'Test',
-      last_name: 'Manager',
+      last_name: 'Supervisor',
       password: 'Password123!',
-      role: UserRole.MANAGER,
+      role: UserRole.SUPERVISOR,
     };
     expect(
       (

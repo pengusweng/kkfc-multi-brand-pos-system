@@ -3,8 +3,8 @@ Feature: Brand administration and scoped access
   These scenarios use current role names and real sessions from shared E2E fixtures.
 
   @E2E-BRND-001
-  Scenario: Manager retrieves a fixture brand
-    Given an authenticated manager
+  Scenario: Supervisor retrieves a fixture brand
+    Given an authenticated supervisor
     When a fixture brand is retrieved
     Then the response status is 200 and the brand ID matches the fixture brand
 
@@ -24,21 +24,21 @@ Feature: Brand administration and scoped access
     And the new brand ID is tracked for fixture cleanup
 
   @E2E-BRND-004
-  Scenario: Manager can list all brands
-    Given an authenticated manager
+  Scenario: Supervisor can list all brands
+    Given an authenticated supervisor
     When the global brand listing is requested with limit 100
     Then the response status is 200
     And both fixture brands are included
 
   @E2E-BRND-005
-  Scenario: Manager cannot edit a brand configuration
-    Given an authenticated manager and the current brand name
-    When the manager attempts to update that name
+  Scenario: Supervisor cannot edit a brand configuration
+    Given an authenticated supervisor and the current brand name
+    When the supervisor attempts to update that name
     Then the response status is 403
     And a subsequent read preserves the original name
 
   @E2E-BRND-006
-  Scenario: Manager cannot create a brand
-    Given an authenticated manager
+  Scenario: Supervisor cannot create a brand
+    Given an authenticated supervisor
     When a new brand is submitted
     Then the response status is 403

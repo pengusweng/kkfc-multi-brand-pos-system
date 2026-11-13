@@ -102,9 +102,9 @@ export function MenuItemsDocs() {
 export function CreateMenuItemDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Create a menu item (manager or superadmin).',
+      summary: 'Create a menu item (superadmin).',
       description:
-        'Managers and superadmins can create menu items in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
+        'Superadmins can create menu items in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
     }),
     ApiResponse({
       status: 201,
@@ -207,9 +207,9 @@ export function UpdateMenuItemDocs() {
       },
     }),
     ApiOperation({
-      summary: 'Update an active menu item (manager or superadmin).',
+      summary: 'Update an active menu item (superadmin).',
       description:
-        'Managers and superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
+        'Superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
     }),
     ApiParam({ name: 'id', format: 'uuid', description: 'Menu item UUID.' }),
     ApiResponse({
@@ -241,9 +241,9 @@ export function UpdateMenuItemDocs() {
 export function ReactivateMenuItemDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Reactivate a menu item (manager or superadmin).',
+      summary: 'Reactivate a menu item (superadmin).',
       description:
-        'Managers and superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
+        'Superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
     }),
     ApiParam({
       name: 'id',
@@ -275,9 +275,9 @@ export function ReactivateMenuItemDocs() {
 export function DeleteMenuItemDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Deactivate a menu item (manager or superadmin).',
+      summary: 'Deactivate a menu item (superadmin).',
       description:
-        'Managers and superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
+        'Superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
     }),
     ApiParam({
       name: 'id',

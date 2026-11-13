@@ -10,18 +10,18 @@ Feature: Persist and authorize menu channel operations
     And a row is inserted only for a successful request
     Examples:
       | user                  | status |
-      | brand A manager       | 201    |
+      | brand A supervisor    | 403    |
       | brand A cashier       | 403    |
       | superadmin            | 201    |
-      | brand B manager       | 403    |
+      | brand B supervisor    | 403    |
       | unauthenticated user  | 401    |
 
   @IT-MCH-002
-  Scenario Outline: Deny cross-brand access without mutation
+  Scenario Outline: Let a superadmin operate on any brand's channel
     Given a saved channel in brand A
-    When brand B manager attempts to <operation> it
-    Then the response status is 403
-    And its price and availability remain unchanged
+    When a superadmin requests to <operation> it
+    Then the response status is 200
+    And the saved price and availability reflect the operation
     Examples:
       | operation  |
       | read       |
@@ -35,11 +35,11 @@ Feature: Persist and authorize menu channel operations
     When all menu channels are listed
     Then the response status is <status>
     Examples:
-      | user            | status |
-      | brand A manager | 403    |
-      | cashier         | 403    |
-      | superadmin      | 200    |
-      | brand B manager | 403    |
+      | user               | status |
+      | brand A supervisor | 403    |
+      | cashier            | 403    |
+      | superadmin         | 200    |
+      | brand B supervisor | 403    |
 
   @IT-MCH-004
   Scenario Outline: Enforce channel uniqueness

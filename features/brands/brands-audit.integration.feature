@@ -30,6 +30,6 @@ Feature: Brands audit logging
   @IT-BRND-033
   Scenario: Audit role denials but not routine brand reads
     Test Case ID: IT-BRND-033
-    Given a manager
+    Given a supervisor
     When brands are listed, a brand is viewed and a brand is created
     Then only the creation produces a BRAND_CREATED DENIED row with ACCESS_DENIED

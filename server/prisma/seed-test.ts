@@ -9,7 +9,6 @@ config({ path: ['.env', '../.env'], quiet: true });
 export const TEST_PIN = '1234';
 export const TEST_PIN_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.SUPERADMIN,
-  UserRole.MANAGER,
   UserRole.RECIPE_MANAGER,
   UserRole.SUPERVISOR,
   UserRole.KITCHEN_HEAD,
@@ -42,21 +41,21 @@ export const TEST_USERS = [
     first_name: 'Test',
     last_name: 'Owner',
     password: 'Password123!',
-    role: UserRole.MANAGER,
+    role: UserRole.SUPERVISOR,
   },
   {
-    username: 'test_manager_ai',
+    username: 'test_sup_ai',
     first_name: 'Aurelia',
-    last_name: 'Manager',
+    last_name: 'Supervisor',
     password: 'Password123!',
-    role: UserRole.MANAGER,
+    role: UserRole.SUPERVISOR,
   },
   {
-    username: 'test_manager_kk',
+    username: 'test_sup_kk',
     first_name: 'King Kungs',
-    last_name: 'Manager',
+    last_name: 'Supervisor',
     password: 'Password123!',
-    role: UserRole.MANAGER,
+    role: UserRole.SUPERVISOR,
   },
   {
     username: 'test_chef',
@@ -136,7 +135,7 @@ export const TEST_UNASSIGNED_OWNER = {
   first_name: 'Unassigned',
   last_name: 'Owner',
   password: 'Password123!',
-  role: UserRole.MANAGER,
+  role: UserRole.SUPERVISOR,
 };
 
 export const TEST_BRANDS = [

@@ -143,14 +143,14 @@ export function FindAllKitchenTicketsDocs() {
   return applyDecorators(
     ApiOperation({
       summary:
-        'List kitchen tickets with pagination (superadmin, manager, kitchen head).',
+        'List kitchen tickets with pagination (superadmin, supervisor, kitchen head).',
       description:
-        'Requires SUPERADMIN, MANAGER, or KITCHEN_HEAD. Includes all dates and statuses. Uses page (default 1) and limit (default 10, maximum 100). Orders by created_at descending, then kitchen_ticket_id ascending. Returns kitchenTickets and total, without a data/meta wrapper.',
+        'Requires SUPERADMIN, SUPERVISOR, or KITCHEN_HEAD. Includes all dates and statuses. Uses page (default 1) and limit (default 10, maximum 100). Orders by created_at descending, then kitchen_ticket_id ascending. Returns kitchenTickets and total, without a data/meta wrapper.',
     }),
     ApiResponse({
       status: 403,
       description:
-        'Only SUPERADMIN, MANAGER, and KITCHEN_HEAD can list all kitchen tickets. KITCHEN_STAFF is not allowed.',
+        'Only SUPERADMIN, SUPERVISOR, and KITCHEN_HEAD can list all kitchen tickets. KITCHEN_STAFF is not allowed.',
       schema: {
         example: {
           code: 'ACCESS_DENIED',

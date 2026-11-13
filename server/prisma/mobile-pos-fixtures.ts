@@ -84,10 +84,10 @@ async function main() {
       const manager = orders
         ? await tx.user.create({
             data: {
-              username: `mgr_${suffix.replaceAll('-', '').slice(0, 12)}`,
+              username: `sup_${suffix.replaceAll('-', '').slice(0, 12)}`,
               first_name: 'Order',
               last_name: 'Tester',
-              role: 'MANAGER',
+              role: 'SUPERVISOR',
 
               password_hash: passwordHash,
             },

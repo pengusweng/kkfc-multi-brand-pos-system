@@ -196,7 +196,7 @@ describe('Confidential recipes HTTP authorization', () => {
   });
 
   it.each([
-    { role: 'MANAGER', is_active: true },
+    { role: 'SUPERVISOR', is_active: true },
     { role: 'SUPERADMIN', is_active: false },
   ])(
     'IT-RCP-004: denies when approver authority is revoked: %j',

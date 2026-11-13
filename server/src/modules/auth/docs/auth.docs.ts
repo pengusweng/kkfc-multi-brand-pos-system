@@ -8,10 +8,10 @@ import {
 
 const userProfileExample = {
   user_id: '00000000-0000-4000-8000-000000000001',
-  username: 'manager',
+  username: 'supervisor',
   first_name: 'Maria',
   last_name: 'Santos',
-  role: 'MANAGER',
+  role: 'SUPERVISOR',
   is_active: true,
   created_at: '2026-10-31T08:00:00.000Z',
   modified_at: '2026-10-31T08:00:00.000Z',

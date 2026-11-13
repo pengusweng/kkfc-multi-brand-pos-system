@@ -72,7 +72,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     path: string,
     method = 'GET',
     body?: unknown,
-    user = 0,
+    user = 2,
     pin: string | null = fixture.pin,
   ) {
     return fetch(`${url}${path}`, {
@@ -116,7 +116,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     expect((await request('/auth/me', 'GET', undefined, 0)).status).toBe(200);
   });
   it('IT-ORD-019: persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
-    const userId = fixture.users[0].user_id;
+    const userId = fixture.users[2].user_id;
     const original = await prisma.user.findUniqueOrThrow({
       where: { user_id: userId },
     });
@@ -127,10 +127,10 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
               `/users/${userId}`,
               'PATCH',
               { first_name: 'Blocked' },
-              0,
+              2,
               '0000',
             )
-          : await request('/users', 'POST', {}, 0, '0000');
+          : await request('/users', 'POST', {}, 2, '0000');
       expect(response.status).toBe(attempt === 4 ? 429 : 403);
     }
     const credential = await prisma.userPinCredential.findUniqueOrThrow({
@@ -201,10 +201,10 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
     return prisma.menuItemChannel.create({ data: channelBody(order_channel) });
   }
   it.each([
-    { user: 0, status: 201 },
+    { user: 0, status: 403 },
     { user: 1, status: 403 },
     { user: 2, status: 201 },
-    { user: 3, status: 201 },
+    { user: 3, status: 403 },
     { user: -1, status: 401 },
   ])(
     'IT-MCH-001 Given session $user When creating a channel Then return $status through real guards',
@@ -221,7 +221,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
   );
 
   it.each(['GET', 'PATCH', 'DELETE', 'REACTIVATE'])(
-    'IT-MCH-002 Given another brand manager When requesting channel %s Then allow the operation',
+    'IT-MCH-002 Given a superadmin When requesting channel %s Then allow the operation',
     async (operation) => {
       const record = await channel();
       if (operation === 'REACTIVATE')
@@ -239,7 +239,7 @@ describe('Catalog HTTP endpoints (PostgreSQL integration)', () => {
             path,
             operation === 'REACTIVATE' ? 'PATCH' : operation,
             operation === 'PATCH' ? { price: 999 } : undefined,
-            3,
+            2,
           )
         ).status,
       ).toBe(200);

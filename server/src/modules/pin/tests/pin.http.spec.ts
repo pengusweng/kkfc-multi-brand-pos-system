@@ -48,7 +48,6 @@ describe('PIN HTTP endpoints and guard', () => {
   };
   const allowedRoles = [
     UserRole.SUPERADMIN,
-    UserRole.MANAGER,
     UserRole.RECIPE_MANAGER,
     UserRole.SUPERVISOR,
     UserRole.KITCHEN_HEAD,
@@ -213,12 +212,12 @@ describe('PIN HTTP endpoints and guard', () => {
     async (pin) => {
       await request(app.getHttpServer())
         .post('/api/pin')
-        .auth('MANAGER', { type: 'bearer' })
+        .auth('SUPERVISOR', { type: 'bearer' })
         .send({ pin })
         .expect(400);
       await request(app.getHttpServer())
         .patch('/api/pin')
-        .auth('MANAGER', { type: 'bearer' })
+        .auth('SUPERVISOR', { type: 'bearer' })
         .send({ ...reset, pin })
         .expect(400);
       expect(repository.create).not.toHaveBeenCalled();
@@ -233,7 +232,7 @@ describe('PIN HTTP endpoints and guard', () => {
     });
     const response = await request(app.getHttpServer())
       .post('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send(setup)
       .expect(409);
     expect(response.body).toMatchObject({ code: 'EXISTING_PIN_FOUND' });
@@ -243,7 +242,7 @@ describe('PIN HTTP endpoints and guard', () => {
   it('IT-PIN-013: rejects a reset with the wrong account password', async () => {
     const response = await request(app.getHttpServer())
       .patch('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send({ ...reset, password: 'incorrect' })
       .expect(401);
     expect(response.body).toMatchObject({ code: 'INVALID_CREDENTIALS' });
@@ -255,7 +254,7 @@ describe('PIN HTTP endpoints and guard', () => {
     async (password) => {
       await request(app.getHttpServer())
         .patch('/api/pin')
-        .auth('MANAGER', { type: 'bearer' })
+        .auth('SUPERVISOR', { type: 'bearer' })
         .send({ ...reset, password })
         .expect(400);
       expect(repository.update).not.toHaveBeenCalled();
@@ -265,12 +264,12 @@ describe('PIN HTTP endpoints and guard', () => {
   it('IT-PIN-015: allows repeated password-authorized resets without an action PIN', async () => {
     await request(app.getHttpServer())
       .patch('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send(reset)
       .expect(200);
     await request(app.getHttpServer())
       .patch('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send({ ...reset, pin: '0789' })
       .expect(200);
     expect(repository.update).toHaveBeenCalledTimes(2);
@@ -280,12 +279,12 @@ describe('PIN HTTP endpoints and guard', () => {
   it('IT-PIN-016: rejects a body-supplied user ID', async () => {
     await request(app.getHttpServer())
       .post('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send({ ...setup, user_id: 'another-user' })
       .expect(400);
     await request(app.getHttpServer())
       .patch('/api/pin')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .send({ ...reset, user_id: 'another-user' })
       .expect(400);
     expect(repository.create).not.toHaveBeenCalled();
@@ -332,7 +331,7 @@ describe('PIN HTTP endpoints and guard', () => {
     async (pin) => {
       const call = request(app.getHttpServer())
         .post('/api/pin-protected')
-        .auth('MANAGER', { type: 'bearer' });
+        .auth('SUPERVISOR', { type: 'bearer' });
       if (pin !== undefined) call.set('X-Action-Pin', pin);
       await call.expect(403);
       expect(repository.verifyPin).not.toHaveBeenCalled();
@@ -346,7 +345,7 @@ describe('PIN HTTP endpoints and guard', () => {
       repository.verifyPin.mockResolvedValue({ status });
       await request(app.getHttpServer())
         .post('/api/pin-protected')
-        .auth('MANAGER', { type: 'bearer' })
+        .auth('SUPERVISOR', { type: 'bearer' })
         .set('X-Action-Pin', '0123')
         .expect(403);
       expect(protectedAction).not.toHaveBeenCalled();
@@ -357,7 +356,7 @@ describe('PIN HTTP endpoints and guard', () => {
     repository.verifyPin.mockRejectedValue(new Error('Database unavailable'));
     await request(app.getHttpServer())
       .post('/api/pin-protected')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .set('X-Action-Pin', '0123')
       .expect(500);
     expect(protectedAction).not.toHaveBeenCalled();
@@ -372,7 +371,7 @@ describe('PIN HTTP endpoints and guard', () => {
     });
     const response = await request(app.getHttpServer())
       .post('/api/pin-protected')
-      .auth('MANAGER', { type: 'bearer' })
+      .auth('SUPERVISOR', { type: 'bearer' })
       .set('X-Action-Pin', '0123')
       .expect(429)
       .expect('Retry-After', '2');

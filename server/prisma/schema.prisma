@@ -70,7 +70,6 @@ enum OrderStatus {
 
 enum UserRole {
   SUPERADMIN
-  MANAGER
   RECIPE_MANAGER
   SUPERVISOR
   KITCHEN_HEAD

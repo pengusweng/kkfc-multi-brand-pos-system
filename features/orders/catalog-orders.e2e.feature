@@ -5,10 +5,10 @@ Feature: Catalog and order workflows through a running API
 
   @E2E-MCH-001
   Scenario: Persist the platform channel lifecycle
-    Given a manager has created a unique menu item and GrabFood override
-    When the manager changes its price to 150
+    Given a superadmin has created a unique menu item and GrabFood override
+    When the superadmin changes its price to 150
     Then a subsequent read returns 150
-    When the manager deactivates and reactivates the override
+    When the superadmin deactivates and reactivates the override
     Then a subsequent read returns an available channel
 
   @E2E-ORD-001
@@ -33,15 +33,15 @@ Feature: Catalog and order workflows through a running API
     Then the response status is 409
 
   @E2E-MCH-002
-  Scenario: Managers can inspect and update channels across brands
-    Given a manager created a GrabFood override at 120 pesos
-    When another manager reads and updates it to 999 pesos
-    Then both requests return 200
-    And the original manager reads an available channel at 999 pesos
+  Scenario: Supervisors can inspect channels but not change them
+    Given a superadmin created a GrabFood override at 120 pesos
+    When a supervisor reads it and tries to update it to 999 pesos
+    Then the read returns 200 and the update returns 403
+    And the superadmin still reads an available channel at 120 pesos
 
   @E2E-ASSET-001 @storage
   Scenario: Persist and download an associated image
     Given a configured test storage bucket and a unique menu item
-    When its manager attaches a valid PNG
+    When the superadmin attaches a valid PNG
     Then a subsequent menu read returns the stored object key
     And an owner download URL retrieves a nonempty PNG from storage

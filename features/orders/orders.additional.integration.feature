@@ -114,7 +114,7 @@ Feature: Additional orders integration coverage
   @IT-ORD-029
   Scenario: Allow permitted cancellation roles and use the session actor
     Test Case ID: IT-ORD-029
-    Given an authenticated cashier, manager, or superadmin and a valid cancellation body
+    Given an authenticated cashier, supervisor, or superadmin and a valid cancellation body
     When cancellation is requested through the draft orders endpoint
     Then the response is 200 and the actor is taken from the session
 
@@ -168,7 +168,7 @@ Feature: Additional orders integration coverage
   @IT-ORD-035
   Scenario: Allow order and kitchen roles to read an order
     Test Case ID: IT-ORD-035
-    Given an authenticated cashier, manager, superadmin, kitchen head, or kitchen staff
+    Given an authenticated cashier, supervisor, superadmin, kitchen head, or kitchen staff
     When an order is requested by UUID
     Then the response is 200 with the order from the service
 

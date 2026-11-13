@@ -22,9 +22,9 @@ Feature: Additional users unit coverage
   # Jest: server/src/modules/users/tests/users.service.spec.ts
   # Context: UsersService
   @UT-USER-018
-  Scenario: Blocks managers from creating superadmins
+  Scenario: Blocks non-superadmins from creating superadmins
     Test Case ID: UT-USER-018
-    Given a manager attempts to create a superadmin
+    Given a non-superadmin attempts to create a superadmin
     When user creation is requested
     Then access is denied without saving the account
 
@@ -40,9 +40,9 @@ Feature: Additional users unit coverage
   # Jest: server/src/modules/users/tests/users.service.spec.ts
   # Context: UsersService
   @UT-USER-020
-  Scenario: Allows managers to create staff without assignments
+  Scenario: Allows non-superadmins to create staff without assignments
     Test Case ID: UT-USER-020
-    Given a manager and a valid staff payload
+    Given a non-superadmin and a valid staff payload
     When the account is created
     Then staff creation succeeds without brand assignments
 

@@ -41,8 +41,7 @@ export class CreateUserDTO {
   })
   @ApiProperty({
     enum: UserRole,
-    description:
-      'Only managers and superadmins can create users. Only superadmins can create SUPERADMIN accounts. Managers can create non-superadmin accounts.',
+    description: 'Only superadmins can create users.',
   })
   role!: UserRole;
 }

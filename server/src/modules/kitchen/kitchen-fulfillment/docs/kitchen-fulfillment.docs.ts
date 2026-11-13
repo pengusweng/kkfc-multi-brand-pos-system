@@ -38,9 +38,8 @@ export function KitchenFulfillmentDocs() {
   );
 }
 
-const kitchenRoles =
-  'SUPERADMIN, MANAGER, SUPERVISOR, KITCHEN_HEAD, and KITCHEN_STAFF.';
-const checkerRoles = 'SUPERADMIN, MANAGER, SUPERVISOR, and KITCHEN_HEAD.';
+const kitchenRoles = 'SUPERADMIN, SUPERVISOR, KITCHEN_HEAD, and KITCHEN_STAFF.';
+const checkerRoles = 'SUPERADMIN, SUPERVISOR, and KITCHEN_HEAD.';
 
 const ticketExample = {
   kitchen_ticket_id: '00000000-0000-4000-8000-000000000001',

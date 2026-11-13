@@ -40,8 +40,7 @@ export class UpdateUserDTO {
     minLength: 8,
     maxLength: 32,
     format: 'password',
-    description:
-      'Managers may change passwords for active non-superadmin users. Only superadmins may change superadmin passwords.',
+    description: 'Only superadmins may change passwords.',
   })
   password?: string;
 }

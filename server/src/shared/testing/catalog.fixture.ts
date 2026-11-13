@@ -31,10 +31,10 @@ export async function createCatalogFixture(prisma: PrismaService) {
   const users = await Promise.all(
     (
       [
-        'MANAGER',
+        'SUPERVISOR',
         'CASHIER_STAFF',
         'SUPERADMIN',
-        'MANAGER',
+        'SUPERVISOR',
         'KITCHEN_HEAD',
         'KITCHEN_STAFF',
       ] as const

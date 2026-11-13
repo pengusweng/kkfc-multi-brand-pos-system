@@ -70,7 +70,7 @@ export class MenuItemsController {
     id: fromResult('menu_item_id'),
   })
   @CreateMenuItemDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
@@ -127,7 +127,7 @@ export class MenuItemsController {
     id: fromParam('id'),
   })
   @UpdateMenuItemDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
@@ -160,7 +160,6 @@ export class MenuItemsController {
   @UpdateMenuItemAvailabilityDocs()
   @Roles(
     UserRole.SUPERADMIN,
-    UserRole.MANAGER,
     UserRole.RECIPE_MANAGER,
     UserRole.SUPERVISOR,
     UserRole.KITCHEN_HEAD,
@@ -182,7 +181,7 @@ export class MenuItemsController {
     id: fromParam('id'),
   })
   @ReactivateMenuItemDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.reactivateMenuItem(menuItemId);
   }
@@ -195,7 +194,7 @@ export class MenuItemsController {
     id: fromParam('id'),
   })
   @DeleteMenuItemDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async delete(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.deleteMenuItem(menuItemId);
   }

@@ -136,11 +136,11 @@ describe('Brands audit logging', () => {
     ]);
   });
 
-  it('IT-BRND-033: Given a manager and routine brand reads, When brands are read and a brand is created, Then only the role denial is audited', async () => {
+  it('IT-BRND-033: Given a supervisor and routine brand reads, When brands are read and a brand is created, Then only the role denial is audited', async () => {
     brands.findAll.mockResolvedValue({ data: [], meta: {} });
     brands.findOne.mockResolvedValue({ brand_id: brandId });
 
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERVISOR;
     const list = await call('GET');
     const view = await call('GET', `/${brandId}`);
     const create = await call('POST', '', { name: 'Gamcheon', code: 'GC2' });

@@ -12,14 +12,14 @@ An authenticated catalog user exists
     ${response}=    POST On Session    api    /api/auth/login    json=${payload}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     ${headers}=    Create Dictionary    Authorization=Bearer ${body}[token]
-    IF    $body['user']['role'] in ('SUPERADMIN', 'MANAGER', 'RECIPE_MANAGER', 'SUPERVISOR', 'KITCHEN_HEAD')
+    IF    $body['user']['role'] in ('SUPERADMIN', 'RECIPE_MANAGER', 'SUPERVISOR', 'KITCHEN_HEAD')
         Set To Dictionary    ${headers}    X-Action-Pin=${CATALOG_PIN}
     END
     RETURN    ${headers}
 
-A manager has created a unique menu item
-    ${headers}=    An authenticated catalog user exists    0
-    Set Test Variable    ${MANAGER_HEADERS}    ${headers}
+A superadmin has created a unique menu item
+    ${headers}=    An authenticated catalog user exists    2
+    Set Test Variable    ${ADMIN_HEADERS}    ${headers}
     ${suffix}=    Evaluate    str(uuid.uuid4())    modules=uuid
     ${payload}=    Create Dictionary    brand_id=${CATALOG}[brand][brand_id]    recipe_id=${CATALOG}[recipe][recipe_id]
     ...    code=robot-${suffix}    name=Robot fixture meal    img_url=https://example.com/fixture.png    base_price=${100}
@@ -29,31 +29,31 @@ A manager has created a unique menu item
     Set Test Variable    ${MENU_CODE}    ${body}[code]
     Set Test Variable    ${ORDER_PATH}    /api/brands/${CATALOG}[brand][brand_id]/orders
 
-The manager creates a GrabFood override
+The superadmin creates a GrabFood override
     ${payload}=    Create Dictionary    menu_item_id=${MENU_ID}    order_channel=GRABFOOD    price=${120}
-    ${response}=    POST On Session    api    /api/menu-channels    headers=${MANAGER_HEADERS}    json=${payload}    expected_status=201
+    ${response}=    POST On Session    api    /api/menu-channels    headers=${ADMIN_HEADERS}    json=${payload}    expected_status=201
     ${body}=    Set Variable    ${response.json()}
     Set Test Variable    ${CHANNEL_ID}    ${body}[menu_item_channel_id]
 
-The manager changes the channel price to 150
+The superadmin changes the channel price to 150
     ${payload}=    Create Dictionary    price=${150}
-    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    json=${payload}    expected_status=200
+    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    json=${payload}    expected_status=200
 
 The saved channel price is 150
-    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
+    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     Should Be Equal As Numbers    ${body}[price]    150
 
-The manager deactivates and reactivates the channel
-    DELETE On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
-    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=404
-    ${response}=    GET On Session    api    url=/api/menu-channels/${CHANNEL_ID}?activeOnly=false    headers=${MANAGER_HEADERS}    expected_status=200
+The superadmin deactivates and reactivates the channel
+    DELETE On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=200
+    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=404
+    ${response}=    GET On Session    api    url=/api/menu-channels/${CHANNEL_ID}?activeOnly=false    headers=${ADMIN_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     Should Be Equal    ${body}[is_available]    ${False}
-    PATCH On Session    api    /api/menu-channels/reactivate/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
+    PATCH On Session    api    /api/menu-channels/reactivate/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=200
 
 The saved channel is available
-    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
+    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     Should Be Equal    ${body}[is_available]    ${True}
 
@@ -114,32 +114,32 @@ The cashier submits another ID with the same normalized platform references
     ${response}=    POST On Session    api    ${ORDER_PATH}    headers=${CASHIER_HEADERS}    json=${changed}    expected_status=409
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
-Another manager reads and changes the channel
+A supervisor reads the channel but cannot change it
     ${headers}=    An authenticated catalog user exists    3
     GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    expected_status=200
     ${payload}=    Create Dictionary    price=${999}
-    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    json=${payload}    expected_status=200
+    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    json=${payload}    expected_status=403
 
-The channel change is visible to the original manager
-    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
+The channel is unchanged for the superadmin
+    ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${ADMIN_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
-    Should Be Equal As Numbers    ${body}[price]    999
+    Should Be Equal As Numbers    ${body}[price]    120
     Should Be Equal    ${body}[is_available]    ${True}
 
-The manager attaches a valid PNG to the menu item
+The superadmin attaches a valid PNG to the menu item
     ${image}=    Evaluate    base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAE0lEQVQImWP4z8DwnwGM/zMwAAAf7gP9qS/A4gAAAABJRU5ErkJggg==')    modules=base64
     ${file}=    Create List    fixture.png    ${image}    image/png
     ${files}=    Create Dictionary    file=${file}
-    ${response}=    PATCH On Session    api    /api/menu-items/${MENU_ID}    headers=${MANAGER_HEADERS}    files=${files}    expected_status=200
+    ${response}=    PATCH On Session    api    /api/menu-items/${MENU_ID}    headers=${ADMIN_HEADERS}    files=${files}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     Set Test Variable    ${IMAGE_KEY}    ${body}[img_url]
 
 The stored image can be retrieved through an owner download URL
-    ${response}=    GET On Session    api    /api/menu-items/${MENU_ID}    headers=${MANAGER_HEADERS}    expected_status=200
+    ${response}=    GET On Session    api    /api/menu-items/${MENU_ID}    headers=${ADMIN_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     Should Be Equal    ${body}[img_url]    ${IMAGE_KEY}
     ${params}=    Create Dictionary    key=${IMAGE_KEY}
-    ${response}=    GET On Session    api    /api/assets/download-url    headers=${MANAGER_HEADERS}    params=${params}    expected_status=200
+    ${response}=    GET On Session    api    /api/assets/download-url    headers=${ADMIN_HEADERS}    params=${params}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     ${image}=    GET    ${body}[downloadUrl]    expected_status=200
     Should Start With    ${image.headers}[Content-Type]    image/png

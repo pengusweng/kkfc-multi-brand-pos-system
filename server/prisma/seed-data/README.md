@@ -79,13 +79,13 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 
 ## Running the seeds
 
-Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
+Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The manager-role migration maps MANAGER to SUPERVISOR. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
 
-- `npm run db:seed` inserts missing fixtures for 3 brands, 17 users covering all 8 roles, 51 inventory items, 22 recipes and 83 recipe components, 25 menu items, 50 delivery channel overrides, 14 modifiers, and 34 menu item modifier assignments in one transaction. Existing rows are never overwritten, including passwords, stock balances, recipe instructions and component quantities, prices, and inactive records. Codes (and recipe versions) keep IDs stable; modifier assignments have their own UUID and remain unique by menu item and modifier. New seed users use `Password123!`. Use this seed only in development or test databases.
-- `npm run db:seed:test` inserts missing brands and users for all 8 roles, including a manager, inventory staff, kitchen staff, and cashier staff for each brand, plus an unassigned manager. Existing users are preserved. New test users use `Password123!`. Use it only in a development or test database.
+- `npm run db:seed` inserts missing fixtures for 3 brands, 17 users covering all 7 roles, 51 inventory items, 22 recipes and 83 recipe components, 25 menu items, 50 delivery channel overrides, 14 modifiers, and 34 menu item modifier assignments in one transaction. Existing rows are never overwritten, including passwords, stock balances, recipe instructions and component quantities, prices, and inactive records. Codes (and recipe versions) keep IDs stable; modifier assignments have their own UUID and remain unique by menu item and modifier. New seed users use `Password123!`. Use this seed only in development or test databases.
+- `npm run db:seed:test` inserts missing brands and users for all 7 roles, including a supervisor, inventory staff, kitchen staff, and cashier staff for each brand, plus an unassigned supervisor. Existing users are preserved. New test users use `Password123!`. Use it only in a development or test database.
 
 Both seed commands create missing PIN credentials for seeded users whose stored
-role is `SUPERADMIN`, `MANAGER`, `RECIPE_MANAGER`, `SUPERVISOR`, or `KITCHEN_HEAD`,
+role is `SUPERADMIN`, `RECIPE_MANAGER`, `SUPERVISOR`, or `KITCHEN_HEAD`,
 including `test_unassigned`. The four-digit development/test PIN is `1234`, stored only as
 an Argon2 hash in `user_pin_credentials`. Existing PIN hashes, failed-attempt
 counters, and cooldowns are preserved on reruns. Other roles receive no new PIN
@@ -94,9 +94,9 @@ credential. Apply the `user_pin_credentials` migration before running either see
 | Role                 | Username           |
 | -------------------- | ------------------ |
 | SUPERADMIN           | `test_superadmin`  |
-| MANAGER (GC)         | `test_owner`       |
-| MANAGER (AI)         | `test_manager_ai`  |
-| MANAGER (KK)         | `test_manager_kk`  |
+| SUPERVISOR (GC)      | `test_owner`       |
+| SUPERVISOR (AI)      | `test_sup_ai`      |
+| SUPERVISOR (KK)      | `test_sup_kk`      |
 | RECIPE_MANAGER       | `test_recipe_mgr`  |
 | SUPERVISOR           | `test_supervisor`  |
 | KITCHEN_HEAD         | `test_chef`        |

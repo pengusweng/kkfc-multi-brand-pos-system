@@ -12,7 +12,7 @@ describe('Menu catalog HTTP endpoints', () => {
   const user = {
     user_id: '00000000-0000-4000-8000-000000000003',
     brand_id: brandId,
-    role: UserRole.MANAGER,
+    role: UserRole.SUPERADMIN,
   };
   const dto = {
     menu_item: {
@@ -89,7 +89,7 @@ describe('Menu catalog HTTP endpoints', () => {
 
   afterAll(async () => app?.close());
 
-  it('IT-MCAT-001: creates a catalog entry for a manager assigned to its nested brand', async () => {
+  it('IT-MCAT-001: creates a catalog entry for a superadmin assigned to its nested brand', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers,
