@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { UserRole } from "./userSchema";
 
-// Roles a superadmin can hand out from the staff page. Superadmin and Manager
-// accounts are deliberately not creatable here.
+// Roles a superadmin can hand out from the staff page. Superadmin accounts are
+// deliberately not creatable here.
 export const CREATABLE_ROLES = [
   "RECIPE_MANAGER",
   "SUPERVISOR",

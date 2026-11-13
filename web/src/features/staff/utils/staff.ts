@@ -28,7 +28,6 @@ export type StaffMember = {
 
 export const ROLE_LABEL: Record<UserRole, string> = {
   SUPERADMIN: "Superadmin",
-  MANAGER: "Manager",
   RECIPE_MANAGER: "Recipe Manager",
   SUPERVISOR: "Supervisor",
   KITCHEN_HEAD: "Kitchen Head",
