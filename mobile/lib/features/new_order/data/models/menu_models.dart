@@ -244,6 +244,8 @@ class CartLine {
     required this.id,
     required this.item,
     required this.quantity,
+    this.brandId = '',
+    this.brandName = '',
     this.selections = const {},
     this.kitchenNote,
   });
@@ -251,6 +253,10 @@ class CartLine {
   final String id;
   final MenuItem item;
   final int quantity;
+
+  /// Provider captured when the item is added, independent of menu selection.
+  final String brandId;
+  final String brandName;
   final Map<String, String> selections; // groupId -> optionId
   final String? kitchenNote;
 
@@ -262,6 +268,8 @@ class CartLine {
     id: id,
     item: item,
     quantity: quantity ?? this.quantity,
+    brandId: brandId,
+    brandName: brandName,
     selections: selections ?? this.selections,
     kitchenNote: kitchenNote ?? this.kitchenNote,
   );

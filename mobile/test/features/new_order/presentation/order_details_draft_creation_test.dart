@@ -142,6 +142,43 @@ void main() {
     );
   }
 
+  testWidgets('Step 3 prevents submitting another provider’s items', (
+    tester,
+  ) async {
+    final mockRepo = MockOrderEntryRepository();
+    final container = ProviderContainer(
+      overrides: [
+        orderEntryRepositoryProvider.overrideWithValue(mockRepo),
+        assignedBrandsProvider.overrideWithValue([sampleBrand]),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(activeBrandProvider.notifier).select(sampleBrand);
+    container.read(cartProvider.notifier).add(sampleItem);
+    container
+        .read(activeBrandProvider.notifier)
+        .select(
+          const AssignedBrand(
+            id: '55555555-5555-4555-8555-555555555555',
+            code: 'KK',
+            name: 'King Kungs Cafe',
+          ),
+        );
+    container.read(menuChannelProvider.notifier).select(MenuChannel.takeaway);
+
+    await tester.pumpWidget(createSubject(container));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review order'));
+    await tester.pumpAndSettle();
+
+    expect(mockRepo.createCallCount, 0);
+    expect(
+      find.textContaining('Each order must contain items from one provider.'),
+      findsOneWidget,
+    );
+    expect(container.read(cartProvider).single.brandName, sampleBrand.name);
+  });
+
   testWidgets(
     'Step 3 requires table for Dine-in and does not call API when blank',
     (tester) async {

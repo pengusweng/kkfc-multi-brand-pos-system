@@ -6,7 +6,6 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/customize_flow.dart';
-import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Opens the CartPanel as an impeccable slide-up bottom sheet on phone layouts.
@@ -43,7 +42,6 @@ class _CartPanelState extends ConsumerState<CartPanel> {
   @override
   Widget build(BuildContext context) {
     final lines = ref.watch(cartProvider);
-    final brand = ref.watch(activeBrandProvider);
     final channel = ref.watch(menuChannelProvider);
     final total = ref.watch(cartTotalProvider);
     final count = ref.watch(cartCountProvider);
@@ -349,7 +347,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                                           ),
                                         ),
                                         child: Text(
-                                          brand.name,
+                                          line.brandName,
                                           style: const TextStyle(
                                             fontSize: 11.0,
                                             fontWeight: FontWeight.w600,
