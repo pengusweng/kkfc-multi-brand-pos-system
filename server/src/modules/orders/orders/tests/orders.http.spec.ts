@@ -1517,7 +1517,12 @@ describe('Draft cancellation HTTP API', () => {
     });
   }
 
-  it.each([UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN])(
+  it.each([
+    UserRole.CASHIER_STAFF,
+    UserRole.MANAGER,
+    UserRole.SUPERVISOR,
+    UserRole.SUPERADMIN,
+  ])(
     'IT-ORD-029: allows %s and takes the actor from the session',
     async (role) => {
       auth.validateSession.mockResolvedValue({
@@ -1564,6 +1569,7 @@ describe('Draft cancellation HTTP API', () => {
           [
             UserRole.CASHIER_STAFF,
             UserRole.MANAGER,
+            UserRole.SUPERVISOR,
             UserRole.SUPERADMIN,
           ] as UserRole[]
         ).includes(role),
@@ -1605,6 +1611,7 @@ describe('Order detail HTTP API', () => {
   const allowedRoles: UserRole[] = [
     UserRole.CASHIER_STAFF,
     UserRole.MANAGER,
+    UserRole.SUPERVISOR,
     UserRole.SUPERADMIN,
     UserRole.KITCHEN_HEAD,
     UserRole.KITCHEN_STAFF,
