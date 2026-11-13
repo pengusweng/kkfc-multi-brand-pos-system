@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - name: Test failure issue reporting
         run: node --test .github/scripts/*.test.cjs
+      - name: Test Android signing configuration
+        run: python3 .github/scripts/configure_android_signing_test.py
 
   detect-changes:
     name: Detect Changes

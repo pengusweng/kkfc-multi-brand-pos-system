@@ -15,6 +15,9 @@ class MenuRepository {
     String brandId, {
     bool activeOnly = true,
   }) async {
+    if (!activeOnly) {
+      return _getByMenuItems(brandId, activeOnly: false);
+    }
     try {
       return await _getByCatalog(brandId);
     } catch (_) {
@@ -49,7 +52,7 @@ class MenuRepository {
       }
 
       final parsedTotalPages = meta['totalPages'];
-      if (parsedTotalPages is! int || parsedTotalPages < 1) {
+      if (parsedTotalPages is! int || parsedTotalPages < 0) {
         throw const FormatException(
           'Invalid menu-catalog pagination metadata.',
         );
@@ -97,7 +100,7 @@ class MenuRepository {
       );
 
       final parsedTotalPages = meta['totalPages'];
-      if (parsedTotalPages is! int || parsedTotalPages < 1) {
+      if (parsedTotalPages is! int || parsedTotalPages < 0) {
         throw const FormatException('Invalid menu-items pagination metadata.');
       }
       totalPages = parsedTotalPages;

@@ -126,14 +126,20 @@ void main() {
       },
     );
 
-    testWidgets('the current menu card shows the active brand and channel', (
+    testWidgets('the current menu card shows only the active provider', (
       tester,
     ) async {
       await _pumpMenu(tester, _desktop);
 
       expect(find.byType(CurrentMenuCard), findsOneWidget);
       expect(find.textContaining('Gamcheon'), findsWidgets);
-      expect(find.textContaining('Dine-in'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(CurrentMenuCard),
+          matching: find.textContaining('Dine-in'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('tapping current menu card opens choose menu modal', (
@@ -144,8 +150,8 @@ void main() {
       await tester.tap(find.byType(CurrentMenuCard));
       await tester.pumpAndSettle();
 
-      expect(find.text('Choose menu'), findsOneWidget);
-      expect(find.text('Only menus you can manage are shown.'), findsOneWidget);
+      expect(find.text('Choose provider'), findsOneWidget);
+      expect(find.text('Choose the provider for this menu.'), findsOneWidget);
     });
 
     testWidgets(
@@ -271,7 +277,7 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.byType(ChooseMenuModal), findsOneWidget);
-        expect(find.text('Choose menu'), findsOneWidget);
+        expect(find.text('Choose provider'), findsOneWidget);
 
         // Verify primary & secondary action buttons are displayed and pinned
         expect(

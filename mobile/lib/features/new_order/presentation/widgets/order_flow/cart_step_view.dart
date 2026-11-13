@@ -5,7 +5,6 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/item_customization_dialog.dart';
 import 'package:mobile/features/new_order/presentation/widgets/order_flow/cart_item_card.dart';
-import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Step 2: The current order (cart panel) view for mobile phones matching the visual design.
@@ -25,7 +24,6 @@ class CartStepView extends ConsumerWidget {
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
     final channel = ref.watch(menuChannelProvider);
-    final brand = ref.watch(activeBrandProvider);
 
     final lineText = '${lines.length} line${lines.length == 1 ? '' : 's'}';
     final itemText = '$count item${count == 1 ? '' : 's'}';
@@ -103,7 +101,7 @@ class CartStepView extends ConsumerWidget {
                       CartItemCard(
                         line: line,
                         channel: channel,
-                        brandName: brand.name,
+                        brandName: line.brandName,
                         onIncrement: () => ref
                             .read(cartProvider.notifier)
                             .incrementLine(line.id),
@@ -114,7 +112,7 @@ class CartStepView extends ConsumerWidget {
                           context,
                           item: line.item,
                           channel: channel,
-                          brandName: brand.name,
+                          brandName: line.brandName,
                           editing: line,
                         ),
                         onRemove: () =>

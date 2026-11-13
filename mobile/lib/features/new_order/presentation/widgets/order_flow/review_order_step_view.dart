@@ -165,6 +165,7 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
 
       final updatedDraft = OrderDraft.fromJson(confirmed);
       ref.read(activeOrderDraftProvider.notifier).set(updatedDraft);
+      ref.read(clientOrderIdProvider.notifier).regenerate();
 
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -174,6 +175,9 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         final message = _extractErrorMessage(e);
+        if (e is DioException && e.response?.statusCode == 400) {
+          ref.invalidate(menuItemsProvider);
+        }
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(message),
@@ -191,8 +195,6 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
     final cart = ref.watch(cartProvider);
     final total = ref.watch(cartTotalProvider);
     final itemCount = ref.watch(cartCountProvider);
-    final activeBrand = ref.watch(activeBrandProvider);
-    final brandName = activeBrand.name;
     final draft = ref.watch(activeOrderDraftProvider);
 
     final lineCount = cart.length;
@@ -441,7 +443,7 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _formatModifiers(cart[i], brandName),
+                                  _formatModifiers(cart[i], cart[i].brandName),
                                   style: const TextStyle(
                                     fontFamily: KkfcFonts.text,
                                     fontSize: 13.0,

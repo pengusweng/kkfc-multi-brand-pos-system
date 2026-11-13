@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
@@ -176,12 +177,14 @@ class CartNotifier extends Notifier<List<CartLine>> {
   int _findIdentical(
     MenuItem item,
     Map<String, String> sel, {
+    required String brandId,
     String? except,
     String? kitchenNote,
   }) => state.indexWhere(
     (l) =>
         l.id != except &&
         l.item.id == item.id &&
+        l.brandId == brandId &&
         mapEquals(l.selections, sel) &&
         (l.kitchenNote ?? '') == (kitchenNote ?? ''),
   );
@@ -195,11 +198,16 @@ class CartNotifier extends Notifier<List<CartLine>> {
     int quantity, {
     String? kitchenNote,
   }) {
+    final brand = ref.read(activeBrandProvider);
+    final brandId = resolveActiveBrandId(
+      brand,
+      ref.read(assignedBrandsProvider),
+    );
     final sel = _normalize(item, selections);
     final note = (kitchenNote != null && kitchenNote.trim().isNotEmpty)
         ? kitchenNote.trim()
         : null;
-    final i = _findIdentical(item, sel, kitchenNote: note);
+    final i = _findIdentical(item, sel, brandId: brandId, kitchenNote: note);
     if (i != -1) {
       state = [
         for (var k = 0; k < state.length; k++)
@@ -214,6 +222,8 @@ class CartNotifier extends Notifier<List<CartLine>> {
       ...state,
       CartLine(
         id: 'line-${_seq++}',
+        brandId: brandId,
+        brandName: brand.name,
         item: item,
         quantity: quantity,
         selections: sel,
@@ -235,6 +245,8 @@ class CartNotifier extends Notifier<List<CartLine>> {
         ? state[i]
         : CartLine(
             id: state[i].id,
+            brandId: state[i].brandId,
+            brandName: state[i].brandName,
             item: item,
             quantity: state[i].quantity,
             selections: state[i].selections,
@@ -246,7 +258,13 @@ class CartNotifier extends Notifier<List<CartLine>> {
         : line.kitchenNote;
 
     // If the edit makes this line identical to another, merge them.
-    final j = _findIdentical(line.item, sel, except: lineId, kitchenNote: note);
+    final j = _findIdentical(
+      line.item,
+      sel,
+      brandId: line.brandId,
+      except: lineId,
+      kitchenNote: note,
+    );
     if (j != -1) {
       final otherId = state[j].id;
       state = [
@@ -261,6 +279,8 @@ class CartNotifier extends Notifier<List<CartLine>> {
         if (l.id == lineId)
           CartLine(
             id: line.id,
+            brandId: line.brandId,
+            brandName: line.brandName,
             item: line.item,
             quantity: quantity,
             selections: sel,
@@ -289,7 +309,11 @@ class CartNotifier extends Notifier<List<CartLine>> {
       if (l.id != lineId) l,
   ];
 
-  void clear() => state = const [];
+  void clear() {
+    state = const [];
+    ref.read(activeOrderDraftProvider.notifier).clear();
+    ref.read(clientOrderIdProvider.notifier).regenerate();
+  }
 }
 
 /// Not autoDispose: the draft order must survive tab changes.

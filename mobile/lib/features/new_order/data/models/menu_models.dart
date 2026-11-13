@@ -127,12 +127,16 @@ class MenuItem {
     final baseCentavos = decimalToCentavos(basePrice);
     final baseAvailable = json['is_available'] == true;
     final isActive = json['is_active'] != false;
+    final recipe = json['recipe'];
+    final recipeAvailable =
+        !json.containsKey('recipe') ||
+        (recipe is Map<String, dynamic> && recipe['is_active'] == true);
     final prices = <MenuChannel, int>{
       for (final channel in MenuChannel.values) channel: baseCentavos,
     };
     final availability = <MenuChannel, MenuAvailability>{
       for (final channel in MenuChannel.values)
-        channel: !isActive
+        channel: !isActive || !recipeAvailable
             ? MenuAvailability.inactive
             : baseAvailable
             ? MenuAvailability.available
@@ -151,9 +155,11 @@ class MenuItem {
         if (channel == null || price == null) continue;
         listed.add(channel);
         prices[channel] = decimalToCentavos(price);
-        availability[channel] = baseAvailable && row['is_available'] == true
-            ? MenuAvailability.available
-            : MenuAvailability.manualOff;
+        if (recipeAvailable && baseAvailable) {
+          availability[channel] = row['is_available'] == true
+              ? MenuAvailability.available
+              : MenuAvailability.manualOff;
+        }
       }
     }
 
@@ -165,6 +171,7 @@ class MenuItem {
         if (row is! Map<String, dynamic>) continue;
         if (row['is_available'] == false) continue;
         final mod = row['modifier'] as Map<String, dynamic>?;
+        if (mod?['is_active'] == false) continue;
         final name = mod?['name'] as String? ?? row['name'] as String?;
         final modId =
             row['modifier_id'] as String? ??
@@ -244,6 +251,8 @@ class CartLine {
     required this.id,
     required this.item,
     required this.quantity,
+    this.brandId = '',
+    this.brandName = '',
     this.selections = const {},
     this.kitchenNote,
   });
@@ -251,6 +260,10 @@ class CartLine {
   final String id;
   final MenuItem item;
   final int quantity;
+
+  /// Provider captured when the item is added, independent of menu selection.
+  final String brandId;
+  final String brandName;
   final Map<String, String> selections; // groupId -> optionId
   final String? kitchenNote;
 
@@ -262,6 +275,8 @@ class CartLine {
     id: id,
     item: item,
     quantity: quantity ?? this.quantity,
+    brandId: brandId,
+    brandName: brandName,
     selections: selections ?? this.selections,
     kitchenNote: kitchenNote ?? this.kitchenNote,
   );

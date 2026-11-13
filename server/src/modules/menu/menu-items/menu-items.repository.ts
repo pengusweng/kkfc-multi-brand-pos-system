@@ -83,6 +83,7 @@ export class MenuItemsRepository {
     };
     const itemsQuery = tx.menuItem.findMany({
       where,
+      include: { recipe: { select: { is_active: true } } },
       skip,
       take,
       orderBy: [{ created_at: 'desc' }, { menu_item_id: 'asc' }],

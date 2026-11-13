@@ -20,6 +20,58 @@ class _FakeAdapter implements HttpClientAdapter {
 }
 
 void main() {
+  for (final recipe in [
+    null,
+    {'is_active': false},
+  ]) {
+    test('recipe $recipe is unavailable on every channel', () {
+      final item = MenuItem.fromApiJson({
+        'menu_item_id': 'item',
+        'name': 'Meal',
+        'base_price': '100',
+        'is_available': true,
+        'recipe': recipe,
+        'menuChannels': [
+          {'order_channel': 'GRABFOOD', 'price': '120', 'is_available': true},
+        ],
+      });
+      for (final channel in MenuChannel.values) {
+        expect(item.availabilityFor(channel), MenuAvailability.inactive);
+      }
+    });
+  }
+
+  test('base stockout is preserved even when channel overrides exist', () {
+    final item = MenuItem.fromApiJson({
+      'menu_item_id': 'item',
+      'name': 'Meal',
+      'base_price': '100',
+      'is_available': false,
+      'recipe': {'is_active': true},
+      'menuChannels': [
+        {'order_channel': 'GRABFOOD', 'price': '120', 'is_available': true},
+        {'order_channel': 'FOODPANDA', 'price': '120', 'is_available': false},
+      ],
+    });
+    for (final channel in MenuChannel.values) {
+      expect(item.availabilityFor(channel), MenuAvailability.stockout);
+    }
+  });
+
+  test('empty catalog succeeds without falling back to menu-items', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) {
+      expect(options.path, '/menu-catalog/brand/brand-1');
+      return ResponseBody.fromString(
+        '{"data":[],"meta":{"totalPages":0}}',
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+    expect(await MenuRepository(dio).getByBrand('brand-1'), isEmpty);
+  });
   test(
     'maps the brand menu response and its channel overrides to a menu card',
     () {

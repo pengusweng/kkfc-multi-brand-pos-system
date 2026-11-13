@@ -19,7 +19,7 @@ Future<bool?> openCustomize(
     context,
     item: item,
     channel: channel,
-    brandName: brand.name,
+    brandName: editing?.brandName ?? brand.name,
     editing: editing,
   );
 }

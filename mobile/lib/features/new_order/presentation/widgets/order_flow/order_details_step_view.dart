@@ -138,14 +138,34 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
       final activeBrand = ref.read(activeBrandProvider);
       final allBrands = ref.read(assignedBrandsProvider);
       final brandId = resolveActiveBrandId(activeBrand, allBrands);
-      final orderId = ref.read(clientOrderIdProvider);
-
+      if (lines.any(
+        (line) => line.brandId.isNotEmpty && line.brandId != brandId,
+      )) {
+        throw StateError(
+          'Each order must contain items from one provider. Switch back to the '
+          'items’ provider, or remove items from other providers before continuing.',
+        );
+      }
       final storeRef = channel.isPlatform
           ? formatStoreReference(
               brandName: activeBrand.name,
               channelLabel: channel.label,
             )
           : null;
+
+      final orderId = ref
+          .read(clientOrderIdProvider.notifier)
+          .forRequest(
+            brandId: brandId,
+            channel: channel,
+            lines: lines,
+            reference: text,
+            merchantStoreReference: storeRef,
+          );
+      final previousDraft = ref.read(activeOrderDraftProvider);
+      if (previousDraft != null && previousDraft.orderId != orderId) {
+        ref.read(activeOrderDraftProvider.notifier).clear();
+      }
 
       final created = await ref
           .read(orderEntryRepositoryProvider)
@@ -167,6 +187,9 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
       }
     } catch (e) {
       if (mounted) {
+        if (e is DioException && e.response?.statusCode == 400) {
+          ref.invalidate(menuItemsProvider);
+        }
         setState(() {
           _isSubmitting = false;
           _apiErrorMessage = _extractErrorMessage(e);

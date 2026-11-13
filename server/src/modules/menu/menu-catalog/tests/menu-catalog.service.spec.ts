@@ -184,6 +184,58 @@ describe('MenuCatalogService operations', () => {
 });
 
 describe('MenuCatalogService transactional creation', () => {
+  it('UT-MCAT-013: catalog preserves disabled channels and recipe availability', async () => {
+    const item = {
+      menu_item_id: 'meal',
+      is_active: true,
+      is_available: true,
+      recipe: { is_active: false },
+    };
+    const channel = {
+      order_channel: 'GRABFOOD',
+      is_available: false,
+      price: 120,
+    };
+    const tx = {
+      menuItem: {
+        findMany: jest.fn().mockResolvedValue([item]),
+        count: jest.fn().mockResolvedValue(1),
+      },
+      menuItemChannel: { findMany: jest.fn().mockResolvedValue([channel]) },
+      menuItemModifier: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const prisma = {
+      $transaction: jest
+        .fn()
+        .mockImplementation((work: (client: typeof tx) => unknown) => work(tx)),
+    } as unknown as PrismaService;
+    const repository = new MenuCatalogRepository(
+      prisma,
+      new MenuItemsRepository(prisma),
+      new MenuChannelsRepository(prisma),
+      {} as ModifiersRepository,
+      new MenuItemModifiersRepository(prisma),
+    );
+
+    const result = await repository.findMany('brand', 0, 100);
+    expect(result.menuItems[0]).toMatchObject({
+      recipe: { is_active: false },
+      menuChannels: [channel],
+    });
+    expect(tx.menuItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { brand_id: 'brand', is_active: true },
+        include: { recipe: { select: { is_active: true } } },
+      }),
+    );
+    expect(tx.menuItemChannel.findMany).toHaveBeenCalledWith({
+      where: {
+        menu_item_id: 'meal',
+        is_available: undefined,
+        order_channel: undefined,
+      },
+    });
+  });
   const dto: MenuCatalogSetupDTO = {
     menu_item: {
       brand_id: 'brand-id',

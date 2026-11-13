@@ -30,7 +30,7 @@ class _ResponsiveMenuLayout extends ConsumerStatefulWidget {
 }
 
 class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _entranceController;
   late final Animation<double> _headerFade;
   late final Animation<Offset> _headerSlide;
@@ -42,6 +42,7 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 550),
@@ -95,8 +96,16 @@ class _ResponsiveMenuLayoutState extends ConsumerState<_ResponsiveMenuLayout>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _entranceController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(menuItemsProvider);
+    }
   }
 
   @override

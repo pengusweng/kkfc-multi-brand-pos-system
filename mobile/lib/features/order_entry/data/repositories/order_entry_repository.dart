@@ -29,6 +29,44 @@ Random _secureOrFallbackRandom() {
   }
 }
 
+/// Shared request serialization keeps retry identity aligned with the API payload.
+Map<String, dynamic> buildCreateOrderPayload({
+  required MenuChannel channel,
+  required List<CartLine> lines,
+  String? reference,
+  String? merchantStoreReference,
+  String? notes,
+}) {
+  final trimmedReference = reference?.trim() ?? '';
+  final trimmedStore = merchantStoreReference?.trim() ?? '';
+  final trimmedNotes = notes?.trim() ?? '';
+
+  return <String, dynamic>{
+    'order_channel': channel.apiValue,
+    if (channel == MenuChannel.dineIn && trimmedReference.isNotEmpty)
+      'table_reference': trimmedReference,
+    if (channel.isPlatform && trimmedStore.isNotEmpty)
+      'merchant_store_reference': trimmedStore,
+    if (channel.isPlatform && trimmedReference.isNotEmpty)
+      'external_order_reference': trimmedReference,
+    if (channel == MenuChannel.takeaway && trimmedReference.isNotEmpty)
+      'notes': trimmedNotes.isEmpty
+          ? trimmedReference
+          : '$trimmedReference · $trimmedNotes',
+    if (channel != MenuChannel.takeaway && trimmedNotes.isNotEmpty)
+      'notes': trimmedNotes,
+    'lines': [
+      for (final line in lines)
+        {
+          'menu_item_id': line.item.id,
+          'quantity': line.quantity,
+          if (line.selectedModifierIds.isNotEmpty)
+            'modifier_ids': line.selectedModifierIds,
+        },
+    ],
+  };
+}
+
 class OrderEntryRepository {
   OrderEntryRepository(this._dio);
 
@@ -44,34 +82,15 @@ class OrderEntryRepository {
     String? merchantStoreReference,
     String? notes,
   }) async {
-    final trimmedReference = reference?.trim() ?? '';
-    final trimmedStore = merchantStoreReference?.trim() ?? '';
-    final trimmedNotes = notes?.trim() ?? '';
-
     final payload = <String, dynamic>{
       'order_id': orderId,
-      'order_channel': channel.apiValue,
-      if (channel == MenuChannel.dineIn && trimmedReference.isNotEmpty)
-        'table_reference': trimmedReference,
-      if (channel.isPlatform && trimmedStore.isNotEmpty)
-        'merchant_store_reference': trimmedStore,
-      if (channel.isPlatform && trimmedReference.isNotEmpty)
-        'external_order_reference': trimmedReference,
-      if (channel == MenuChannel.takeaway && trimmedReference.isNotEmpty)
-        'notes': trimmedNotes.isEmpty
-            ? trimmedReference
-            : '$trimmedReference · $trimmedNotes',
-      if (channel != MenuChannel.takeaway && trimmedNotes.isNotEmpty)
-        'notes': trimmedNotes,
-      'lines': [
-        for (final line in lines)
-          {
-            'menu_item_id': line.item.id,
-            'quantity': line.quantity,
-            if (line.selectedModifierIds.isNotEmpty)
-              'modifier_ids': line.selectedModifierIds,
-          },
-      ],
+      ...buildCreateOrderPayload(
+        channel: channel,
+        lines: lines,
+        reference: reference,
+        merchantStoreReference: merchantStoreReference,
+        notes: notes,
+      ),
     };
 
     final response = await _dio.post<Map<String, dynamic>>(

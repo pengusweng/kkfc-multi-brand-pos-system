@@ -143,6 +143,106 @@ void main() {
   }
 
   testWidgets(
+    'Editing after review uses a new ID; unchanged review reuses its ID',
+    (tester) async {
+      final repo = MockOrderEntryRepository();
+      final container = ProviderContainer(
+        overrides: [
+          orderEntryRepositoryProvider.overrideWithValue(repo),
+          assignedBrandsProvider.overrideWithValue([sampleBrand]),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleItem);
+      await tester.pumpWidget(createSubject(container));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Table 1');
+      await tester.tap(find.text('Review order'));
+      await tester.pumpAndSettle();
+      final firstId = repo.lastCreatePayload!['orderId'];
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Review order'));
+      await tester.pumpAndSettle();
+      expect(repo.lastCreatePayload!['orderId'], firstId);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Table 2');
+      await tester.tap(find.text('Review order'));
+      await tester.pumpAndSettle();
+      expect(repo.createCallCount, 3);
+      expect(repo.lastCreatePayload!['orderId'], isNot(firstId));
+      expect(
+        container.read(activeOrderDraftProvider)!.tableReference,
+        'Table 2',
+      );
+    },
+  );
+
+  testWidgets('A failed request retries with the same order ID', (
+    tester,
+  ) async {
+    final repo = MockOrderEntryRepository(shouldFailCreate: true);
+    final container = ProviderContainer(
+      overrides: [
+        orderEntryRepositoryProvider.overrideWithValue(repo),
+        assignedBrandsProvider.overrideWithValue([sampleBrand]),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(cartProvider.notifier).add(sampleItem);
+    await tester.pumpWidget(createSubject(container));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Table 1');
+    await tester.tap(find.text('Review order'));
+    await tester.pumpAndSettle();
+    final firstId = repo.lastCreatePayload!['orderId'];
+    await tester.tap(find.text('Review order'));
+    await tester.pumpAndSettle();
+    expect(repo.createCallCount, 2);
+    expect(repo.lastCreatePayload!['orderId'], firstId);
+  });
+
+  testWidgets('Step 3 prevents submitting another provider’s items', (
+    tester,
+  ) async {
+    final mockRepo = MockOrderEntryRepository();
+    final container = ProviderContainer(
+      overrides: [
+        orderEntryRepositoryProvider.overrideWithValue(mockRepo),
+        assignedBrandsProvider.overrideWithValue([sampleBrand]),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(activeBrandProvider.notifier).select(sampleBrand);
+    container.read(cartProvider.notifier).add(sampleItem);
+    container
+        .read(activeBrandProvider.notifier)
+        .select(
+          const AssignedBrand(
+            id: '55555555-5555-4555-8555-555555555555',
+            code: 'KK',
+            name: 'King Kungs Cafe',
+          ),
+        );
+    container.read(menuChannelProvider.notifier).select(MenuChannel.takeaway);
+
+    await tester.pumpWidget(createSubject(container));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review order'));
+    await tester.pumpAndSettle();
+
+    expect(mockRepo.createCallCount, 0);
+    expect(
+      find.textContaining('Each order must contain items from one provider.'),
+      findsOneWidget,
+    );
+    expect(container.read(cartProvider).single.brandName, sampleBrand.name);
+  });
+
+  testWidgets(
     'Step 3 requires table for Dine-in and does not call API when blank',
     (tester) async {
       final mockRepo = MockOrderEntryRepository();
@@ -291,6 +391,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(mockRepo.confirmCallCount, 1);
+      expect(
+        container.read(clientOrderIdProvider),
+        isNot(mockRepo.lastCreatePayload!['orderId']),
+      );
 
       // Step 5 Confirmation View
       expect(find.text('Kitchen ticket confirmed'), findsOneWidget);
