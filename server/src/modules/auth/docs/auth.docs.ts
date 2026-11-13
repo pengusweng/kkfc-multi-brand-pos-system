@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -29,7 +30,7 @@ export function LoginDocs() {
     ApiOperation({
       summary: 'Log in and create a 24-hour session.',
       description:
-        'Available to active users of any role. Returns token, expires_at, and user. Use the token as Authorization: Bearer <token>. The user profile excludes password_hash and has no brand assignment. The response uses Cache-Control: no-store.',
+        'Available to active users of any role. Superadmins must also send their four-digit X-Action-Pin header; other roles do not need it. Returns token, expires_at, and user. Use the token as Authorization: Bearer <token>. The user profile excludes password_hash and has no brand assignment. The response uses Cache-Control: no-store.',
     }),
     ApiResponse({
       status: 200,
@@ -45,9 +46,25 @@ export function LoginDocs() {
         },
       },
     }),
+    ApiHeader({
+      name: 'X-Action-Pin',
+      required: false,
+      description:
+        'Four-digit PIN. Required only when the account is a superadmin; ignored for other roles.',
+    }),
     ApiResponse({
       status: 401,
-      description: 'Invalid username or password, or inactive account.',
+      description:
+        'Invalid username or password, or inactive account (INVALID_CREDENTIALS). For superadmins, a missing PIN (PIN_REQUIRED) or a wrong PIN (INVALID_PIN).',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'The superadmin has no PIN set up (PIN_NOT_CONFIGURED).',
+    }),
+    ApiResponse({
+      status: 429,
+      description:
+        'The superadmin PIN is locked after too many wrong attempts (PIN_LOCKED, with locked_until).',
     }),
   );
 }

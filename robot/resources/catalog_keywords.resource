@@ -9,7 +9,11 @@ An authenticated catalog user exists
     [Arguments]    ${index}=0
     ${username}=    Set Variable    ${CATALOG}[users][${index}][username]
     ${payload}=    Create Dictionary    username=${username}    password=${CATALOG_PASSWORD}
-    ${response}=    POST On Session    api    /api/auth/login    json=${payload}    expected_status=200
+    ${login_headers}=    Create Dictionary
+    IF    $CATALOG['users'][int($index)]['role'] == 'SUPERADMIN'
+        Set To Dictionary    ${login_headers}    X-Action-Pin=${CATALOG_PIN}
+    END
+    ${response}=    POST On Session    api    /api/auth/login    json=${payload}    headers=${login_headers}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
     ${headers}=    Create Dictionary    Authorization=Bearer ${body}[token]
     IF    $body['user']['role'] in ('SUPERADMIN', 'RECIPE_MANAGER', 'SUPERVISOR', 'KITCHEN_HEAD')
