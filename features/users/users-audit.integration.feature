@@ -12,7 +12,7 @@ Feature: Users audit logging
   @IT-USER-022
   Scenario: Audit user creation, updates and deactivation
     Test Case ID: IT-USER-022
-    Given a manager with a valid action PIN
+    Given a superadmin with a valid action PIN
     When a user is created, updated and deactivated
     Then USER_CREATED, USER_UPDATED and USER_DEACTIVATED SUCCESS rows name the affected user
     And no row contains the new user's password
@@ -31,7 +31,7 @@ Feature: Users audit logging
   @IT-USER-024
   Scenario: Audit sensitive staff reads
     Test Case ID: IT-USER-024
-    Given a manager
+    Given a superadmin
     When users are listed and a user is viewed by username
     Then USERS_LISTED and USER_VIEWED SUCCESS rows are written, the view naming the resolved user
 

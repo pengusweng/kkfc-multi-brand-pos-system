@@ -13,9 +13,9 @@ Feature: Additional menu catalog integration coverage
   # Jest: server/src/modules/menu/menu-catalog/tests/menu-catalog.http.spec.ts
   # Context: Menu catalog HTTP endpoints
   @IT-MCAT-001
-  Scenario: Creates a catalog entry for a manager assigned to its nested brand
+  Scenario: Creates a catalog entry for a superadmin assigned to its nested brand
     Test Case ID: IT-MCAT-001
-    Given an authenticated manager with a valid PIN and nested catalog payload
+    Given an authenticated superadmin with a valid PIN and nested catalog payload
     When the catalog entry is created
     Then the response is 201 and the complete entry is returned after PIN verification
 
@@ -51,7 +51,7 @@ Feature: Additional menu catalog integration coverage
   @IT-MCAT-005
   Scenario: Creates entries across brands
     Test Case ID: IT-MCAT-005
-    Given an authenticated manager and a catalog payload for another brand
+    Given an authenticated superadmin and a catalog payload for another brand
     When the entry is created
     Then the response is 201 under shared brand access
 
@@ -69,7 +69,7 @@ Feature: Additional menu catalog integration coverage
   @IT-MCAT-007
   Scenario: Requires an action PIN for creation
     Test Case ID: IT-MCAT-007
-    Given an authenticated manager without an action PIN
+    Given an authenticated superadmin without an action PIN
     When catalog creation is requested
     Then the response is 403 before creating an entry
 

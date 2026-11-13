@@ -37,7 +37,7 @@ Feature: Current mobile order review and real API order lifecycle
   @IT-MOB-ORD-004
   Scenario: Recheck catalog availability and preserve a rejected mobile draft
     Given a staff member has an available meal in the cart and a saved API draft
-    When the fixture manager marks that meal unavailable through the real API
+    When the fixture supervisor marks that meal unavailable through the real API
     Then verification and confirmation reject the stale API draft without a ticket
     And a new API order containing an unavailable meal is rejected
     When the staff member attempts to send the stale mobile cart

@@ -38,7 +38,7 @@ response="$tmp/response.json"
 cleanup() {
   local status=$?
   trap - EXIT
-  for token in "${cashier:-}" "${head:-}" "${staff:-}" "${manager:-}"; do
+  for token in "${cashier:-}" "${head:-}" "${staff:-}" "${supervisor:-}"; do
     [[ -z $token ]] || curl -sS -o /dev/null -X POST -H "Authorization: Bearer $token" "$api/auth/logout" || true
   done
   rm -f "$tmp/response.json" "$tmp/image.png"
@@ -74,7 +74,7 @@ login() {
 cashier=$(login test_order_staff)
 head=$(login test_chef)
 staff=$(login test_kitchen)
-manager=$(login test_owner)
+supervisor=$(login test_owner)
 call 200 GET /auth/me "$staff"
 preparer=$(json get "$response" user_id)
 call 200 GET /auth/me "$head"
@@ -146,7 +146,7 @@ run_flow() {
     call 200 GET "/handoff/actor/$preparer" "$head"
     check handoff "$ticket_id"
   fi
-  call 409 POST "/kitchen-fulfillment/brands/$brand/orders/$order_id/cancel" "$manager" '{"cancellation_reason":"Too late"}'
+  call 409 POST "/kitchen-fulfillment/brands/$brand/orders/$order_id/cancel" "$supervisor" '{"cancellation_reason":"Too late"}'
   printf 'PASS %s\n' "$mode"
 }
 

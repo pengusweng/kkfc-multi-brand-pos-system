@@ -31,9 +31,9 @@ Feature: Additional menu items integration coverage
   # Jest: server/src/modules/menu/menu-items/tests/menu-items.http.spec.ts
   # Context: Menu items HTTP endpoints
   @IT-MI-003
-  Scenario: Delegate validated menu mutations for managers
+  Scenario: Delegate validated menu mutations for superadmins
     Test Case ID: IT-MI-003
-    Given an authenticated manager and valid menu mutation input
+    Given an authenticated superadmin and valid menu mutation input
     When a menu mutation endpoint is requested
     Then the expected status is returned and the service receives validated arguments
 
@@ -58,9 +58,9 @@ Feature: Additional menu items integration coverage
   # Jest: server/src/modules/menu/menu-items/tests/menu-items.http.spec.ts
   # Context: Menu items HTTP endpoints
   @IT-MI-006
-  Scenario: Allow managers to mutate menus across brands
+  Scenario: Allow superadmins to mutate menus across brands
     Test Case ID: IT-MI-006
-    Given an authenticated manager with another or no legacy brand value
+    Given an authenticated superadmin with another or no legacy brand value
     When a menu mutation is requested
     Then shared brand access permits creation or update
 
@@ -168,9 +168,9 @@ Feature: Additional menu items integration coverage
   @IT-MI-018
   Scenario: Reserves the all-brands listing for superadmins
     Test Case ID: IT-MI-018
-    Given a manager or an unauthenticated client
+    Given a supervisor or an unauthenticated client
     When the all-brand menu listing is requested
-    Then the manager receives 403 and the unauthenticated client receives 401
+    Then the supervisor receives 403 and the unauthenticated client receives 401
 
   # Jest: server/src/modules/menu/menu-items/tests/menu-items.http.spec.ts
   # Context: Menu items HTTP endpoints

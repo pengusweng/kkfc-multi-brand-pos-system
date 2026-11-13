@@ -3,7 +3,7 @@ Resource          common.resource
 
 *** Keywords ***
 A registered test user exists with role "${role}"
-    ${roles}=    Create Dictionary    MANAGER=${0}    CASHIER_STAFF=${1}    SUPERADMIN=${2}    OTHER_BRAND_MANAGER=${3}    KITCHEN_HEAD=${4}    KITCHEN_STAFF=${5}
+    ${roles}=    Create Dictionary    SUPERVISOR=${0}    CASHIER_STAFF=${1}    SUPERADMIN=${2}    OTHER_BRAND_SUPERVISOR=${3}    KITCHEN_HEAD=${4}    KITCHEN_STAFF=${5}
     Dictionary Should Contain Key    ${roles}    ${role}
     ${index}=    Get From Dictionary    ${roles}    ${role}
     Set Test Variable    ${ACTIVE_USER}    ${CATALOG}[users][${index}][username]

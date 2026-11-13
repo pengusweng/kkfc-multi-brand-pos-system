@@ -38,10 +38,10 @@ Feature: Order validation and transactional persistence
     Then the response status is <status>
     Examples:
       | user                  | status |
-      | brand A manager       | 201    |
+      | brand A supervisor    | 201    |
       | brand A cashier       | 201    |
       | superadmin            | 201    |
-      | brand B manager       | 403    |
+      | brand B supervisor    | 201    |
       | unauthenticated user  | 401    |
 
   @IT-ORD-004
@@ -139,9 +139,9 @@ Feature: Order validation and transactional persistence
   @IT-ORD-014
   Scenario: Keep cross-brand duplicate responses opaque
     Given a platform order in brand A
-    When brand B's manager submits the same platform identity to brand B
+    When brand B's supervisor submits the same platform identity to brand B
     Then DUPLICATE_PLATFORM_ORDER has existing_order null and no brand A details
-    When the manager submits brand A's UUID to brand B
+    When the supervisor submits brand A's UUID to brand B
     Then ORDER_ID_CONFLICT contains no existing-order data
     And brand A's route still rejects unauthorized and unauthenticated replays
 

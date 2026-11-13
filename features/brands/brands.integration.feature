@@ -56,8 +56,8 @@ Feature: Global brand HTTP contracts and logo uploads
     Then return 503 without updating the brand
 
   @IT-BRND-010
-  Scenario: Blocks managers before uploading replacement images
-    Given a manager session
+  Scenario: Blocks supervisors before uploading replacement images
+    Given a supervisor session
     When a replacement logo is uploaded
     Then return 403 before storage or update
 

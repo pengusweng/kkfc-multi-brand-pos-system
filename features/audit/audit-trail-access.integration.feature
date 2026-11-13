@@ -21,6 +21,6 @@ Feature: Audit trail access logging
   @IT-AUDIT-014
   Scenario: Deny other roles without writing audit rows
     Test Case ID: IT-AUDIT-014
-    Given a manager
+    Given a supervisor
     When they try to view the audit trail
     Then the response is 403, no records are read, and no audit row is written

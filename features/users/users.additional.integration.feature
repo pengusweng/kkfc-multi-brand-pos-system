@@ -13,9 +13,9 @@ Feature: Additional users integration coverage
   # Jest: server/src/modules/users/tests/users.http.spec.ts
   # Context: Users HTTP endpoints (IT-USER)
   @IT-USER-011
-  Scenario: Allow managers and superadmins to list users globally
+  Scenario: Allow superadmins to list users globally
     Test Case ID: IT-USER-011
-    Given an authenticated manager or superadmin
+    Given an authenticated superadmin
     When users are listed with page 2 and limit 5
     Then the response is 200 and global pagination reaches the service
 
@@ -42,7 +42,7 @@ Feature: Additional users integration coverage
   @IT-USER-014
   Scenario: Protect superadmin targets through role authorization over HTTP
     Test Case ID: IT-USER-014
-    Given a superadmin target and a manager or superadmin caller
+    Given a superadmin target and a supervisor or superadmin caller
     When the target is updated or deactivated over HTTP
     Then only the superadmin caller is permitted to modify it
 
@@ -54,15 +54,6 @@ Feature: Additional users integration coverage
     Given a user payload supplies an obsolete role name
     When user creation is requested
     Then the response is 400 and validation names current supported roles
-
-  # Jest: server/src/modules/users/tests/users.http.spec.ts
-  # Context: Users HTTP endpoints (IT-USER)
-  @IT-USER-016
-  Scenario: Allows managers to update and deactivate users across brands
-    Test Case ID: IT-USER-016
-    Given an authenticated manager and an account formerly associated with another brand
-    When the account is updated and deactivated
-    Then both operations succeed using the manager's role permissions
 
   # Jest: server/src/modules/users/tests/users.http.spec.ts
   # Context: Users HTTP endpoints (IT-USER)

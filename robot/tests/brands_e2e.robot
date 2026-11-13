@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation     Feature: Multi-Brand Management E2E API Flow
-...               As an authorized Manager or Superadmin,
+...               As an authenticated employee or Superadmin,
 ...               I want to inspect brands and manage their configuration by role,
 ...               So that employees share brand visibility and only superadmins change configuration.
 Metadata          Feature ID        FEAT-BRND-001
@@ -13,11 +13,11 @@ Suite Setup       Initialize API Session
 Suite Teardown    Delete All Sessions
 
 *** Test Cases ***
-E2E-BRND-001: Manager retrieves a fixture brand
-    [Documentation]    Verify that a manager can fetch a fixture brand.
+E2E-BRND-001: Supervisor retrieves a fixture brand
+    [Documentation]    Verify that a supervisor can fetch a fixture brand.
     [Tags]             E2E    BRANDS    E2E-BRND-001    FR-001
     Given the backend server is running against the test database
-    And an authenticated session exists for role "MANAGER"
+    And an authenticated session exists for role "SUPERVISOR"
     When The client retrieves its own brand
     Then the HTTP response status should be 200
     And The response JSON key "brand_id" should be equal to "${SESSION_BRAND_ID}"
@@ -47,25 +47,25 @@ E2E-BRND-003: Superadmin creates a brand without a user assignment
     Then the HTTP response status should be 200
     And the response JSON key "brand_id" should be equal to "${CREATED_BRAND_ID}"
 
-E2E-BRND-004: Manager can list all brands
+E2E-BRND-004: Supervisor can list all brands
     [Documentation]    Verify that authenticated employees can list all brands.
     [Tags]             E2E    BRANDS    E2E-BRND-004    FR-001
     Given the backend server is running against the test database
-    And an authenticated session exists for role "MANAGER"
+    And an authenticated session exists for role "SUPERVISOR"
     When The client lists all brands
     Then the HTTP response status should be 200
     And the brand listing includes both fixture brands
 
-E2E-BRND-005: Manager cannot update their brand configuration
+E2E-BRND-005: Supervisor cannot update their brand configuration
     [Tags]    E2E    BRANDS    E2E-BRND-005
-    Given an authenticated session exists for role "MANAGER"
+    Given an authenticated session exists for role "SUPERVISOR"
     And the current brand name is recorded
     When the client updates its own brand name to "Unauthorized brand change"
     Then the HTTP response status should be 403
     And the original brand name is preserved
 
-E2E-BRND-006: Manager cannot create a brand
+E2E-BRND-006: Supervisor cannot create a brand
     [Tags]    E2E    BRANDS    E2E-BRND-006
-    Given an authenticated session exists for role "MANAGER"
+    Given an authenticated session exists for role "SUPERVISOR"
     When the client creates a unique brand
     Then the HTTP response status should be 403

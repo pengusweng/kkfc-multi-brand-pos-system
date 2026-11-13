@@ -51,7 +51,7 @@ Feature: Additional pin integration coverage
   @IT-PIN-005
   Scenario: Checks the PIN for actions across brands
     Test Case ID: IT-PIN-005
-    Given an authenticated manager and a valid PIN with shared brand access
+    Given an authenticated supervisor and a valid PIN with shared brand access
     When a protected menu write targets another brand
     Then the PIN is verified and the action succeeds
 
