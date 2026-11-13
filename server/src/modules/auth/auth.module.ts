@@ -6,10 +6,11 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { Authenticated } from './auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PinModule } from '../pin/pin.module';
 
 @Global()
 @Module({
-  imports: [PrismaModule, UsersModule],
+  imports: [PrismaModule, UsersModule, PinModule],
   providers: [AuthRepository, AuthService, Authenticated, RolesGuard],
   controllers: [AuthController],
   exports: [AuthService, Authenticated, RolesGuard],

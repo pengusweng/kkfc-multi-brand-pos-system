@@ -10,6 +10,7 @@ import {
   Controller,
   Get,
   Header,
+  Headers,
   HttpCode,
   HttpStatus,
   Post,
@@ -45,8 +46,8 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   @HttpCode(HttpStatus.OK)
   @LoginDocs()
-  async login(@Body() dto: LoginDTO) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDTO, @Headers('x-action-pin') pin?: string) {
+    return this.authService.login(dto, pin);
   }
 
   @Get('me')

@@ -1,4 +1,6 @@
 import { PinGuard } from '../../pin/pin.guard';
+import { PinService } from '../../pin/pin.service';
+import type { PinVerificationResult } from '../../pin/pin.repository';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
@@ -39,6 +41,11 @@ describe('Auth HTTP endpoints', () => {
     last_seen_at: Date;
   };
   const sessions = new Map<string, Session>();
+  const ADMIN_PIN = '1234';
+  const verifyPin = jest.fn(
+    (_userId: string, pin: string): Promise<PinVerificationResult> =>
+      Promise.resolve({ status: pin === ADMIN_PIN ? 'valid' : 'invalid' }),
+  );
   const safeSession = (session: Session) => ({
     session_id: session.session_id,
     user_id: session.user_id,
@@ -154,6 +161,8 @@ describe('Auth HTTP endpoints', () => {
           return Promise.resolve({ count });
         }),
       })
+      .overrideProvider(PinService)
+      .useValue({ verifyPin })
       .overrideGuard(PinGuard)
       .useValue({ canActivate: () => true })
       .compile();
@@ -172,6 +181,7 @@ describe('Auth HTTP endpoints', () => {
   });
 
   beforeEach(() => {
+    verifyPin.mockClear();
     sessions.clear();
     users.clear();
     users.set(admin.user_id, { ...admin });
@@ -182,10 +192,24 @@ describe('Auth HTTP endpoints', () => {
     await app?.close();
   });
 
+  async function postLogin(username: string, pin?: string) {
+    return fetch(`${url}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(pin ? { 'X-Action-Pin': pin } : {}),
+      },
+      body: JSON.stringify({ username, password: 'correct-password' }),
+    });
+  }
+
   async function login(username = 'admin') {
     const response = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(username === 'admin' ? { 'X-Action-Pin': ADMIN_PIN } : {}),
+      },
       body: JSON.stringify({ username, password: 'correct-password' }),
     });
     expect(response.status).toBe(200);
@@ -476,4 +500,43 @@ describe('Auth HTTP endpoints', () => {
       ).status,
     ).toBe(200);
   });
+
+  it('IT-AUTH-018: requires a valid PIN before a superadmin session is created', async () => {
+    const missing = await postLogin('admin');
+    expect(missing.status).toBe(401);
+    expect(await missing.json()).toMatchObject({ code: 'PIN_REQUIRED' });
+    expect(verifyPin).not.toHaveBeenCalled();
+
+    for (const pin of ['9999', 'abcd', '12345']) {
+      const wrong = await postLogin('admin', pin);
+      expect(wrong.status).toBe(401);
+      expect(await wrong.json()).toMatchObject({ code: 'INVALID_PIN' });
+    }
+    expect(verifyPin).toHaveBeenCalledTimes(1);
+    expect(verifyPin).toHaveBeenCalledWith(admin.user_id, '9999');
+
+    verifyPin.mockResolvedValueOnce({ status: 'not-configured' });
+    expect((await postLogin('admin', ADMIN_PIN)).status).toBe(403);
+
+    const until = new Date(Date.now() + 60_000);
+    verifyPin.mockResolvedValueOnce({ status: 'locked', until });
+    const locked = await postLogin('admin', ADMIN_PIN);
+    expect(locked.status).toBe(429);
+    expect(await locked.json()).toMatchObject({
+      code: 'PIN_LOCKED',
+      locked_until: until.toISOString(),
+    });
+    expect(sessions.size).toBe(0);
+
+    expect((await postLogin('admin', ADMIN_PIN)).status).toBe(200);
+    expect(sessions.size).toBe(1);
+  });
+
+  it.each([undefined, '9999'])(
+    'IT-AUTH-019: lets non-superadmins log in without checking the PIN header: %s',
+    async (pin) => {
+      expect((await postLogin('staff', pin)).status).toBe(200);
+      expect(verifyPin).not.toHaveBeenCalled();
+    },
+  );
 });
