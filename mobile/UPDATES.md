@@ -1,14 +1,20 @@
 # Android builds and optional updates
 
-The **Android APK** workflow runs on pushes to `development` and `main`, and can
-also be started from GitHub Actions with **Run workflow**. It tests the mobile
-app, builds a signed universal APK, and saves it as an Actions artifact.
+The **Android APK** workflow runs on pushes to `development` and `main` that
+change `mobile/**` (excluding Markdown documentation), the Android APK workflow,
+or its signing/publishing scripts. Backend-only, web-only and documentation-only
+pushes do not generate new APKs or update notices.
+
+It can also be started from GitHub Actions with **Run workflow**, regardless of
+which files changed. Use this after changing build variables or signing secrets
+when a rebuild is needed. It tests the mobile app, builds a signed universal APK,
+and saves it as an Actions artifact.
 No local backend is needed. Builds use the hosted API at
 `https://kkfc-demo-api.onrender.com/api` by default.
 
 For now, **development publishes in-app updates**. Set the repository Actions
 variable `ANDROID_UPDATE_BRANCH` to `main` when production is ready. The next
-successful push to that branch publishes the update. Other branches only
+successful qualifying build on that branch publishes the update. Other branches only
 produce manually downloadable APKs, with automatic update checking disabled.
 
 ## One-time GitHub setup
