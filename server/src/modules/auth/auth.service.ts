@@ -46,7 +46,6 @@ export class AuthService {
     const user = await this.usersRepository.findOne(credentials.user_id);
     assertExists(user, 'User', credentials.user_id, this.logger);
 
-    // Only superadmins need a PIN to sign in; other roles ignore the header.
     if (user.role === UserRole.SUPERADMIN) {
       if (!pin) {
         this.logger.warn(`PIN required for superadmin login: ${user.user_id}`);
@@ -61,7 +60,6 @@ export class AuthService {
         ? await this.pinService.verifyPin(user.user_id, pin)
         : ({ status: 'invalid' } as const);
 
-      // A wrong PIN is a failed login (401), like a wrong password.
       if (result.status === 'invalid') {
         this.logger.warn(`Invalid PIN for superadmin login: ${user.user_id}`);
 
