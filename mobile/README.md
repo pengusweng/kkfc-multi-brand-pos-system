@@ -14,6 +14,9 @@ Check your setup with `flutter doctor`.
 
 ## Running the app
 
+For APKs built automatically on GitHub, optional in-app updates, or running
+against the hosted API without a local backend, see [UPDATES.md](UPDATES.md).
+
 ```sh
 flutter pub get
 ```

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/app_updates/optional_update_notice.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
-import 'package:mobile/core/models/brand_models.dart';
-import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/catalog/catalog_search_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_selector/choose_menu_modal.dart';
@@ -24,42 +23,13 @@ class MenuCatalogView extends ConsumerWidget {
   final bool isWide;
   final double bottomPadding;
 
-  void _onChannelSelected(
-    BuildContext context,
-    WidgetRef ref,
-    MenuChannel newChannel,
-  ) {
-    final current = ref.read(menuChannelProvider);
-    if (current == newChannel) return;
-
-    // Update active channel in notifier directly without navigating to repricing screen
-    ref.read(menuChannelProvider.notifier).select(newChannel);
-  }
-
-  void _onMenuSwitched(
-    BuildContext context,
-    WidgetRef ref,
-    AssignedBrand newBrand,
-    MenuChannel newChannel,
-  ) {
-    final currentBrand = ref.read(activeBrandProvider);
-    final currentChannel = ref.read(menuChannelProvider);
-
-    if (newBrand.id != currentBrand.id) {
-      ref.read(activeBrandProvider.notifier).select(newBrand);
-    }
-
-    if (newChannel != currentChannel) {
-      _onChannelSelected(context, ref, newChannel);
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeBrand = ref.watch(activeBrandProvider);
     final assignedBrands = ref.watch(assignedBrandsProvider);
     final selectedChannel = ref.watch(menuChannelProvider);
     final visibleItems = ref.watch(visibleMenuItemsProvider);
+    final visibleCount = visibleItems.asData?.value.length;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -84,25 +54,25 @@ class MenuCatalogView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Current Menu Selector ("Gamcheon · Dine-in >")
+                  const OptionalUpdateNotice(),
+                  // Provider selection; channels are selected in order details.
                   CurrentMenuCard(
                     brand: activeBrand,
                     channel: selectedChannel,
+                    showChannel: false,
                     onTap: () async {
                       final result = await showChooseMenuModal(
                         context,
                         brands: assignedBrands,
                         currentBrand: activeBrand,
                         currentChannel: selectedChannel,
+                        showChannels: false,
                       );
                       if (result != null) {
                         if (!context.mounted) return;
-                        _onMenuSwitched(
-                          context,
-                          ref,
-                          result.brand,
-                          result.channel,
-                        );
+                        ref
+                            .read(activeBrandProvider.notifier)
+                            .select(result.brand);
                       }
                     },
                   ),
@@ -110,6 +80,17 @@ class MenuCatalogView extends ConsumerWidget {
 
                   // 2. Search field + Unavailable button with tactile press feedback
                   const CatalogSearchBar(),
+                  if (visibleCount != null) ...[
+                    const SizedBox(height: KkfcSpace.s8),
+                    Text(
+                      'Showing $visibleCount item${visibleCount == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontFamily: KkfcFonts.text,
+                        fontSize: 13,
+                        color: Color(0xFF586579),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -146,26 +127,36 @@ class MenuCatalogView extends ConsumerWidget {
                   );
 
                   if (isSearching || isHidingUnavailable) {
-                    return const SliverToBoxAdapter(
+                    return SliverToBoxAdapter(
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.all(KkfcSpace.s40),
+                          padding: const EdgeInsets.all(KkfcSpace.s40),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.search_off,
                                 size: 40,
                                 color: Color(0xFF76849A),
                               ),
-                              SizedBox(height: KkfcSpace.s12),
-                              Text(
+                              const SizedBox(height: KkfcSpace.s12),
+                              const Text(
                                 'No items in this category or matching search',
                                 style: TextStyle(
                                   fontFamily: KkfcFonts.ibmPlexSans,
                                   color: Color(0xFF586579),
                                   fontSize: 14,
                                 ),
+                              ),
+                              const SizedBox(height: KkfcSpace.s12),
+                              TextButton(
+                                onPressed: () {
+                                  ref.read(menuSearchProvider.notifier).clear();
+                                  ref
+                                      .read(hideUnavailableProvider.notifier)
+                                      .set(false);
+                                },
+                                child: const Text('Clear filters'),
                               ),
                             ],
                           ),

@@ -13,11 +13,13 @@ class CurrentMenuCard extends StatelessWidget {
     required this.brand,
     required this.channel,
     required this.onTap,
+    this.showChannel = true,
   });
 
   final AssignedBrand brand;
   final MenuChannel channel;
   final VoidCallback onTap;
+  final bool showChannel;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +61,9 @@ class CurrentMenuCard extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      '${brand.name} · ${channel.label}',
+                      showChannel
+                          ? '${brand.name} · ${channel.label}'
+                          : brand.name,
                       style: const TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 15.0,

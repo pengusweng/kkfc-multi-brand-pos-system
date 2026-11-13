@@ -7,10 +7,13 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
+import 'package:mobile/features/new_order/data/seed/sample_brands.dart';
 import 'package:mobile/features/new_order/presentation/pages/channel_repricing_screen.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
+import 'package:mobile/features/new_order/presentation/pages/mobile_order_flow_screen.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 void main() {
   group('ChannelTabs selection', () {
@@ -72,7 +75,7 @@ void main() {
 
   group('Channel change navigation', () {
     testWidgets(
-      'changing the channel does not route to repricing screen and updates in place',
+      'ordering selects a provider once and changes channels only in order details',
       (tester) async {
         tester.view.physicalSize = const Size(412, 915);
         tester.view.devicePixelRatio = 1;
@@ -85,6 +88,11 @@ void main() {
               path: AppRoutes.menu,
               builder: (context, state) => const MenuScreen(),
             ),
+            GoRoute(
+              path: AppRoutes.mobileOrderFlow,
+              builder: (context, state) =>
+                  const MobileOrderFlowScreen(initialStep: 3),
+            ),
           ],
         );
         addTearDown(router.dispose);
@@ -92,6 +100,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             menuItemsProvider.overrideWith((ref) async => sampleMenu),
+            assignedBrandsProvider.overrideWithValue(sampleAssignedBrands),
           ],
         );
         addTearDown(container.dispose);
@@ -116,17 +125,41 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Select GrabFood and tap Switch menu
-        await tester.tap(find.text('GrabFood'));
+        expect(find.text('Choose provider'), findsOneWidget);
+        for (final channel in MenuChannel.values) {
+          expect(find.text(channel.label), findsNothing);
+        }
+        expect(find.text("Aurelia's Inasal"), findsOneWidget);
+        await tester.tap(
+          find.byKey(const ValueKey('select-provider-aurelias-inasal')),
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const ValueKey('switch-menu-button')));
         await tester.pumpAndSettle();
 
-        // Unrouted repricing: stays on MenuScreen, channel updated in place
         expect(find.byType(ChannelRepricingScreen), findsNothing);
         expect(find.byType(MenuScreen), findsOneWidget);
+        expect(container.read(activeBrandProvider).id, 'aurelias-inasal');
+        expect(container.read(menuChannelProvider), MenuChannel.dineIn);
+        expect(container.read(cartCountProvider), 1);
+
+        router.go(AppRoutes.mobileOrderFlow);
+        await tester.pumpAndSettle();
+        expect(find.text('Channel'), findsOneWidget);
+        for (final channel in MenuChannel.values) {
+          expect(
+            find.byKey(ValueKey('channel-${channel.name}')),
+            findsOneWidget,
+          );
+        }
+        await tester.tap(find.byKey(const ValueKey('channel-grabFood')));
+        await tester.pumpAndSettle();
         expect(container.read(menuChannelProvider), MenuChannel.grabFood);
+        expect(
+          container.read(cartTotalProvider),
+          sampleMenu[0].priceFor(MenuChannel.grabFood),
+        );
       },
     );
 

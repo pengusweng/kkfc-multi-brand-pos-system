@@ -76,6 +76,14 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
       await tester.pumpAndSettle();
       expect(find.text('Channel Meal'), findsNothing);
+      expect(find.text('Showing 0 items'), findsOneWidget);
+      await tester.tap(find.text('Clear filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('Include unavailable'), findsOneWidget);
+      expect(find.text('Channel Meal'), findsOneWidget);
+      expect(find.text('Showing 1 item'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
+      await tester.pumpAndSettle();
       container.read(menuChannelProvider.notifier).select(MenuChannel.dineIn);
       await tester.pumpAndSettle();
       expect(find.text('Channel Meal'), findsOneWidget);
@@ -248,6 +256,15 @@ void main() {
       // Initially both items are shown
       expect(find.text('Available Meal'), findsOneWidget);
       expect(find.text('Soldout Meal'), findsOneWidget);
+      expect(find.text('Include unavailable'), findsOneWidget);
+      final filter = find.byKey(const ValueKey('unavailable-filter-button'));
+      expect(
+        find.descendant(
+          of: filter,
+          matching: find.byIcon(Icons.visibility_outlined),
+        ),
+        findsOneWidget,
+      );
 
       // Tap Unavailable filter button to hide unavailable items
       await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
@@ -256,6 +273,14 @@ void main() {
       // Only available item is shown
       expect(find.text('Available Meal'), findsOneWidget);
       expect(find.text('Soldout Meal'), findsNothing);
+      expect(find.text('Available only'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: filter,
+          matching: find.byIcon(Icons.visibility_off_outlined),
+        ),
+        findsOneWidget,
+      );
 
       // Tap again to toggle back
       await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
@@ -264,6 +289,7 @@ void main() {
       // Both items are visible again
       expect(find.text('Available Meal'), findsOneWidget);
       expect(find.text('Soldout Meal'), findsOneWidget);
+      expect(find.text('Include unavailable'), findsOneWidget);
     },
   );
 }

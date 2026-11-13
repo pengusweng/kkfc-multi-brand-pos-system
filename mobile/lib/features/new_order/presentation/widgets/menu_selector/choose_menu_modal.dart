@@ -12,6 +12,7 @@ Future<({AssignedBrand brand, MenuChannel channel})?> showChooseMenuModal(
   required List<AssignedBrand> brands,
   required AssignedBrand currentBrand,
   required MenuChannel currentChannel,
+  bool showChannels = true,
 }) {
   return showModalBottomSheet<({AssignedBrand brand, MenuChannel channel})>(
     context: context,
@@ -22,6 +23,7 @@ Future<({AssignedBrand brand, MenuChannel channel})?> showChooseMenuModal(
       brands: brands,
       initialBrand: currentBrand,
       initialChannel: currentChannel,
+      showChannels: showChannels,
     ),
   );
 }
@@ -33,11 +35,13 @@ class ChooseMenuModal extends ConsumerStatefulWidget {
     required this.brands,
     required this.initialBrand,
     required this.initialChannel,
+    this.showChannels = true,
   });
 
   final List<AssignedBrand> brands;
   final AssignedBrand initialBrand;
   final MenuChannel initialChannel;
+  final bool showChannels;
 
   @override
   ConsumerState<ChooseMenuModal> createState() => _ChooseMenuModalState();
@@ -84,20 +88,22 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Choose menu',
-                      style: TextStyle(
+                      widget.showChannels ? 'Choose menu' : 'Choose provider',
+                      style: const TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 20.0,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF19293E),
                       ),
                     ),
-                    SizedBox(height: 4.0),
+                    const SizedBox(height: 4.0),
                     Text(
-                      'Only menus you can manage are shown.',
-                      style: TextStyle(
+                      widget.showChannels
+                          ? 'Only menus you can manage are shown.'
+                          : 'Choose the provider for this menu.',
+                      style: const TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 13.5,
                         color: Color(0xFF586579),
@@ -152,9 +158,11 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
                               borderRadius: BorderRadius.circular(8.0),
                             ),
                           ),
-                          child: const Text(
-                            'Switch menu',
-                            style: TextStyle(
+                          child: Text(
+                            widget.showChannels
+                                ? 'Switch menu'
+                                : 'Switch provider',
+                            style: const TextStyle(
                               fontFamily: KkfcFonts.ibmPlexSans,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
@@ -208,6 +216,44 @@ class _ChooseMenuModalState extends ConsumerState<ChooseMenuModal> {
   }
 
   Widget _buildBrandCard(AssignedBrand brand) {
+    if (!widget.showChannels) {
+      final selected = _selectedBrand.id == brand.id;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
+          color: selected ? const Color(0xFFEDF0F4) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          child: ListTile(
+            key: ValueKey('select-provider-${brand.id}'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(
+                color: selected
+                    ? const Color(0xFF19293E)
+                    : const Color(0xFFDDD6C9),
+              ),
+            ),
+            selected: selected,
+            enabled: brand.isAuthorized,
+            leading: Icon(
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+            ),
+            title: Text(brand.name),
+            trailing: brand.isAuthorized
+                ? null
+                : const Icon(Icons.lock_outline),
+            onTap: brand.isAuthorized
+                ? () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedBrand = brand);
+                  }
+                : null,
+          ),
+        ),
+      );
+    }
     final channelsAsync = ref.watch(brandChannelsProvider(brand));
     final defaultChannels =
         brand.channels ??

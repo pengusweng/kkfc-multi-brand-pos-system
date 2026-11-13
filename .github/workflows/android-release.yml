@@ -1,0 +1,103 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build signed APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      build-number: ${{ steps.version.outputs.build_number }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze and test
+        run: |
+          flutter analyze
+          dart run tool/run_flutter_tests.dart
+      - name: Assign increasing Android version code
+        id: version
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: echo "build_number=$((100000 + RUN_NUMBER * 100 + RUN_ATTEMPT))" >> "$GITHUB_OUTPUT"
+      - name: Configure persistent APK signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: python3 ../.github/scripts/configure-android-signing.py
+      - name: Build APK against the hosted API
+        env:
+          API_URL: ${{ vars.ANDROID_API_URL || 'https://kkfc-demo-api.onrender.com/api' }}
+          UPDATE_REPOSITORY: ${{ github.repository }}
+          UPDATES_ENABLED: ${{ github.ref_name == (vars.ANDROID_UPDATE_BRANCH || 'development') && 'true' || 'false' }}
+          BUILD_NUMBER: ${{ steps.version.outputs.build_number }}
+        run: |
+          flutter build apk --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=ENV=prod \
+            --dart-define="API_URL=$API_URL" \
+            --dart-define="APP_UPDATE_REPOSITORY=$UPDATE_REPOSITORY" \
+            --dart-define="APP_UPDATES_ENABLED=$UPDATES_ENABLED"
+          cp build/app/outputs/flutter-apk/app-release.apk build/kkfc-pos.apk
+          cd build
+          sha256sum kkfc-pos.apk > kkfc-pos.apk.sha256
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kkfc-pos-${{ github.ref_name }}-${{ steps.version.outputs.build_number }}
+          path: |
+            mobile/build/kkfc-pos.apk
+            mobile/build/kkfc-pos.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Remove signing files
+        if: always()
+        run: rm -f android/key.properties android/app-release.jks
+
+  publish:
+    name: Publish optional app update
+    if: github.ref_name == (vars.ANDROID_UPDATE_BRANCH || 'development')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: kkfc-pos-${{ github.ref_name }}-${{ needs.build.outputs.build-number }}
+          path: dist
+      - name: Publish APK to GitHub Releases
+        uses: actions/github-script@v7
+        env:
+          BUILD_NUMBER: ${{ needs.build.outputs.build-number }}
+        with:
+          script: |
+            const publish = require('./.github/scripts/publish-android-release.cjs');
+            await publish({ github, context, core, buildNumber: Number(process.env.BUILD_NUMBER) });
