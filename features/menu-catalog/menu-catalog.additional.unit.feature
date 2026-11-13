@@ -117,3 +117,12 @@ Feature: Additional menu catalog unit coverage
     Given a newly created catalog entry with or without child records
     When catalog creation completes
     Then the full saved entry and its available children are returned
+
+  # Jest: server/src/modules/menu/menu-catalog/tests/menu-catalog.service.spec.ts
+  # Context: MenuCatalogService transactional creation
+  @UT-MCAT-013
+  Scenario: Preserve checkout restrictions in the menu catalog
+    Test Case ID: UT-MCAT-013
+    Given an active item with an inactive recipe and a disabled sales channel
+    When its brand catalog is loaded
+    Then the recipe availability and disabled channel are included

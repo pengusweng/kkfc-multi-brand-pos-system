@@ -175,6 +175,9 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         final message = _extractErrorMessage(e);
+        if (e is DioException && e.response?.statusCode == 400) {
+          ref.invalidate(menuItemsProvider);
+        }
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(message),

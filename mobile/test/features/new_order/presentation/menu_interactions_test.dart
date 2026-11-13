@@ -40,6 +40,57 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets(
+    'Channel filter uses API availability and refresh picks up restored stock',
+    (tester) async {
+      var grabAvailable = false;
+      var loads = 0;
+      final container = ProviderContainer(
+        overrides: [
+          menuItemsProvider.overrideWith((ref) async {
+            loads++;
+            return [
+              MenuItem.fromApiJson({
+                'menu_item_id': 'meal',
+                'name': 'Channel Meal',
+                'base_price': '100',
+                'is_available': true,
+                'recipe': {'is_active': true},
+                'menuChannels': [
+                  {
+                    'order_channel': 'GRABFOOD',
+                    'price': '120',
+                    'is_available': grabAvailable,
+                  },
+                ],
+              }),
+            ];
+          }),
+        ],
+      );
+      await _pump(tester, container, const MenuScreen());
+      await tester.pumpAndSettle();
+      container.read(menuChannelProvider.notifier).select(MenuChannel.grabFood);
+      await tester.pumpAndSettle();
+      expect(find.text('MANUAL OFF'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('unavailable-filter-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Channel Meal'), findsNothing);
+      container.read(menuChannelProvider.notifier).select(MenuChannel.dineIn);
+      await tester.pumpAndSettle();
+      expect(find.text('Channel Meal'), findsOneWidget);
+      container.read(menuChannelProvider.notifier).select(MenuChannel.grabFood);
+      await tester.pumpAndSettle();
+
+      grabAvailable = true;
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      expect(loads, 2);
+      expect(find.text('Channel Meal'), findsOneWidget);
+      expect(find.text('MANUAL OFF'), findsNothing);
+      expect(container.read(hideUnavailableProvider), isTrue);
+    },
+  );
   for (final availability in MenuAvailability.values) {
     testWidgets(
       'IT-MOB-MENU-001 Given ${availability.name} availability When tapping an item Then only available items enter the cart',

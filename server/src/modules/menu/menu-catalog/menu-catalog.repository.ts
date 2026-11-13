@@ -70,7 +70,7 @@ export class MenuCatalogRepository {
           const menuChannels =
             await this.menuChannelsRepository.findManyByMenuItem(
               menuItem.menu_item_id,
-              true,
+              false,
               undefined,
               tx,
             );

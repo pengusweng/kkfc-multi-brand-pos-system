@@ -8,7 +8,7 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 /// Search input bar with animated focus ring, debounce, clear button,
-/// and tactile "Unavailable" navigation button.
+/// and an availability filter toggle.
 class CatalogSearchBar extends ConsumerStatefulWidget {
   const CatalogSearchBar({super.key});
 
@@ -200,7 +200,7 @@ class _CatalogSearchBarState extends ConsumerState<CatalogSearchBar> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Unavailable',
+                      'Hide unavailable',
                       style: TextStyle(
                         fontFamily: KkfcFonts.ibmPlexSans,
                         fontSize: 14.0,

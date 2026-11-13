@@ -61,148 +61,161 @@ class MenuCatalogView extends ConsumerWidget {
     final selectedChannel = ref.watch(menuChannelProvider);
     final visibleItems = ref.watch(visibleMenuItemsProvider);
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              isWide ? KkfcSpace.s20 : KkfcSpace.s16,
-              KkfcSpace.s16,
-              isWide ? KkfcSpace.s20 : KkfcSpace.s16,
-              KkfcSpace.s12,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Current Menu Selector ("Gamcheon · Dine-in >")
-                CurrentMenuCard(
-                  brand: activeBrand,
-                  channel: selectedChannel,
-                  onTap: () async {
-                    final result = await showChooseMenuModal(
-                      context,
-                      brands: assignedBrands,
-                      currentBrand: activeBrand,
-                      currentChannel: selectedChannel,
-                    );
-                    if (result != null) {
-                      if (!context.mounted) return;
-                      _onMenuSwitched(
+    return RefreshIndicator(
+      onRefresh: () async {
+        try {
+          ref.invalidate(menuItemsProvider);
+          await ref.read(menuItemsProvider.future);
+        } catch (_) {
+          // The catalog's error state provides the retry action.
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+                KkfcSpace.s16,
+                isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+                KkfcSpace.s12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Current Menu Selector ("Gamcheon · Dine-in >")
+                  CurrentMenuCard(
+                    brand: activeBrand,
+                    channel: selectedChannel,
+                    onTap: () async {
+                      final result = await showChooseMenuModal(
                         context,
-                        ref,
-                        result.brand,
-                        result.channel,
+                        brands: assignedBrands,
+                        currentBrand: activeBrand,
+                        currentChannel: selectedChannel,
                       );
-                    }
-                  },
-                ),
-                const SizedBox(height: KkfcSpace.s12),
+                      if (result != null) {
+                        if (!context.mounted) return;
+                        _onMenuSwitched(
+                          context,
+                          ref,
+                          result.brand,
+                          result.channel,
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: KkfcSpace.s12),
 
-                // 2. Search field + Unavailable button with tactile press feedback
-                const CatalogSearchBar(),
-              ],
-            ),
-          ),
-        ),
-
-        // 3. Menu Items Grid / List with native viewport virtualization (Zero shrinkWrap)
-        SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            isWide ? KkfcSpace.s20 : KkfcSpace.s16,
-            KkfcSpace.s4,
-            isWide ? KkfcSpace.s20 : KkfcSpace.s16,
-            bottomPadding,
-          ),
-          sliver: visibleItems.when(
-            loading: () =>
-                SliverToBoxAdapter(child: MenuGridSkeleton(isWide: isWide)),
-            error: (_, _) => SliverToBoxAdapter(
-              child: MenuMessageCard(
-                icon: Icons.wifi_off,
-                title: "Couldn't load the menu",
-                body: 'Check the connection, then try again.',
-                actionLabel: 'Try again',
-                onAction: () => ref.invalidate(menuItemsProvider),
+                  // 2. Search field + Unavailable button with tactile press feedback
+                  const CatalogSearchBar(),
+                ],
               ),
             ),
-            data: (items) {
-              if (items.isEmpty) {
-                final isSearching = ref
-                    .watch(menuSearchProvider)
-                    .trim()
-                    .isNotEmpty;
-                final isHidingUnavailable = ref.watch(hideUnavailableProvider);
+          ),
 
-                if (isSearching || isHidingUnavailable) {
-                  return const SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(KkfcSpace.s40),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 40,
-                              color: Color(0xFF76849A),
-                            ),
-                            SizedBox(height: KkfcSpace.s12),
-                            Text(
-                              'No items in this category or matching search',
-                              style: TextStyle(
-                                fontFamily: KkfcFonts.ibmPlexSans,
-                                color: Color(0xFF586579),
-                                fontSize: 14,
+          // 3. Menu Items Grid / List with native viewport virtualization (Zero shrinkWrap)
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+              KkfcSpace.s4,
+              isWide ? KkfcSpace.s20 : KkfcSpace.s16,
+              bottomPadding,
+            ),
+            sliver: visibleItems.when(
+              loading: () =>
+                  SliverToBoxAdapter(child: MenuGridSkeleton(isWide: isWide)),
+              error: (_, _) => SliverToBoxAdapter(
+                child: MenuMessageCard(
+                  icon: Icons.wifi_off,
+                  title: "Couldn't load the menu",
+                  body: 'Check the connection, then try again.',
+                  actionLabel: 'Try again',
+                  onAction: () => ref.invalidate(menuItemsProvider),
+                ),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  final isSearching = ref
+                      .watch(menuSearchProvider)
+                      .trim()
+                      .isNotEmpty;
+                  final isHidingUnavailable = ref.watch(
+                    hideUnavailableProvider,
+                  );
+
+                  if (isSearching || isHidingUnavailable) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(KkfcSpace.s40),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 40,
+                                color: Color(0xFF76849A),
                               ),
-                            ),
-                          ],
+                              SizedBox(height: KkfcSpace.s12),
+                              Text(
+                                'No items in this category or matching search',
+                                style: TextStyle(
+                                  fontFamily: KkfcFonts.ibmPlexSans,
+                                  color: Color(0xFF586579),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                    );
+                  }
+
+                  return SliverToBoxAdapter(
+                    child: MenuMessageCard(
+                      icon: Icons.restaurant_menu_outlined,
+                      title: 'No menu items available',
+                      body: 'No items found in this brand catalog.',
+                      actionLabel: 'Refresh catalog',
+                      onAction: () => ref.invalidate(menuItemsProvider),
                     ),
                   );
                 }
 
-                return SliverToBoxAdapter(
-                  child: MenuMessageCard(
-                    icon: Icons.restaurant_menu_outlined,
-                    title: 'No menu items available',
-                    body: 'No items found in this brand catalog.',
-                    actionLabel: 'Refresh catalog',
-                    onAction: () => ref.invalidate(menuItemsProvider),
-                  ),
-                );
-              }
-
-              return isWide
-                  ? SliverGrid.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16.0,
-                            mainAxisSpacing: 16.0,
-                            mainAxisExtent: 180.0,
-                          ),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) => MenuItemCard(
-                        item: items[index],
-                        channel: selectedChannel,
-                        compact: false,
-                      ),
-                    )
-                  : SliverList.separated(
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12.0),
-                      itemBuilder: (context, index) => MenuItemCard(
-                        item: items[index],
-                        channel: selectedChannel,
-                        compact: true,
-                      ),
-                    );
-            },
+                return isWide
+                    ? SliverGrid.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16.0,
+                              mainAxisSpacing: 16.0,
+                              mainAxisExtent: 180.0,
+                            ),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) => MenuItemCard(
+                          item: items[index],
+                          channel: selectedChannel,
+                          compact: false,
+                        ),
+                      )
+                    : SliverList.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12.0),
+                        itemBuilder: (context, index) => MenuItemCard(
+                          item: items[index],
+                          channel: selectedChannel,
+                          compact: true,
+                        ),
+                      );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

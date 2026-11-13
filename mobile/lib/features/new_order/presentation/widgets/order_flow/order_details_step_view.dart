@@ -187,6 +187,9 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
       }
     } catch (e) {
       if (mounted) {
+        if (e is DioException && e.response?.statusCode == 400) {
+          ref.invalidate(menuItemsProvider);
+        }
         setState(() {
           _isSubmitting = false;
           _apiErrorMessage = _extractErrorMessage(e);
