@@ -49,3 +49,23 @@ E2E-AUTH-004: User logout and session invalidation
     Then the HTTP response status should be 204
     When the client requests the protected profile endpoint with the session token
     Then the HTTP response status should be 401
+
+E2E-AUTH-005: Superadmin login requires a PIN
+    [Documentation]    Verify that a superadmin needs a correct PIN to sign in, while other roles do not.
+    [Tags]             E2E    AUTH    E2E-AUTH-005    FR-AUTH-001
+    Given the backend server is running against the test database
+    And a registered test user exists with role "SUPERADMIN"
+    When the client submits valid login credentials without a PIN to "/api/auth/login"
+    Then the HTTP response status should be 401
+    And the response JSON key "code" should be equal to "PIN_REQUIRED"
+    And the response should not contain a session token
+    When the client submits valid login credentials with PIN "0000" to "/api/auth/login"
+    Then the HTTP response status should be 401
+    And the response JSON key "code" should be equal to "INVALID_PIN"
+    And the response should not contain a session token
+    When the client submits valid login credentials to "/api/auth/login"
+    Then the HTTP response status should be 200
+    And the response should contain an active session token
+    Given a registered test user exists with role "SUPERVISOR"
+    When the client submits valid login credentials without a PIN to "/api/auth/login"
+    Then the HTTP response status should be 200

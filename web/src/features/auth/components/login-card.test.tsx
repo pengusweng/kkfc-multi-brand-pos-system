@@ -14,8 +14,8 @@ test("shows the API's invalid-credentials error without navigating", async () =>
   ));
   const onSuccess = vi.fn();
   function LoginForm() {
-    const { form, serverError } = useLogin(onSuccess);
-    return <LoginCard form={form} serverError={serverError} />;
+    // Pass the whole hook result, as the login page does, so the PIN step props stay in sync.
+    return <LoginCard {...useLogin(onSuccess)} />;
   }
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const user = userEvent.setup();

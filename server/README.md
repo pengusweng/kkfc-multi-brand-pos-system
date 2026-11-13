@@ -100,14 +100,14 @@ Order cancellation: `POST /api/brands/:brandId/orders/:orderId/cancel` requires
 `{ "cancellation_reason": "Customer requested cancellation." }` and returns the
 saved cancelled order with HTTP `200`. See [cancel request, response and errors](docs/orders-api.md#cancel-body-and-response).
 
-Log in through `POST /api/auth/login`, then paste the returned token into **Authorize**.
+Log in through `POST /api/auth/login` (superadmins add their `X-Action-Pin` header), then paste the returned token into **Authorize**.
 Sessions expire after 24 hours. Protected routes require `Authorization: Bearer <token>`.
 Login returns `token`, `expires_at`, and a user profile without brand assignments.
 Password hashes are excluded from API responses.
 
 | Endpoint                      | Access and behavior                                                                                                                                               |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /api/auth/login`        | Active users of any role; creates a session.                                                                                                                      |
+| `POST /api/auth/login`        | Active users of any role; creates a session. Superadmins must also send their four-digit `X-Action-Pin` header.                                                   |
 | `GET /api/auth/me`            | Any authenticated user; returns their current profile.                                                                                                            |
 | `POST /api/auth/logout`       | Revokes the current session; returns 204.                                                                                                                         |
 | `POST /api/auth/logout-all`   | Revokes all sessions for the current user; returns 204.                                                                                                           |

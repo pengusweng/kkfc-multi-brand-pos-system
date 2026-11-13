@@ -7,11 +7,28 @@ A registered test user exists with role "${role}"
     Dictionary Should Contain Key    ${roles}    ${role}
     ${index}=    Get From Dictionary    ${roles}    ${role}
     Set Test Variable    ${ACTIVE_USER}    ${CATALOG}[users][${index}][username]
+    Set Test Variable    ${ACTIVE_ROLE}    ${CATALOG}[users][${index}][role]
     Set Test Variable    ${ACTIVE_PASS}    ${CATALOG_PASSWORD}
 
 The client submits valid login credentials to "${endpoint}"
+    # Superadmins must also send their PIN; other roles log in with a password only.
+    ${headers}=    Create Dictionary
+    IF    $ACTIVE_ROLE == 'SUPERADMIN'
+        Set To Dictionary    ${headers}    X-Action-Pin=${CATALOG_PIN}
+    END
+    ${payload}=    Create Dictionary    username=${ACTIVE_USER}    password=${ACTIVE_PASS}
+    ${response}=   POST On Session      api    ${endpoint}    json=${payload}    headers=${headers}    expected_status=any
+    Set Test Variable    ${LAST_RESPONSE}    ${response}
+
+The client submits valid login credentials without a PIN to "${endpoint}"
     ${payload}=    Create Dictionary    username=${ACTIVE_USER}    password=${ACTIVE_PASS}
     ${response}=   POST On Session      api    ${endpoint}    json=${payload}    expected_status=any
+    Set Test Variable    ${LAST_RESPONSE}    ${response}
+
+The client submits valid login credentials with PIN "${pin}" to "${endpoint}"
+    ${headers}=    Create Dictionary    X-Action-Pin=${pin}
+    ${payload}=    Create Dictionary    username=${ACTIVE_USER}    password=${ACTIVE_PASS}
+    ${response}=   POST On Session      api    ${endpoint}    json=${payload}    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
 The client submits an invalid password to "${endpoint}"

@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/src/components/ui/atoms/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { form, serverError, session } = useLogin(({ user }) => {
+  const { session, ...login } = useLogin(({ user }) => {
     router.replace(WEB_ROLES.has(user.role) ? "/dashboard" : "/unauthorized");
   });
 
@@ -22,7 +22,7 @@ export default function LoginPage() {
           className="absolute top-3 right-3 z-10 motion-safe:animate-rise sm:top-5 sm:right-5 lg:top-[2.875rem] lg:right-12"
           style={{ animationDelay: "500ms" }}
         />
-        <LoginCard form={form} serverError={serverError} redirecting={Boolean(session)} />
+        <LoginCard {...login} redirecting={Boolean(session)} />
       </LoginBackground>
     </div>
   );

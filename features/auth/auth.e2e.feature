@@ -30,3 +30,14 @@ Feature: Authenticate and revoke real API sessions
     Then the response status is 204
     When the old token requests the protected profile
     Then the response status is 401
+
+  @E2E-AUTH-005
+  Scenario: Require a PIN for superadmin login only
+    Given an active fixture superadmin with a PIN
+    When login omits the PIN
+    Then the response status is 401 with code PIN_REQUIRED and no session token
+    When login sends a wrong PIN
+    Then the response status is 401 with code INVALID_PIN and no session token
+    When login sends the correct PIN
+    Then the response status is 200 with a session token
+    And an active fixture supervisor still signs in without a PIN

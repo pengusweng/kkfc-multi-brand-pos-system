@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 import { AuthRepository } from '../auth.repository';
 import { AuthService } from '../auth.service';
 import { UsersRepository } from '../../users/users.repository';
+import { PinService } from '../../pin/pin.service';
 
 describe('AuthService', () => {
   const now = new Date('2030-01-01T12:00:00Z');
@@ -48,6 +49,7 @@ describe('AuthService', () => {
     service = new AuthService(
       authRepository as unknown as AuthRepository,
       usersRepository as unknown as UsersRepository,
+      {} as PinService,
     );
   });
 

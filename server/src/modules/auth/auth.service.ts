@@ -4,7 +4,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { AuthRepository } from './auth.repository';
@@ -12,6 +12,8 @@ import { UsersRepository } from '../users/users.repository';
 import { CreateSessionDTO } from './dto/create-session.dto';
 import { LoginDTO } from './dto/login.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
+import { assertValidPin } from '../pin/pin.assertions';
+import { PinService } from '../pin/pin.service';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +22,7 @@ export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly pinService: PinService,
   ) {}
 
   getUserProfile(
@@ -28,7 +31,7 @@ export class AuthService {
     return user;
   }
 
-  async login(dto: LoginDTO) {
+  async login(dto: LoginDTO, pin?: string) {
     const credentials = await this.usersRepository.findByUsername(dto.username);
     if (
       !credentials ||
@@ -42,6 +45,32 @@ export class AuthService {
 
     const user = await this.usersRepository.findOne(credentials.user_id);
     assertExists(user, 'User', credentials.user_id, this.logger);
+
+    if (user.role === UserRole.SUPERADMIN) {
+      if (!pin) {
+        this.logger.warn(`PIN required for superadmin login: ${user.user_id}`);
+
+        throw new UnauthorizedException({
+          code: 'PIN_REQUIRED',
+          message: 'Enter your PIN to sign in.',
+        });
+      }
+
+      const result = /^[0-9]{4}$/.test(pin)
+        ? await this.pinService.verifyPin(user.user_id, pin)
+        : ({ status: 'invalid' } as const);
+
+      if (result.status === 'invalid') {
+        this.logger.warn(`Invalid PIN for superadmin login: ${user.user_id}`);
+
+        throw new UnauthorizedException({
+          code: 'INVALID_PIN',
+          message: 'Incorrect PIN.',
+        });
+      }
+
+      assertValidPin(result);
+    }
 
     const token = randomBytes(32).toString('base64url');
     const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);

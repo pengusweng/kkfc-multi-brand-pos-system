@@ -6,20 +6,56 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/src/components/ui/atoms/input";
 import { Button } from "@/components/ui/button";
 import type { useLogin } from "../hooks/useLogin";
+import LoginPinStep from "./login-pin-step";
 
-type LoginCardProps = Pick<ReturnType<typeof useLogin>, "form" | "serverError"> & {
+type LoginCardProps = Pick<
+  ReturnType<typeof useLogin>,
+  "form" | "serverError" | "pinStep" | "pinPending" | "submitPin" | "cancelPin"
+> & {
   redirecting?: boolean;
 };
 
-// Each block rises in slightly after the one above it.
-const rise = (step: number): CSSProperties => ({ animationDelay: `${180 + step * 70}ms` });
-
-export default function LoginCard({ form, serverError, redirecting = false }: LoginCardProps) {
+export default function LoginCard({
+  form,
+  serverError,
+  pinStep,
+  pinPending,
+  submitPin,
+  cancelPin,
+  redirecting = false,
+}: LoginCardProps) {
   const [showPassword, setShowPassword] = useState(false);
+  // Back from the PIN step, the form slides in once instead of replaying the staggered page entrance.
+  const [returned, setReturned] = useState(false);
+  if (pinStep && !returned) setReturned(true);
+
+  // Each block rises in slightly after the one above it.
+  const rise = (step: number): { className: string; style?: CSSProperties } => returned
+    ? { className: "motion-safe:animate-page-in" }
+    : { className: "motion-safe:animate-rise", style: { animationDelay: `${180 + step * 70}ms` } };
+
+  if (pinStep) {
+    return (
+      <section aria-labelledby="login-title" className="w-full max-w-sm lg:-mt-8">
+        <form.Subscribe selector={(state) => state.values.username}>
+          {(username) => (
+            <LoginPinStep
+              username={username}
+              step={pinStep}
+              pending={pinPending}
+              redirecting={redirecting}
+              onSubmit={submitPin}
+              onBack={cancelPin}
+            />
+          )}
+        </form.Subscribe>
+      </section>
+    );
+  }
 
   return (
     <section aria-labelledby="login-title" className="w-full max-w-sm lg:-mt-8">
-      <header className="motion-safe:animate-rise" style={rise(0)}>
+      <header className={rise(0).className} style={rise(0).style}>
         <h1 id="login-title" className="text-3xl leading-tight font-semibold tracking-[-0.01em] text-ink">
           Sign in
         </h1>
@@ -42,7 +78,7 @@ export default function LoginCard({ form, serverError, redirecting = false }: Lo
             const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
             return (
-              <div className="grid gap-2 motion-safe:animate-rise" style={rise(1)}>
+              <div className={`grid gap-2 ${rise(1).className}`} style={rise(1).style}>
                 <Label htmlFor={field.name} className="leading-5 text-ink">Username</Label>
                 <Input
                   id={field.name}
@@ -74,7 +110,7 @@ export default function LoginCard({ form, serverError, redirecting = false }: Lo
             const invalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
             return (
-              <div className="grid gap-2 motion-safe:animate-rise" style={rise(2)}>
+              <div className={`grid gap-2 ${rise(2).className}`} style={rise(2).style}>
                 <Label htmlFor={field.name} className="leading-5 text-ink">Password</Label>
                 <div className="relative">
                   <Input
@@ -133,8 +169,8 @@ export default function LoginCard({ form, serverError, redirecting = false }: Lo
                 type="submit"
                 disabled={busy}
                 aria-busy={busy}
-                className="mt-1 h-12 w-full cursor-pointer text-base font-semibold motion-safe:animate-rise disabled:opacity-80"
-                style={rise(3)}
+                className={`mt-1 h-12 w-full cursor-pointer text-base font-semibold disabled:opacity-80 ${rise(3).className}`}
+                style={rise(3).style}
               >
                 {busy && <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />}
                 {redirecting ? "Opening dashboard…" : isSubmitting ? "Signing in…" : "Sign In"}
