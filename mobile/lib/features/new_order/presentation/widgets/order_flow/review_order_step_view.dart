@@ -165,6 +165,7 @@ class _ReviewOrderStepViewState extends ConsumerState<ReviewOrderStepView> {
 
       final updatedDraft = OrderDraft.fromJson(confirmed);
       ref.read(activeOrderDraftProvider.notifier).set(updatedDraft);
+      ref.read(clientOrderIdProvider.notifier).regenerate();
 
       if (mounted) {
         setState(() => _isSubmitting = false);

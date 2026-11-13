@@ -146,14 +146,26 @@ class _OrderDetailsStepViewState extends ConsumerState<OrderDetailsStepView> {
           'items’ provider, or remove items from other providers before continuing.',
         );
       }
-      final orderId = ref.read(clientOrderIdProvider);
-
       final storeRef = channel.isPlatform
           ? formatStoreReference(
               brandName: activeBrand.name,
               channelLabel: channel.label,
             )
           : null;
+
+      final orderId = ref
+          .read(clientOrderIdProvider.notifier)
+          .forRequest(
+            brandId: brandId,
+            channel: channel,
+            lines: lines,
+            reference: text,
+            merchantStoreReference: storeRef,
+          );
+      final previousDraft = ref.read(activeOrderDraftProvider);
+      if (previousDraft != null && previousDraft.orderId != orderId) {
+        ref.read(activeOrderDraftProvider.notifier).clear();
+      }
 
       final created = await ref
           .read(orderEntryRepositoryProvider)

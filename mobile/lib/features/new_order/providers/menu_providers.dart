@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/order_draft_provider.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
@@ -308,7 +309,11 @@ class CartNotifier extends Notifier<List<CartLine>> {
       if (l.id != lineId) l,
   ];
 
-  void clear() => state = const [];
+  void clear() {
+    state = const [];
+    ref.read(activeOrderDraftProvider.notifier).clear();
+    ref.read(clientOrderIdProvider.notifier).regenerate();
+  }
 }
 
 /// Not autoDispose: the draft order must survive tab changes.
