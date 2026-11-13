@@ -11,10 +11,10 @@ import {
 
 const userExample = {
   user_id: '00000000-0000-4000-8000-000000000001',
-  username: 'manager',
+  username: 'supervisor',
   first_name: 'Maria',
   last_name: 'Santos',
-  role: 'MANAGER',
+  role: 'SUPERVISOR',
   is_active: true,
   created_at: '2026-10-31T08:00:00.000Z',
   modified_at: '2026-10-31T08:00:00.000Z',
@@ -36,7 +36,7 @@ export function CreateUserDocs() {
     ApiOperation({
       summary: 'Create a user.',
       description:
-        'Managers can create non-superadmin accounts; superadmins can create any role. Users have no brand assignment. Responses omit password_hash.',
+        'Superadmins can create any role. Users have no brand assignment. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 201,
@@ -55,9 +55,9 @@ export function UpdateUserDocs() {
   return applyDecorators(
     PinRequiredDocs(),
     ApiOperation({
-      summary: 'Update a user (manager or superadmin).',
+      summary: 'Update a user (superadmin).',
       description:
-        'Accepts a user UUID, not a username. Managers can edit active non-superadmin users and reset their passwords. Only superadmins can edit superadmins. Supports username, first_name, last_name, and password. Omitted fields are unchanged; null is invalid.',
+        'Accepts a user UUID, not a username. Only superadmins can edit users and reset their passwords. Supports username, first_name, last_name, and password. Omitted fields are unchanged; null is invalid.',
     }),
     ApiParam({
       name: 'id',
@@ -86,9 +86,9 @@ export function UpdateUserDocs() {
 export function FindAllUsersDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List all users (manager or superadmin).',
+      summary: 'List all users (superadmin).',
       description:
-        'Managers and superadmins can list all users. status filters by account state (active by default, inactive, or all). search does a case-insensitive partial match on username, first_name, and last_name; every space-separated term must match one of them, and a blank search is ignored. role limits results to a single UserRole. sortBy (name, username, role, status, created_at) with sortOrder (asc or desc) orders the results; without sortBy the newest accounts come first. Responses omit password_hash.',
+        'Superadmins can list all users. status filters by account state (active by default, inactive, or all). search does a case-insensitive partial match on username, first_name, and last_name; every space-separated term must match one of them, and a blank search is ignored. role limits results to a single UserRole. sortBy (name, username, role, status, created_at) with sortOrder (asc or desc) orders the results; without sortBy the newest accounts come first. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,
@@ -166,9 +166,9 @@ export function DeleteUserDocs() {
   return applyDecorators(
     PinRequiredDocs(),
     ApiOperation({
-      summary: 'Deactivate a user (manager or superadmin).',
+      summary: 'Deactivate a user (superadmin).',
       description:
-        'Accepts a user UUID. Managers can deactivate active non-superadmin users; only superadmins can deactivate superadmins. The record is preserved and the account can no longer authenticate.',
+        'Accepts a user UUID. Only superadmins can deactivate users. The record is preserved and the account can no longer authenticate.',
     }),
     ApiParam({
       name: 'id',

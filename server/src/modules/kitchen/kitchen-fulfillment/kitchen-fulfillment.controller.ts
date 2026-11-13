@@ -46,7 +46,6 @@ import { Audit, fromParam } from '../../../shared/audit/audit.decorator';
 @UseGuards(Authenticated, RolesGuard)
 @Roles(
   UserRole.SUPERADMIN,
-  UserRole.MANAGER,
   UserRole.SUPERVISOR,
   UserRole.KITCHEN_STAFF,
   UserRole.KITCHEN_HEAD,
@@ -119,12 +118,7 @@ export class KitchenFulfillmentController {
   })
   @HttpCode(200)
   @CheckDocs()
-  @Roles(
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD, UserRole.SUPERVISOR)
   async check(
     @Param('kitchenTicketId', ParseUUIDPipe) kitchenTicketId: string,
     @Req() req: AuthenticatedRequest,
@@ -144,12 +138,7 @@ export class KitchenFulfillmentController {
   })
   @HttpCode(200)
   @PassQcDocs()
-  @Roles(
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD, UserRole.SUPERVISOR)
   async passQCAttempt(
     @Param('attemptId', ParseUUIDPipe) attemptId: string,
     @Req() req: AuthenticatedRequest,
@@ -169,12 +158,7 @@ export class KitchenFulfillmentController {
   })
   @HttpCode(200)
   @RejectQcDocs()
-  @Roles(
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD, UserRole.SUPERVISOR)
   async rejectQcAttempt(
     @Param('attemptId', ParseUUIDPipe) attemptId: string,
     @Body() dto: RejectQcAttemptDTO,
@@ -238,12 +222,7 @@ export class KitchenFulfillmentController {
   })
   @HttpCode(200)
   @CancelDocs()
-  @Roles(
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-    UserRole.SUPERVISOR,
-  )
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD, UserRole.SUPERVISOR)
   async cancel(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('orderId', ParseUUIDPipe) orderId: string,

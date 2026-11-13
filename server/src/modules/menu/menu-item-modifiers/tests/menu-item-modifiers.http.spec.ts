@@ -275,9 +275,9 @@ describe('Menu item modifiers HTTP endpoints', () => {
   });
 
   it.each(assignmentRoutes)(
-    'IT-MIM-004: $method $path allows managers in the assignment menu item brand',
+    'IT-MIM-004: $method $path allows superadmins in the assignment menu item brand',
     async (route) => {
-      role = UserRole.MANAGER;
+      role = UserRole.SUPERADMIN;
       callerBrand = brandId;
       const response = await fetch(url + route.path, {
         method: route.method,
@@ -290,9 +290,9 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    'IT-MIM-005: $method $path allows managers across brands',
+    'IT-MIM-005: $method $path allows superadmins across brands',
     async (route) => {
-      role = UserRole.MANAGER;
+      role = UserRole.SUPERADMIN;
       callerBrand = otherBrandId;
       const response = await fetch(url + route.path, {
         method: route.method,
@@ -305,9 +305,9 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    'IT-MIM-006: $method $path allows managers across brands',
+    'IT-MIM-006: $method $path allows superadmins across brands',
     async (route) => {
-      role = UserRole.MANAGER;
+      role = UserRole.SUPERADMIN;
       const response = await fetch(url + route.path, {
         method: route.method,
         headers,
@@ -383,7 +383,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it('IT-MIM-011: resolves unavailable assignments so their owner can reactivate them', async () => {
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERADMIN;
     callerBrand = brandId;
     prisma.menuItemModifier.findUnique.mockResolvedValue({
       menu_item: { brand_id: brandId },
@@ -398,7 +398,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   });
 
   it('IT-MIM-012: rejects a spoofed body brand that conflicts with the stored assignment brand', async () => {
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERADMIN;
     callerBrand = otherBrandId;
     const response = await fetch(`${url}/${assignmentId}`, {
       method: 'PATCH',
@@ -411,7 +411,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   });
 
   it('IT-MIM-013: rejects changing the parent menu item in the update body', async () => {
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERADMIN;
     callerBrand = otherBrandId;
     const response = await fetch(`${url}/${assignmentId}`, {
       method: 'PATCH',

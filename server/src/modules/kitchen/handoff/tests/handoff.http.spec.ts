@@ -23,11 +23,7 @@ describe('Handoff list HTTP endpoints', () => {
     ],
     total: 21,
   };
-  const allowedRoles: UserRole[] = [
-    UserRole.SUPERADMIN,
-    UserRole.MANAGER,
-    UserRole.KITCHEN_HEAD,
-  ];
+  const allowedRoles: UserRole[] = [UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD];
   const auth = { validateSession: jest.fn() };
   const service = { findAll: jest.fn(), findManyByActor: jest.fn() };
   const routes = [

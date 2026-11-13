@@ -69,7 +69,7 @@ describe('Users audit logging', () => {
   afterAll(async () => app.close());
 
   beforeEach(() => {
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERADMIN;
     audit.create.mockClear().mockResolvedValue({});
     for (const mock of [...Object.values(users), pins.verifyPin]) {
       mock.mockReset();
@@ -102,7 +102,7 @@ describe('Users audit logging', () => {
     role: UserRole.CASHIER_STAFF,
   };
 
-  it('IT-USER-022: Given a manager with a valid PIN, When users are created, updated and deactivated, Then audit each with the affected user', async () => {
+  it('IT-USER-022: Given a superadmin with a valid PIN, When users are created, updated and deactivated, Then audit each with the affected user', async () => {
     users.createUser.mockResolvedValue({ user_id: newUserId });
     users.updateUser.mockResolvedValue({ user_id: targetId });
     users.deleteUser.mockResolvedValue({ user_id: targetId });
@@ -168,7 +168,7 @@ describe('Users audit logging', () => {
     },
   );
 
-  it('IT-USER-024: Given a manager, When users are listed or viewed by username, Then audit the sensitive reads with the viewed user', async () => {
+  it('IT-USER-024: Given a superadmin, When users are listed or viewed by username, Then audit the sensitive reads with the viewed user', async () => {
     users.findAllUsers.mockResolvedValue({ data: [], meta: {} });
     users.findOneUser.mockResolvedValue({ user_id: targetId });
 

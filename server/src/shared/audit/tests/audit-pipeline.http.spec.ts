@@ -50,7 +50,7 @@ class FakeAuthGuard implements CanActivate {
 
 @Controller('things')
 @UseGuards(FakeAuthGuard, RolesGuard)
-@Roles(UserRole.MANAGER)
+@Roles(UserRole.SUPERVISOR)
 class ThingsController {
   @Post(':id')
   @Audit({ action: 'THING_UPDATED', entity: 'things', id: fromParam('id') })
@@ -108,7 +108,7 @@ describe('Audit pipeline HTTP', () => {
     create.mockReset().mockResolvedValue({});
   });
 
-  function call(path: string, role: string | null = UserRole.MANAGER) {
+  function call(path: string, role: string | null = UserRole.SUPERVISOR) {
     return fetch(`${url}/things${path}`, {
       method: path ? 'POST' : 'GET',
       headers: role ? { 'x-role': role } : {},

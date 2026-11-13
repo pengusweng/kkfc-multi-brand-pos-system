@@ -75,14 +75,12 @@ describe('Kitchen fulfillment HTTP endpoints', () => {
   const auth = { validateSession: jest.fn() };
   const kitchenRoles: UserRole[] = [
     UserRole.SUPERADMIN,
-    UserRole.MANAGER,
     UserRole.SUPERVISOR,
     UserRole.KITCHEN_STAFF,
     UserRole.KITCHEN_HEAD,
   ];
   const checkerRoles: UserRole[] = [
     UserRole.SUPERADMIN,
-    UserRole.MANAGER,
     UserRole.SUPERVISOR,
     UserRole.KITCHEN_HEAD,
   ];

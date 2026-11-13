@@ -221,8 +221,8 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('IT-BRND-010: Given a manager session, When a replacement logo is uploaded, Then return 403 before storage or update', async () => {
-    currentRole = UserRole.MANAGER;
+  it('IT-BRND-010: Given a supervisor session, When a replacement logo is uploaded, Then return 403 before storage or update', async () => {
+    currentRole = UserRole.SUPERVISOR;
     expect(
       (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
         .status,
@@ -398,9 +398,7 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it.each(
-    Object.values(UserRole).filter(
-      (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
-    ),
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
   )(
     'IT-BRND-022: Given staff role %s, When brand creation is requested, Then return 403 without creating a brand',
     async (role) => {

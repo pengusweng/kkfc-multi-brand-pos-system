@@ -27,7 +27,6 @@ describe('Order item QC rejection retrieval HTTP endpoints', () => {
   };
   const allowedRoles: UserRole[] = [
     UserRole.SUPERADMIN,
-    UserRole.MANAGER,
     UserRole.SUPERVISOR,
     UserRole.KITCHEN_HEAD,
     UserRole.KITCHEN_STAFF,

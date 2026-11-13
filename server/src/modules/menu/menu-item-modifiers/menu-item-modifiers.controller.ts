@@ -53,7 +53,7 @@ export class MenuItemModifiersController {
     entity: 'menu_item_modifiers',
     id: fromResult('menu_item_modifier_id'),
   })
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER)
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
     return this.menuItemModifiersService.create(dto);
@@ -68,7 +68,7 @@ export class MenuItemModifiersController {
 
   @Get('menu-item/:menuItemId')
   @FindMenuItemModifiersForMenuItemDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER)
   async findManyForMenuItem(
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
     @Query() query: FindMenuItemModifierDTO,
@@ -99,7 +99,7 @@ export class MenuItemModifiersController {
     id: fromParam('id'),
   })
   @UpdateMenuItemModifierDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER)
   async update(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
     @Body() dto: UpdateMenuItemModifierDTO,
@@ -115,7 +115,7 @@ export class MenuItemModifiersController {
     id: fromParam('id'),
   })
   @ReactivateMenuItemModifierDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.reactivate(menuItemModifierId);
   }
@@ -128,7 +128,7 @@ export class MenuItemModifiersController {
     id: fromParam('id'),
   })
   @DeleteMenuItemModifierDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.delete(menuItemModifierId);
   }

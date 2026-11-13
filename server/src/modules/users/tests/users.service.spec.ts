@@ -8,10 +8,10 @@ import { UsersService } from '../users.service';
 describe('UsersService', () => {
   const user = {
     user_id: '00000000-0000-4000-8000-000000000001',
-    username: 'manager',
+    username: 'supervisor',
     first_name: 'Test',
-    last_name: 'Manager',
-    role: UserRole.MANAGER,
+    last_name: 'Supervisor',
+    role: UserRole.SUPERVISOR,
     is_active: true,
     created_at: new Date('2030-01-01T00:00:00Z'),
     modified_at: new Date('2030-01-01T00:00:00Z'),
@@ -66,7 +66,7 @@ describe('UsersService', () => {
       expect(repository.create).toHaveBeenCalledWith(dto);
     },
   );
-  it('UT-USER-018: blocks managers from creating superadmins', async () => {
+  it('UT-USER-018: blocks non-superadmins from creating superadmins', async () => {
     await expect(
       service.createUser({ ...createDTO, role: UserRole.SUPERADMIN }),
     ).rejects.toMatchObject({ status: 403 });
@@ -95,7 +95,7 @@ describe('UsersService', () => {
       }
     },
   );
-  it('UT-USER-020: allows managers to create staff without assignments', async () => {
+  it('UT-USER-020: allows non-superadmins to create staff without assignments', async () => {
     await service.createUser(createDTO);
     expect(repository.create).toHaveBeenCalledWith(createDTO);
   });

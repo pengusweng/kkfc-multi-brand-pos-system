@@ -70,8 +70,8 @@ describe('Audit trail access logging', () => {
     expect(audit.rows()).toEqual([]);
   });
 
-  it('IT-AUDIT-014: Given a manager, When they try to view the audit trail, Then it is denied without reading or writing audit rows', async () => {
-    role = UserRole.MANAGER;
+  it('IT-AUDIT-014: Given a supervisor, When they try to view the audit trail, Then it is denied without reading or writing audit rows', async () => {
+    role = UserRole.SUPERVISOR;
 
     const response = await view();
 

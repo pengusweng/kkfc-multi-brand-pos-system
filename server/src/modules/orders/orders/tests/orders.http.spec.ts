@@ -1156,7 +1156,7 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
       code: 'ORDER_ID_CONFLICT',
       message: 'Order ID was already used for a different request.',
     });
-    // Managers can replay orders across brands; authentication still applies.
+    // Supervisors can replay orders across brands; authentication still applies.
     const replay = await request(ordersPath(), 'POST', body, 3);
     expect(replay.status).toBe(201);
     expect(await json(replay)).toMatchObject({
@@ -1517,12 +1517,7 @@ describe('Draft cancellation HTTP API', () => {
     });
   }
 
-  it.each([
-    UserRole.CASHIER_STAFF,
-    UserRole.MANAGER,
-    UserRole.SUPERVISOR,
-    UserRole.SUPERADMIN,
-  ])(
+  it.each([UserRole.CASHIER_STAFF, UserRole.SUPERVISOR, UserRole.SUPERADMIN])(
     'IT-ORD-029: allows %s and takes the actor from the session',
     async (role) => {
       auth.validateSession.mockResolvedValue({
@@ -1568,7 +1563,6 @@ describe('Draft cancellation HTTP API', () => {
         !(
           [
             UserRole.CASHIER_STAFF,
-            UserRole.MANAGER,
             UserRole.SUPERVISOR,
             UserRole.SUPERADMIN,
           ] as UserRole[]
@@ -1610,7 +1604,6 @@ describe('Order detail HTTP API', () => {
   const actorId = '33333333-3333-4333-8333-333333333333';
   const allowedRoles: UserRole[] = [
     UserRole.CASHIER_STAFF,
-    UserRole.MANAGER,
     UserRole.SUPERVISOR,
     UserRole.SUPERADMIN,
     UserRole.KITCHEN_HEAD,

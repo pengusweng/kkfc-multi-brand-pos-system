@@ -107,7 +107,7 @@ describe('Audit list HTTP API', () => {
       username: 'msantos',
       first_name: 'Maria',
       last_name: 'Santos',
-      role: UserRole.MANAGER,
+      role: UserRole.SUPERVISOR,
     };
     const logs = [
       { audit_log_id: 'log-1', actor_id: 'user-1', actor },

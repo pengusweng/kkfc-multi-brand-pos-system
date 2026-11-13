@@ -53,7 +53,7 @@ export class MenuChannelsController {
     id: fromResult('menu_item_channel_id'),
   })
   @CreateMenuChannelDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async create(@Body() dto: CreateMenuChannelDTO) {
     return this.menuChannelsService.create(dto);
   }
@@ -94,7 +94,7 @@ export class MenuChannelsController {
     id: fromParam('id'),
   })
   @UpdateMenuChannelDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async update(
     @Param('id', ParseUUIDPipe) menuItemChannelId: string,
     @Body() dto: UpdateMenuItemChannelDTO,
@@ -110,7 +110,7 @@ export class MenuChannelsController {
     id: fromParam('id'),
   })
   @ReactivateMenuChannelDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.reactivate(menuItemChannelId);
   }
@@ -123,7 +123,7 @@ export class MenuChannelsController {
     id: fromParam('id'),
   })
   @DeleteMenuChannelDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async delete(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.delete(menuItemChannelId);
   }

@@ -17,7 +17,6 @@ import { PaginationDTO } from '../../../shared/dto/pagination.dto';
 @UseGuards(Authenticated, RolesGuard)
 @Roles(
   UserRole.SUPERADMIN,
-  UserRole.MANAGER,
   UserRole.KITCHEN_STAFF,
   UserRole.KITCHEN_HEAD,
   UserRole.CASHIER_STAFF,
@@ -26,7 +25,7 @@ export class HandoffController {
   constructor(private readonly handoffService: HandoffService) {}
 
   @Get()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.KITCHEN_HEAD)
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD)
   async findAll(@Query() query: PaginationDTO) {
     return this.handoffService.findAll(
       (query.page - 1) * query.limit,
@@ -47,7 +46,7 @@ export class HandoffController {
   }
 
   @Get('/actor/:actorId')
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.KITCHEN_HEAD)
+  @Roles(UserRole.SUPERADMIN, UserRole.KITCHEN_HEAD)
   async findManyByActor(
     @Param('actorId', ParseUUIDPipe) actorId: string,
     @Query() query: PaginationDTO,

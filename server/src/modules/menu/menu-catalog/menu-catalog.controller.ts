@@ -36,7 +36,7 @@ export class MenuCatalogController {
     id: fromResult('menu_item_id'),
   })
   @CreateMenuCatalogDocs()
-  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN)
   async create(@Body() dto: MenuCatalogSetupDTO) {
     return this.menuCatalogService.create(dto);
   }

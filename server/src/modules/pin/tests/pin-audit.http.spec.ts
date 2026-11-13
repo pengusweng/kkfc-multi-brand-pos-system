@@ -58,7 +58,7 @@ describe('PIN audit logging', () => {
   afterAll(async () => app.close());
 
   beforeEach(() => {
-    role = UserRole.MANAGER;
+    role = UserRole.SUPERVISOR;
     audit.create.mockClear().mockResolvedValue({});
     for (const mock of Object.values(pins)) mock.mockReset();
   });
@@ -74,7 +74,7 @@ describe('PIN audit logging', () => {
     });
   }
 
-  it('IT-PIN-024: Given a manager, When they set and change their PIN, Then audit both against their own credential without secrets', async () => {
+  it('IT-PIN-024: Given a supervisor, When they set and change their PIN, Then audit both against their own credential without secrets', async () => {
     pins.create.mockResolvedValue({ user_id: actorId });
     pins.updatePin.mockResolvedValue({ user_id: actorId });
 

@@ -41,9 +41,9 @@ export function MenuChannelsDocs() {
 export function CreateMenuChannelDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Create a menu item channel (manager or superadmin).',
+      summary: 'Create a menu item channel (superadmin).',
       description:
-        'Managers and superadmins can create channels across brands. Do not supply brand_id; channels belong to their menu item. Supply an active menu_item_id, order_channel (GRABFOOD or FOODPANDA), and price in PHP from 0 to 9999999999.99 with at most two decimal places. is_available is optional and defaults to true. Each menu item can have only one override per channel, including unavailable overrides.',
+        'Superadmins can create channels across brands. Do not supply brand_id; channels belong to their menu item. Supply an active menu_item_id, order_channel (GRABFOOD or FOODPANDA), and price in PHP from 0 to 9999999999.99 with at most two decimal places. is_available is optional and defaults to true. Each menu item can have only one override per channel, including unavailable overrides.',
     }),
     ApiResponse({
       status: 201,
@@ -165,9 +165,9 @@ export function FindOneMenuChannelDocs() {
 export function UpdateMenuChannelDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Update an available menu item channel (manager or superadmin).',
+      summary: 'Update an available menu item channel (superadmin).',
       description:
-        'Managers and superadmins can update channels across brands. Accepts only an optional price in PHP from 0 to 9999999999.99 with at most two decimal places. Omitted price is unchanged; null is rejected. menu_item_id, order_channel, and is_available cannot be changed through this endpoint.',
+        'Superadmins can update channels across brands. Accepts only an optional price in PHP from 0 to 9999999999.99 with at most two decimal places. Omitted price is unchanged; null is rejected. menu_item_id, order_channel, and is_available cannot be changed through this endpoint.',
     }),
     ApiParam({
       name: 'id',
@@ -198,9 +198,9 @@ export function UpdateMenuChannelDocs() {
 export function ReactivateMenuChannelDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Reactivate a menu item channel (manager or superadmin).',
+      summary: 'Reactivate a menu item channel (superadmin).',
       description:
-        'Managers and superadmins can reactivate channels across brands. Requires no request body. Sets is_available to true.',
+        'Superadmins can reactivate channels across brands. Requires no request body. Sets is_available to true.',
     }),
     ApiParam({
       name: 'id',
@@ -233,9 +233,9 @@ export function ReactivateMenuChannelDocs() {
 export function DeleteMenuChannelDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Deactivate a menu item channel (manager or superadmin).',
+      summary: 'Deactivate a menu item channel (superadmin).',
       description:
-        'Managers and superadmins can deactivate channels across brands. Requires no request body. Sets is_available to false and preserves the record, price, and channel override.',
+        'Superadmins can deactivate channels across brands. Requires no request body. Sets is_available to false and preserves the record, price, and channel override.',
     }),
     ApiParam({
       name: 'id',
