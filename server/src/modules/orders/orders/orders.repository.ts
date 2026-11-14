@@ -41,6 +41,22 @@ export type OrderListFilters = {
   order_date?: Date;
 };
 
+/** Filters for the cross-brand list. Dates are order_date values (Manila dates stored at midnight UTC). */
+export type OrderOverviewFilters = {
+  search?: string;
+  brand_id?: string;
+  payment_status?: PaymentStatus;
+  from?: Date;
+  to?: Date;
+};
+
+const ORDER_STATUSES = Object.values(OrderStatus);
+
+const summaryQuery = {
+  omit: { create_request_hash: true },
+  include: { brand: { select: { brand_id: true, code: true, name: true } } },
+} satisfies Pick<Prisma.OrderFindManyArgs, 'omit' | 'include'>;
+
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -176,6 +192,42 @@ export class OrdersRepository {
     return { orders, total };
   }
 
+  async findOverview(
+    filters: OrderOverviewFilters,
+    status: OrderStatus | undefined,
+    skip: number,
+    take: number,
+  ) {
+    // Everything except status, which the per-status counts below vary.
+    const where = overviewWhere(filters);
+    const [orders, ...perStatus] = await this.prisma.$transaction(
+      [
+        this.prisma.order.findMany({
+          where: { ...where, ...(status ? { status } : {}) },
+          skip,
+          take,
+          orderBy: [{ created_at: 'desc' }, { order_id: 'asc' }],
+          ...summaryQuery,
+        }),
+        ...ORDER_STATUSES.map((value) =>
+          this.prisma.order.count({ where: { ...where, status: value } }),
+        ),
+      ],
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+    // Per-status counts honour every other filter, so a client can label each
+    // status tab from a single response.
+    const counts = Object.fromEntries(
+      ORDER_STATUSES.map((value, i) => [value, perStatus[i]]),
+    ) as Record<OrderStatus, number>;
+    const all = perStatus.reduce((sum, count) => sum + count, 0);
+    return {
+      orders,
+      total: status ? counts[status] : all,
+      counts: { all, ...counts },
+    };
+  }
+
   update(
     orderId: string,
     data: Prisma.OrderUncheckedUpdateInput,
@@ -287,4 +339,28 @@ function isRetryableConflict(error: unknown): boolean {
     'originalCode' in cause &&
     (cause.originalCode === '40001' || cause.originalCode === '40P01')
   );
+}
+
+function overviewWhere({
+  search,
+  brand_id,
+  payment_status,
+  from,
+  to,
+}: OrderOverviewFilters): Prisma.OrderWhereInput {
+  return {
+    ...(search
+      ? { order_code: { contains: search, mode: 'insensitive' as const } }
+      : {}),
+    ...(brand_id ? { brand_id } : {}),
+    ...(payment_status ? { payment_status } : {}),
+    ...(from || to
+      ? {
+          order_date: {
+            ...(from ? { gte: from } : {}),
+            ...(to ? { lte: to } : {}),
+          },
+        }
+      : {}),
+  };
 }

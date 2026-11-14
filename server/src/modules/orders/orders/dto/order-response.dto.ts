@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import {
   OrderChannel,
   OrderStatus,
@@ -191,6 +191,68 @@ export class OrderListResponseDTO {
 
   @ApiProperty({ type: 'integer', minimum: 0 })
   total: number;
+}
+
+export class OrderBrandResponseDTO {
+  @ApiProperty({ type: String, format: 'uuid' })
+  brand_id: string;
+
+  @ApiProperty({ type: String, example: 'GC' })
+  code: string;
+
+  @ApiProperty({ type: String, example: 'Gamcheon' })
+  name: string;
+}
+
+/** A row of GET /orders: the order without its lines or ticket, plus its brand. */
+export class OrderSummaryResponseDTO extends OmitType(OrderResponseDTO, [
+  'order_items_order',
+  'kitchen_tickets_order',
+] as const) {
+  @ApiProperty({ type: OrderBrandResponseDTO })
+  brand: OrderBrandResponseDTO;
+}
+
+export class OrderStatusCountsDTO {
+  @ApiProperty({ example: 40, description: 'Every status.' })
+  all: number;
+  @ApiProperty({ example: 1 })
+  DRAFT: number;
+  @ApiProperty({ example: 1 })
+  CONFIRMED: number;
+  @ApiProperty({ example: 1 })
+  PREPARING: number;
+  @ApiProperty({ example: 31 })
+  COMPLETED: number;
+  @ApiProperty({ example: 6 })
+  CANCELLED: number;
+}
+
+export class OrdersPageMetaDTO {
+  @ApiProperty({ example: 1 })
+  page: number;
+  @ApiProperty({ example: 15 })
+  limit: number;
+  @ApiProperty({ example: 40 })
+  total: number;
+  @ApiProperty({
+    example: 3,
+    description: 'Zero when there are no matching orders.',
+  })
+  totalPages: number;
+  @ApiProperty({
+    type: OrderStatusCountsDTO,
+    description:
+      'Orders per status under every filter except status, for labelling status tabs.',
+  })
+  counts: OrderStatusCountsDTO;
+}
+
+export class OrdersPageResponseDTO {
+  @ApiProperty({ type: [OrderSummaryResponseDTO] })
+  data: OrderSummaryResponseDTO[];
+  @ApiProperty({ type: OrdersPageMetaDTO })
+  meta: OrdersPageMetaDTO;
 }
 
 export class CreateOrderConflictResponseDTO {

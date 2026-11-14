@@ -20,6 +20,7 @@ import {
 import { OrdersRepository } from '../orders.repository';
 import { OrdersService } from '../orders.service';
 import { AuthService } from '../../../auth/auth.service';
+import { AllOrdersController } from '../all-orders.controller';
 import { OrdersController } from '../orders.controller';
 import { KitchenTicketChanges } from '../../../kitchen/kitchen-ticket/kitchen-ticket-changes.service';
 
@@ -1284,6 +1285,81 @@ describe('Orders HTTP endpoints (PostgreSQL integration)', () => {
     ).toBe(1);
   });
 
+  it('IT-ORD-043: Given orders in one brand, When listing every brand through GET /orders, Then filters, brand rows and per-status counts come from the database', async () => {
+    const first = await draft();
+    const second = await draft();
+    expect(
+      (
+        await request(
+          `${ordersPath()}/${second.order_id}/confirm`,
+          'POST',
+          { payment_method: 'CASH', payment_status: 'PAID' },
+          1,
+        )
+      ).status,
+    ).toBe(200);
+    const { order_code } = await savedOrder(second.order_id);
+    const brand = fixture.brand.brand_id;
+    type Page = {
+      data: Record<string, unknown>[];
+      meta: { total: number; counts: Record<string, number> };
+    };
+    const list = async (query: string) => {
+      const response = await request(`/orders?${query}`);
+      expect(response.status).toBe(200);
+      return (await response.json()) as Page;
+    };
+
+    const all = await list(`brand_id=${brand}&limit=100`);
+    expect(all.data.map((row) => row.order_id)).toEqual([
+      second.order_id,
+      first.order_id,
+    ]);
+    expect(all.data[0]).toMatchObject({
+      order_code,
+      status: 'CONFIRMED',
+      payment_status: 'PAID',
+      brand: {
+        brand_id: brand,
+        code: fixture.brand.code,
+        name: fixture.brand.name,
+      },
+    });
+    expect(all.data[0]).not.toHaveProperty('create_request_hash');
+    expect(all.data[0]).not.toHaveProperty('order_items_order');
+    expect(all.meta.counts).toEqual({
+      all: 2,
+      DRAFT: 1,
+      CONFIRMED: 1,
+      PREPARING: 0,
+      COMPLETED: 0,
+      CANCELLED: 0,
+    });
+
+    const drafts = await list(`brand_id=${brand}&status=DRAFT`);
+    expect(drafts.data.map((row) => row.order_id)).toEqual([first.order_id]);
+    expect(drafts.meta).toMatchObject({ total: 1, counts: { all: 2 } });
+
+    const paid = await list(`brand_id=${brand}&payment_status=PAID`);
+    expect(paid.data.map((row) => row.order_id)).toEqual([second.order_id]);
+
+    const searched = await list(
+      `search=${encodeURIComponent(`  ${order_code.toLowerCase()} `)}`,
+    );
+    expect(searched.data.map((row) => row.order_id)).toEqual([second.order_id]);
+
+    expect(
+      (await list(`brand_id=${fixture.otherBrand.brand_id}`)).meta.total,
+    ).toBe(0);
+    expect(
+      (await list(`brand_id=${brand}&from=2000-01-01&to=2000-01-02`)).meta
+        .total,
+    ).toBe(0);
+    expect(
+      (await request(`/orders?from=2026-11-14&to=2026-11-01`)).status,
+    ).toBe(400);
+  });
+
   it('IT-ORD-021: assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
     const first = await draft();
     const saved = await savedOrder(first.order_id);
@@ -1706,6 +1782,124 @@ describe('Order detail HTTP API', () => {
     async (brand, order) => {
       expect((await getOrder(true, brand, order)).status).toBe(400);
       expect(findOneMethod).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('All orders HTTP API', () => {
+  const actorId = '33333333-3333-4333-8333-333333333333';
+  const brandId = '11111111-1111-4111-8111-111111111111';
+  const allowedRoles: UserRole[] = [
+    UserRole.SUPERVISOR,
+    UserRole.CASHIER_STAFF,
+    UserRole.SUPERADMIN,
+  ];
+  const auth = { validateSession: jest.fn() };
+  const prisma = {};
+  const service = { findOverview: jest.fn() };
+  const findOverviewMethod = service.findOverview;
+  let app: INestApplication;
+  let url: string;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      controllers: [AllOrdersController],
+      providers: [
+        { provide: OrdersService, useValue: service },
+        { provide: AuthService, useValue: auth },
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    app = module.createNestApplication();
+    app.useLogger(false);
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.listen(0, '127.0.0.1');
+    url = await app.getUrl();
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    signInAs(UserRole.CASHIER_STAFF);
+    findOverviewMethod.mockResolvedValue({ data: [], meta: { total: 0 } });
+  });
+
+  afterAll(async () => app?.close());
+
+  function signInAs(role: UserRole) {
+    auth.validateSession.mockResolvedValue({
+      user: {
+        user_id: actorId,
+        role,
+        brand_id: role === UserRole.SUPERADMIN ? null : brandId,
+      },
+    });
+  }
+
+  function listOrders(query = '', token = true) {
+    return fetch(`${url}/api/orders${query}`, {
+      headers: token ? { Authorization: 'Bearer test-session' } : {},
+    });
+  }
+
+  it.each(allowedRoles)(
+    'IT-ORD-044: Given %s, When listing every brand, Then pass the typed, trimmed query to the service',
+    async (role) => {
+      signInAs(role);
+      const response = await listOrders(
+        `?page=2&limit=15&search=%20gc-01%20&status=PREPARING&brand_id=${brandId}&payment_status=UNPAID&from=2026-11-01&to=2026-11-14`,
+      );
+      expect(response.status).toBe(200);
+      expect(findOverviewMethod).toHaveBeenCalledWith({
+        page: 2,
+        limit: 15,
+        search: 'gc-01',
+        status: 'PREPARING',
+        brand_id: brandId,
+        payment_status: 'UNPAID',
+        from: '2026-11-01',
+        to: '2026-11-14',
+      });
+    },
+  );
+
+  it('IT-ORD-045: Given no session, When listing every brand, Then return 401', async () => {
+    expect((await listOrders('', false)).status).toBe(401);
+    expect(findOverviewMethod).not.toHaveBeenCalled();
+  });
+
+  it.each(
+    Object.values(UserRole).filter((role) => !allowedRoles.includes(role)),
+  )(
+    'IT-ORD-046: Given %s, When listing every brand, Then return 403',
+    async (role) => {
+      signInAs(role);
+      expect((await listOrders()).status).toBe(403);
+      expect(findOverviewMethod).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    '?status=QUEUED',
+    '?brand_id=not-a-uuid',
+    '?payment_status=OWED',
+    '?from=14-11-2026',
+    '?to=2026-02-30',
+    '?search=' + 'x'.repeat(65),
+    '?limit=101',
+    '?page=0',
+    '?order_channel=DINE_IN',
+  ])(
+    'IT-ORD-047: Given the invalid query %s, When listing every brand, Then return 400',
+    async (query) => {
+      expect((await listOrders(query)).status).toBe(400);
+      expect(findOverviewMethod).not.toHaveBeenCalled();
     },
   );
 });
