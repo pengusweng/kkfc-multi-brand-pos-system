@@ -3,7 +3,7 @@
 import SearchField from "@/src/components/ui/molecules/search-field";
 import type { AuditOutcomeCounts, AuditOutcomeFilter } from "../../schemas/auditLogSchema";
 import ActionSelect from "../molecules/action-select";
-import DateRangeField from "../molecules/date-range-field";
+import DateRangeField from "@/src/components/ui/molecules/date-range-field";
 import OutcomeFilter from "../molecules/outcome-filter";
 
 type AuditFilterBarProps = {

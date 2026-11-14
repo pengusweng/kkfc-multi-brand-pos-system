@@ -153,3 +153,34 @@ Feature: Order catalog and payment rules
     Given no order with that UUID exists in the requested brand
     When the order is requested by UUID
     Then 404 is returned
+
+  @UT-ORD-056
+  Scenario: List orders across every brand with every filter
+    Given saved orders in several brands
+    When every brand's orders are listed with search, status, brand, payment status, a from/to date range, page and limit
+    Then the filters are combined with AND, the page is newest first with each order's brand and without private fields
+    And each status is counted under every filter except status, and the total is the selected status's count
+
+  @UT-ORD-057
+  Scenario: List every brand's orders when no filters are supplied
+    Given no optional list filters
+    When every brand's orders are listed
+    Then no restriction is applied and the total is the sum of every status count
+
+  @UT-ORD-058
+  Scenario: Bound the order date on one side only
+    Given only a to date
+    When every brand's orders are listed
+    Then order_date is bounded above by that date and not below
+
+  @UT-ORD-059
+  Scenario: Reject a from date after the to date
+    Given a from date later than the to date
+    When every brand's orders are listed
+    Then 400 is returned before querying
+
+  @UT-ORD-060
+  Scenario: Reject an unsupported cross-brand page range
+    Given a page whose offset exceeds a signed 32-bit integer
+    When every brand's orders are listed
+    Then PAGINATION_UNSUPPORTED_RANGE is returned before querying

@@ -1313,4 +1313,128 @@ describe('OrdersService', () => {
       );
     });
   });
+
+  describe('cross-brand listing', () => {
+    const summary = {
+      order_id: 'order',
+      order_code: 'GC-00001',
+      status: OrderStatus.DRAFT,
+      brand: { brand_id: 'brand', code: 'GC', name: 'Gamcheon' },
+    };
+    const perStatus: Record<OrderStatus, number> = {
+      DRAFT: 2,
+      CONFIRMED: 3,
+      PREPARING: 1,
+      COMPLETED: 7,
+      CANCELLED: 4,
+    };
+    let root: {
+      $transaction: jest.Mock;
+      order: { findMany: jest.Mock; count: jest.Mock };
+    };
+    let overview: OrdersService;
+
+    beforeEach(() => {
+      root = {
+        // The list and its counts run as one batched read.
+        $transaction: jest.fn((queries: Promise<unknown>[]) =>
+          Promise.all(queries),
+        ),
+        order: {
+          findMany: jest.fn().mockResolvedValue([summary]),
+          count: jest.fn(({ where }: { where: { status: OrderStatus } }) =>
+            Promise.resolve(perStatus[where.status]),
+          ),
+        },
+      };
+      overview = new OrdersService(
+        new OrdersRepository(root as unknown as PrismaService),
+        new OrderItemsService(new OrderItemsRepository()),
+      );
+    });
+
+    it('UT-ORD-056: Given every filter, When listing all brands, Then AND the filters, page newest first, and count each status without the status filter', async () => {
+      const result = await overview.findOverview({
+        page: 2,
+        limit: 5,
+        search: 'gc-000',
+        status: OrderStatus.CONFIRMED,
+        brand_id: 'brand',
+        payment_status: 'PAID',
+        from: '2026-11-01',
+        to: '2026-11-14',
+      });
+
+      const where = {
+        order_code: { contains: 'gc-000', mode: 'insensitive' },
+        brand_id: 'brand',
+        payment_status: 'PAID',
+        order_date: {
+          gte: new Date('2026-11-01T00:00:00.000Z'),
+          lte: new Date('2026-11-14T00:00:00.000Z'),
+        },
+      };
+      expect(root.order.findMany).toHaveBeenCalledWith({
+        where: { ...where, status: OrderStatus.CONFIRMED },
+        skip: 5,
+        take: 5,
+        orderBy: [{ created_at: 'desc' }, { order_id: 'asc' }],
+        omit: { create_request_hash: true },
+        include: {
+          brand: { select: { brand_id: true, code: true, name: true } },
+        },
+      });
+      for (const status of Object.values(OrderStatus)) {
+        expect(root.order.count).toHaveBeenCalledWith({
+          where: { ...where, status },
+        });
+      }
+      expect(result).toEqual({
+        data: [summary],
+        meta: {
+          page: 2,
+          limit: 5,
+          total: 3,
+          totalPages: 1,
+          counts: { all: 17, ...perStatus },
+        },
+      });
+    });
+
+    it('UT-ORD-057: Given no filters, When listing all brands, Then match every order and total every status', async () => {
+      const result = await overview.findOverview({ page: 1, limit: 10 });
+      expect(root.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {}, skip: 0, take: 10 }),
+      );
+      expect(result.meta).toMatchObject({ total: 17, totalPages: 2 });
+    });
+
+    it('UT-ORD-058: Given only one date bound, When listing all brands, Then bound order_date on that side only', async () => {
+      await overview.findOverview({ page: 1, limit: 10, to: '2026-11-14' });
+      expect(root.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { order_date: { lte: new Date('2026-11-14T00:00:00.000Z') } },
+        }),
+      );
+    });
+
+    it('UT-ORD-059: Given from after to, When listing all brands, Then reject before querying', async () => {
+      await expect(
+        overview.findOverview({
+          page: 1,
+          limit: 10,
+          from: '2026-11-14',
+          to: '2026-11-01',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(root.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('UT-ORD-060: Given a page whose offset exceeds the supported range, When listing all brands, Then reject before querying', async () => {
+      await expect(
+        overview.findOverview({ page: 2_147_483_647, limit: 100 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(root.$transaction).not.toHaveBeenCalled();
+    });
+  });
 });

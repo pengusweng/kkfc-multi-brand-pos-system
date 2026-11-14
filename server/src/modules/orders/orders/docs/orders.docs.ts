@@ -9,6 +9,7 @@ import {
 import {
   OrderResponseDTO,
   OrderListResponseDTO,
+  OrdersPageResponseDTO,
   VerifyOrderResponseDTO,
   CreateOrderConflictResponseDTO,
 } from '../dto/order-response.dto';
@@ -162,5 +163,32 @@ export function CancelOrderDocs() {
       description:
         'Cancelled draft order with cancellation actor, reason and timestamp. Its kitchen ticket remains null.',
     }),
+  );
+}
+
+export function FindAllOrdersDocs() {
+  return applyDecorators(
+    ApiTags('Orders'),
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'List orders across every brand',
+      description:
+        'For the back-office orders list. Paginated with page (default 1) and limit (default 10, maximum 100). Optional search (order_code, case-insensitive partial), status, brand_id, payment_status and an Asia/Manila from/to order_date range; filters combine using AND. Sorted by created_at descending, then order_id ascending. Rows carry their brand but no lines or kitchen ticket; read one order through GET /brands/{brandId}/orders/{orderId} for those.',
+    }),
+    ApiResponse({
+      status: 200,
+      type: OrdersPageResponseDTO,
+      description:
+        'A page of orders plus pagination meta with per-status counts. Returns an empty data array when nothing matches.',
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'Invalid query parameters, or from after to.',
+    }),
+    ApiResponse({
+      status: 401,
+      description: 'Missing, invalid or expired bearer session.',
+    }),
+    ApiResponse({ status: 403, description: 'Role access denied.' }),
   );
 }

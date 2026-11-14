@@ -207,3 +207,49 @@ Feature: Additional orders integration coverage
     Given a malformed brand or order UUID
     When an order is requested by UUID
     Then the response is 400 before calling the orders service
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: Orders HTTP endpoints (PostgreSQL integration)
+  @IT-ORD-043
+  Scenario: Lists every brand's orders with filters and per-status counts from the database
+    Test Case ID: IT-ORD-043
+    Given a draft order and a confirmed, paid order in one brand
+    When GET /orders is called with brand, status, payment status, code search and date range filters
+    Then rows are newest first, carry their brand without lines or private fields, and match each filter
+    And per-status counts ignore the status filter, another brand returns nothing, and from after to returns 400
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: All orders HTTP API
+  @IT-ORD-044
+  Scenario: Allow order roles to list every brand's orders
+    Test Case ID: IT-ORD-044
+    Given an authenticated supervisor, cashier, or superadmin
+    When GET /orders is called with every filter
+    Then the response is 200 and the service receives the typed query with the search trimmed
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: All orders HTTP API
+  @IT-ORD-045
+  Scenario: Requires authentication to list every brand's orders
+    Test Case ID: IT-ORD-045
+    Given no authenticated session
+    When GET /orders is called
+    Then the response is 401
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: All orders HTTP API
+  @IT-ORD-046
+  Scenario: Rejects roles without order list permission
+    Test Case ID: IT-ORD-046
+    Given a role other than supervisor, cashier, or superadmin
+    When GET /orders is called
+    Then the response is 403 before calling the orders service
+
+  # Jest: server/src/modules/orders/orders/tests/orders.http.spec.ts
+  # Context: All orders HTTP API
+  @IT-ORD-047
+  Scenario: Rejects invalid or unknown list query parameters
+    Test Case ID: IT-ORD-047
+    Given an invalid status, brand ID, payment status, date, search, page or limit, or an unknown parameter
+    When GET /orders is called
+    Then the response is 400 before calling the orders service

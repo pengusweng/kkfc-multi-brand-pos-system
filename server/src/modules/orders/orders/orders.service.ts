@@ -12,6 +12,7 @@ import { Order, OrderChannel, OrderStatus, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { assertExists } from '../../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
+import { FindAllOrdersDTO } from './dto/find-all-orders.dto';
 import { FindOrdersDTO } from './dto/find-orders.dto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
 import {
@@ -111,6 +112,47 @@ export class OrdersService {
       `Listed orders: brand=${brandId}, returned=${orders.length}, total=${total}`,
     );
     return { orders: orders.map((order) => this.response(order)), total };
+  }
+
+  /** Every brand's orders for the back-office list, newest first, with per-status counts. */
+  async findOverview(query: FindAllOrdersDTO) {
+    const { page, limit, status, search, brand_id, payment_status, from, to } =
+      query;
+    // YYYY-MM-DD strings compare in calendar order.
+    if (from !== undefined && to !== undefined && from > to) {
+      throw new BadRequestException('from must be on or before to.');
+    }
+    const skip = (page - 1) * limit;
+    this.logger.debug(`Listing all orders: skip=${skip}, take=${limit}`);
+    assertValidPagination(skip, this.logger);
+
+    const { orders, total, counts } = await this.repository.findOverview(
+      {
+        search,
+        brand_id,
+        payment_status,
+        // Order dates are stored as Manila calendar dates (midnight UTC).
+        from: from ? new Date(`${from}T00:00:00.000Z`) : undefined,
+        to: to ? new Date(`${to}T00:00:00.000Z`) : undefined,
+      },
+      status,
+      skip,
+      limit,
+    );
+
+    this.logger.log(
+      `Listed all orders: returned=${orders.length}, total=${total}`,
+    );
+    return {
+      data: orders,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        counts,
+      },
+    };
   }
 
   async findOne(brandId: string, orderId: string) {
