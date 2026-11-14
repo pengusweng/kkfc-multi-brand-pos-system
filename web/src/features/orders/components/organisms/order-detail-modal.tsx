@@ -1,6 +1,6 @@
 "use client";
 
-import { ChefHat, X } from "lucide-react";
+import { ChefHat, CircleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DetailRow from "@/src/components/ui/molecules/detail-row";
@@ -10,14 +10,21 @@ import {
   PAYMENT_METHOD_LABEL,
   type KitchenTicket,
   type OrderDetail,
+  type OrderSummary,
 } from "../../utils/orders";
 import OrderStatusBadge from "../atoms/order-status-badge";
 import PaymentStatus from "../atoms/payment-status";
+import OrderDetailSkeleton from "../molecules/order-detail-skeleton";
 import OrderItems from "../molecules/order-items";
 import OrderTimeline from "../molecules/order-timeline";
 
 type OrderDetailModalProps = {
-  order: OrderDetail | null;
+  /** The table row, shown straight away. */
+  order: OrderSummary | null;
+  /** The row with its lines and kitchen ticket, once loaded. */
+  detail: OrderDetail | null;
+  /** Why the lines couldn't load, if they couldn't. */
+  error?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenTicket?: (ticket: KitchenTicket, order: OrderDetail) => void;
@@ -39,8 +46,18 @@ function noTicketReason(order: OrderDetail) {
   return "The kitchen gets a ticket once the order is confirmed.";
 }
 
-export default function OrderDetailModal({ order, open, onOpenChange, onOpenTicket }: OrderDetailModalProps) {
-  const placed = order ? formatPlacedAt(order.placedAt) : null;
+export default function OrderDetailModal({
+  order,
+  detail,
+  error = null,
+  open,
+  onOpenChange,
+  onOpenTicket,
+}: OrderDetailModalProps) {
+  // The detail response is the fresher copy of the same order.
+  const shown = detail ?? order;
+  const placed = shown ? formatPlacedAt(shown.placedAt) : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -51,9 +68,9 @@ export default function OrderDetailModal({ order, open, onOpenChange, onOpenTick
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <DialogTitle className="text-lg font-semibold text-ink tabular-nums">
               <span className="sr-only">Order </span>
-              {order?.code}
+              {shown?.code}
             </DialogTitle>
-            {order ? <OrderStatusBadge status={order.status} /> : null}
+            {shown ? <OrderStatusBadge status={shown.status} /> : null}
           </div>
           <DialogClose
             render={<Button variant="ghost" size="icon-lg" className="size-10 text-ink-muted hover:text-ink" />}
@@ -63,63 +80,82 @@ export default function OrderDetailModal({ order, open, onOpenChange, onOpenTick
           </DialogClose>
         </DialogHeader>
 
-        {order ? (
-          <div className="overflow-y-auto px-6 pt-2 pb-6">
+        {shown ? (
+          <div className="overflow-y-auto px-6 pt-2 pb-6" aria-busy={!detail && !error}>
             {/* The header already draws a rule above the first row. */}
             <dl className="[&>div:first-child]:border-t-0">
-              <DetailRow label="Brand">{order.brand}</DetailRow>
+              <DetailRow label="Brand">{shown.brand}</DetailRow>
               <DetailRow label="Channel">
                 <span className="flex flex-col gap-0.5">
                   <span>
-                    {CHANNEL_LABEL[order.channel]}
-                    {order.table ? <span className="text-ink-muted"> · Table {order.table}</span> : null}
+                    {CHANNEL_LABEL[shown.channel]}
+                    {shown.table ? <span className="text-ink-muted"> · Table {shown.table}</span> : null}
                   </span>
-                  {order.externalReference ? <Code>{order.externalReference}</Code> : null}
+                  {shown.externalReference ? <Code>{shown.externalReference}</Code> : null}
                 </span>
               </DetailRow>
               <DetailRow label="Placed">
-                <time dateTime={order.placedAt}>
+                <time dateTime={shown.placedAt}>
                   {placed?.date}, <span className="whitespace-nowrap">{placed?.time}</span>
                 </time>
               </DetailRow>
               <DetailRow label="Payment">
                 <span className="flex flex-col gap-0.5">
                   <span className="flex flex-wrap items-baseline gap-x-1.5">
-                    <PaymentStatus payment={order.payment} />
-                    {order.paymentMethod ? (
-                      <span className="text-ink-muted">· {PAYMENT_METHOD_LABEL[order.paymentMethod]}</span>
+                    <PaymentStatus payment={shown.payment} />
+                    {shown.paymentMethod ? (
+                      <span className="text-ink-muted">· {PAYMENT_METHOD_LABEL[shown.paymentMethod]}</span>
                     ) : null}
                   </span>
-                  {order.paymentReference ? <Code>{order.paymentReference}</Code> : null}
+                  {shown.paymentReference ? <Code>{shown.paymentReference}</Code> : null}
                 </span>
               </DetailRow>
-              {order.notes ? <DetailRow label="Order note">{order.notes}</DetailRow> : null}
+              {shown.notes ? <DetailRow label="Order note">{shown.notes}</DetailRow> : null}
             </dl>
 
-            <OrderItems order={order} />
-            <OrderTimeline order={order} />
+            {detail ? (
+              <>
+                <OrderItems order={detail} />
+                <OrderTimeline order={detail} />
+              </>
+            ) : error ? (
+              <p
+                role="alert"
+                className="mt-6 flex items-start gap-2.5 rounded-lg bg-destructive/8 px-3 py-2.5 text-sm leading-5 text-danger-ink dark:text-destructive"
+              >
+                <CircleAlert aria-hidden="true" className="mt-px size-4 shrink-0 text-destructive" />
+                {error}
+              </p>
+            ) : (
+              <>
+                <p className="sr-only" role="status">
+                  Loading order items…
+                </p>
+                <OrderDetailSkeleton />
+              </>
+            )}
           </div>
         ) : null}
 
-        {order ? (
-          <DialogFooter className="mx-0 mb-0 flex-row items-center justify-between gap-4 border-hairline sm:justify-between bg-transparent px-6 py-4">
-            {order.ticket ? (
+        {detail ? (
+          <DialogFooter className="mx-0 mb-0 flex-row items-center justify-between gap-4 border-hairline bg-transparent px-6 py-4 sm:justify-between">
+            {detail.ticket ? (
               <>
                 <p className="text-sm text-ink-muted">
-                  Ticket <span className="font-semibold text-ink">{order.ticket.number}</span>
+                  Ticket <span className="font-semibold text-ink">{detail.ticket.number}</span>
                 </p>
                 <Button
                   variant="outline"
                   size="lg"
                   className="h-10 cursor-pointer px-4 font-semibold"
-                  onClick={() => order.ticket && onOpenTicket?.(order.ticket, order)}
+                  onClick={() => detail.ticket && onOpenTicket?.(detail.ticket, detail)}
                 >
                   <ChefHat aria-hidden="true" />
                   Open kitchen ticket
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-ink-muted">{noTicketReason(order)}</p>
+              <p className="text-sm text-ink-muted">{noTicketReason(detail)}</p>
             )}
           </DialogFooter>
         ) : null}

@@ -2,11 +2,10 @@
 
 import DateRangeField from "@/src/components/ui/molecules/date-range-field";
 import SearchField from "@/src/components/ui/molecules/search-field";
-import { BRANDS, PAYMENT_LABEL, type OrderStatusFilter, type PaymentStatus } from "../../utils/orders";
+import { PAYMENT_LABEL, type OrderStatusFilter, type PaymentStatus } from "../../utils/orders";
 import FilterSelect from "../molecules/filter-select";
 import StatusFilter from "../molecules/status-filter";
 
-const BRAND_OPTIONS = BRANDS.map((brand) => ({ value: brand, label: brand }));
 const PAYMENT_OPTIONS = (["PAID", "UNPAID", "REFUNDED"] as const).map((payment) => ({
   value: payment,
   label: PAYMENT_LABEL[payment],
@@ -15,6 +14,8 @@ const PAYMENT_OPTIONS = (["PAID", "UNPAID", "REFUNDED"] as const).map((payment) 
 type OrdersFilterBarProps = {
   query: string;
   onQueryChange: (query: string) => void;
+  /** Brand IDs and names; empty until the brands load. */
+  brandOptions: { value: string; label: string }[];
   brand: string | undefined;
   onBrandChange: (brand: string | undefined) => void;
   payment: PaymentStatus | undefined;
@@ -35,6 +36,7 @@ type OrdersFilterBarProps = {
 export default function OrdersFilterBar({
   query,
   onQueryChange,
+  brandOptions,
   brand,
   onBrandChange,
   payment,
@@ -56,7 +58,7 @@ export default function OrdersFilterBar({
           <FilterSelect
             label="Filter by brand"
             allLabel="All brands"
-            options={BRAND_OPTIONS}
+            options={brandOptions}
             value={brand}
             onChange={onBrandChange}
           />

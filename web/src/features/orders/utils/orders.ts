@@ -1,21 +1,39 @@
-// Mirrors the server's OrderChannel / OrderStatus / PaymentStatus enums.
-export type OrderChannel = "DINE_IN" | "TAKEAWAY" | "GRABFOOD" | "FOODPANDA";
-export type OrderStatus = "DRAFT" | "CONFIRMED" | "PREPARING" | "COMPLETED" | "CANCELLED";
-export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
-export type PaymentMethod = "CASH" | "E_WALLET" | "CARD" | "PLATFORM_SETTLED";
+import type {
+  OrderChannel,
+  OrderDetailRecord,
+  OrderStatus,
+  OrderSummaryRecord,
+  PaymentMethod,
+  PaymentStatus,
+} from "../schemas/orderSchema";
 
+export type { OrderChannel, OrderStatus, PaymentMethod, PaymentStatus };
+
+/** A row of the orders table. It carries every order column, so the modal can show its summary before the lines load. */
 export type OrderSummary = {
   id: string;
   /** Brand prefix and daily number, e.g. "GC-00001". */
   code: string;
-  /** Manila calendar date as YYYY-MM-DD; what the date filter matches. */
+  /** Manila business date as YYYY-MM-DD; what the date filter matches. */
   date: string;
   /** ISO timestamp the order was created. */
   placedAt: string;
+  brandId: string;
   brand: string;
   channel: OrderChannel;
   status: OrderStatus;
   payment: PaymentStatus;
+  paymentMethod: PaymentMethod | null;
+  paymentReference: string | null;
+  table: string | null;
+  /** The platform's own order ID for GrabFood / foodpanda orders. */
+  externalReference: string | null;
+  notes: string | null;
+  /** ISO timestamps; null until that step happens. */
+  confirmedAt: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
 };
 
 export const ORDERS_PAGE_SIZE = 15;
@@ -36,9 +54,6 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export const PAYMENT_LABEL: Record<PaymentStatus, string> = { PAID: "Paid", UNPAID: "Unpaid", REFUNDED: "Refunded" };
-
-/** The brands an order can belong to. Static until brands come from the API. */
-export const BRANDS = ["Gamcheon", "Aurelia's Inasal", "King Kungs Kafé"];
 
 // Pinned to Manila so server and client render the same string (no hydration mismatch).
 const ROW_DATE_FORMAT = new Intl.DateTimeFormat("en-PH", {
@@ -61,51 +76,6 @@ export function formatOrderTime(iso: string) {
 }
 
 export type OrderStatusFilter = OrderStatus | "all";
-
-export type OrderFilters = {
-  search: string;
-  status: OrderStatusFilter;
-  brand?: string;
-  payment?: PaymentStatus;
-  /** YYYY-MM-DD bounds on the order date, both inclusive. */
-  from?: string;
-  to?: string;
-};
-
-function matchesExceptStatus(order: OrderSummary, filters: OrderFilters) {
-  const search = filters.search.trim().toLowerCase();
-  return (
-    (!search || order.code.toLowerCase().includes(search)) &&
-    (!filters.brand || order.brand === filters.brand) &&
-    (!filters.payment || order.payment === filters.payment) &&
-    (!filters.from || order.date >= filters.from) &&
-    (!filters.to || order.date <= filters.to)
-  );
-}
-
-export function filterOrders<T extends OrderSummary>(orders: T[], filters: OrderFilters): T[] {
-  return orders.filter(
-    (order) => matchesExceptStatus(order, filters) && (filters.status === "all" || order.status === filters.status),
-  );
-}
-
-/** Per-status counts under every other filter, so each chip says what picking it would show. */
-export function statusCounts(orders: OrderSummary[], filters: OrderFilters): Record<OrderStatusFilter, number> {
-  const counts: Record<OrderStatusFilter, number> = {
-    all: 0,
-    DRAFT: 0,
-    CONFIRMED: 0,
-    PREPARING: 0,
-    COMPLETED: 0,
-    CANCELLED: 0,
-  };
-  for (const order of orders) {
-    if (!matchesExceptStatus(order, filters)) continue;
-    counts.all += 1;
-    counts[order.status] += 1;
-  }
-  return counts;
-}
 
 export type OrderItemModifier = {
   id: string;
@@ -134,20 +104,70 @@ export type KitchenTicket = {
 };
 
 export type OrderDetail = OrderSummary & {
-  /** ISO timestamps from the order row; null until that step happens. */
-  confirmedAt: string | null;
-  completedAt: string | null;
-  cancelledAt: string | null;
-  cancellationReason: string | null;
-  table: string | null;
-  /** The platform's own order ID for GrabFood / foodpanda orders. */
-  externalReference: string | null;
-  paymentMethod: PaymentMethod | null;
-  paymentReference: string | null;
-  notes: string | null;
   items: OrderItem[];
   ticket: KitchenTicket | null;
 };
+
+export function toOrderSummary(row: OrderSummaryRecord): OrderSummary {
+  return {
+    id: row.order_id,
+    code: row.order_code,
+    date: row.order_date.slice(0, 10),
+    placedAt: row.created_at,
+    brandId: row.brand.brand_id,
+    brand: row.brand.name,
+    channel: row.order_channel,
+    status: row.status,
+    payment: row.payment_status,
+    paymentMethod: row.payment_method,
+    paymentReference: row.payment_reference,
+    table: row.table_reference,
+    externalReference: row.external_order_reference,
+    notes: row.notes,
+    confirmedAt: row.confirmed_at,
+    completedAt: row.completed_at,
+    cancelledAt: row.cancelled_at,
+    cancellationReason: row.cancellation_reason,
+  };
+}
+
+/** The table row with its lines and ticket. Order columns come from the detail response, so they are as fresh as the lines. */
+export function toOrderDetail(summary: OrderSummary, record: OrderDetailRecord): OrderDetail {
+  const ticket = record.kitchen_tickets_order;
+  return {
+    ...summary,
+    status: record.status,
+    payment: record.payment_status,
+    paymentMethod: record.payment_method,
+    paymentReference: record.payment_reference,
+    confirmedAt: record.confirmed_at,
+    completedAt: record.completed_at,
+    cancelledAt: record.cancelled_at,
+    cancellationReason: record.cancellation_reason,
+    items: record.order_items_order.map((line) => ({
+      id: line.order_item_id,
+      name: line.item_name,
+      quantity: line.quantity,
+      unitPrice: line.unit_price,
+      notes: line.notes,
+      modifiers: line.order_item_modifiers_order_item.map((modifier) => ({
+        id: modifier.order_item_modifier_id,
+        name: modifier.modifier_name,
+        price: modifier.additional_price,
+      })),
+    })),
+    ticket: ticket
+      ? {
+          id: ticket.kitchen_ticket_id,
+          number: ticket.ticket_number,
+          acknowledgedAt: ticket.acknowledged_at,
+          preparationStartedAt: ticket.preparation_started_at,
+          readyAt: ticket.ready_at,
+          handedOverAt: ticket.handed_over_at,
+        }
+      : null,
+  };
+}
 
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   CASH: "Cash",
