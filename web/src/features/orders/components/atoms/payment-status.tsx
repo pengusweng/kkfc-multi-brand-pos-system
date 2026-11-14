@@ -29,7 +29,8 @@ export default function PaymentStatus({ payment }: { payment: Payment }) {
     // its baseline, which lifts the label off the row's text line.
     <span className="flex w-fit items-center gap-1.5 whitespace-nowrap text-ink">
       <Icon aria-hidden="true" className={`size-4 shrink-0 ${tone}`} strokeWidth={2.25} />
-      {label}
+      {/* The label, not the icon, sets the baseline, so the cell lines up with its row and label. */}
+      <span className="self-baseline">{label}</span>
     </span>
   );
 }
