@@ -5,8 +5,8 @@ type DateRange = { from?: string; to?: string };
 type DateRangeFieldProps = {
   value: DateRange;
   onChange: (range: DateRange) => void;
-  /** Latest selectable date (YYYY-MM-DD), normally today. */
-  max: string;
+  /** Latest selectable date (YYYY-MM-DD), normally today. Undefined leaves it open. */
+  max?: string;
 };
 
 // Native date inputs open the platform calendar, keep keyboard entry, and

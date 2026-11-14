@@ -17,12 +17,12 @@ export default function OrderSkeletonRow({ index }: { index: number }) {
       <TableCell className="px-3 py-3 md:px-4">
         <div className="flex flex-col gap-0.5">
           <SkeletonBar className="w-20" />
-          <SkeletonBar className="w-24 md:hidden" />
+          <SkeletonBar className="w-40 md:hidden" />
           <SkeletonBar className={`${w.brand} md:hidden`} />
         </div>
       </TableCell>
       <TableCell className="hidden px-4 py-3 md:table-cell">
-        <SkeletonBar className="w-24" />
+        <SkeletonBar className="w-40" />
       </TableCell>
       <TableCell className="hidden px-4 py-3 md:table-cell">
         <SkeletonBar className={w.brand} />

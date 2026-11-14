@@ -2,10 +2,10 @@
 export const CLUSTER = "md:w-px md:pr-10 xl:pr-4";
 
 export const COL = {
-  code: "xl:w-[15%]",
-  date: "xl:w-[15%]",
-  brand: "xl:w-[20%]",
-  channel: "xl:w-[13%]",
+  code: "xl:w-[13%]",
+  date: "xl:w-[20%]",
+  brand: "xl:w-[18%]",
+  channel: "xl:w-[12%]",
   status: "xl:w-[14%]",
   payment: "xl:w-[13%]",
   view: "xl:w-[10%]",

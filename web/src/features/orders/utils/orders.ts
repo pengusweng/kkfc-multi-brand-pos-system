@@ -8,8 +8,10 @@ export type OrderSummary = {
   id: string;
   /** Brand prefix and daily number, e.g. "GC-00001". */
   code: string;
-  /** Manila calendar date as YYYY-MM-DD. */
+  /** Manila calendar date as YYYY-MM-DD; what the date filter matches. */
   date: string;
+  /** ISO timestamp the order was created. */
+  placedAt: string;
   brand: string;
   channel: OrderChannel;
   status: OrderStatus;
@@ -25,16 +27,84 @@ export const CHANNEL_LABEL: Record<OrderChannel, string> = {
   FOODPANDA: "foodpanda",
 };
 
-// order_date is a date-only column, so format it in UTC to keep the day from shifting.
-const DATE_FORMAT = new Intl.DateTimeFormat("en-PH", {
-  timeZone: "UTC",
+export const STATUS_LABEL: Record<OrderStatus, string> = {
+  DRAFT: "Draft",
+  CONFIRMED: "Confirmed",
+  PREPARING: "Preparing",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const PAYMENT_LABEL: Record<PaymentStatus, string> = { PAID: "Paid", UNPAID: "Unpaid", REFUNDED: "Refunded" };
+
+/** The brands an order can belong to. Static until brands come from the API. */
+export const BRANDS = ["Gamcheon", "Aurelia's Inasal", "King Kungs Kafé"];
+
+// Pinned to Manila so server and client render the same string (no hydration mismatch).
+const ROW_DATE_FORMAT = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
   month: "short",
   day: "numeric",
   year: "numeric",
 });
 
-export function formatOrderDate(date: string) {
-  return DATE_FORMAT.format(new Date(`${date}T00:00:00Z`));
+const ROW_TIME_FORMAT = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/** For the table: "Nov 14, 2026" and "12:05 PM", split so the time never wraps apart. The modal shows seconds. */
+export function formatOrderTime(iso: string) {
+  const date = new Date(iso);
+  return { date: ROW_DATE_FORMAT.format(date), time: ROW_TIME_FORMAT.format(date) };
+}
+
+export type OrderStatusFilter = OrderStatus | "all";
+
+export type OrderFilters = {
+  search: string;
+  status: OrderStatusFilter;
+  brand?: string;
+  payment?: PaymentStatus;
+  /** YYYY-MM-DD bounds on the order date, both inclusive. */
+  from?: string;
+  to?: string;
+};
+
+function matchesExceptStatus(order: OrderSummary, filters: OrderFilters) {
+  const search = filters.search.trim().toLowerCase();
+  return (
+    (!search || order.code.toLowerCase().includes(search)) &&
+    (!filters.brand || order.brand === filters.brand) &&
+    (!filters.payment || order.payment === filters.payment) &&
+    (!filters.from || order.date >= filters.from) &&
+    (!filters.to || order.date <= filters.to)
+  );
+}
+
+export function filterOrders<T extends OrderSummary>(orders: T[], filters: OrderFilters): T[] {
+  return orders.filter(
+    (order) => matchesExceptStatus(order, filters) && (filters.status === "all" || order.status === filters.status),
+  );
+}
+
+/** Per-status counts under every other filter, so each chip says what picking it would show. */
+export function statusCounts(orders: OrderSummary[], filters: OrderFilters): Record<OrderStatusFilter, number> {
+  const counts: Record<OrderStatusFilter, number> = {
+    all: 0,
+    DRAFT: 0,
+    CONFIRMED: 0,
+    PREPARING: 0,
+    COMPLETED: 0,
+    CANCELLED: 0,
+  };
+  for (const order of orders) {
+    if (!matchesExceptStatus(order, filters)) continue;
+    counts.all += 1;
+    counts[order.status] += 1;
+  }
+  return counts;
 }
 
 export type OrderItemModifier = {
@@ -65,7 +135,6 @@ export type KitchenTicket = {
 
 export type OrderDetail = OrderSummary & {
   /** ISO timestamps from the order row; null until that step happens. */
-  placedAt: string;
   confirmedAt: string | null;
   completedAt: string | null;
   cancelledAt: string | null;

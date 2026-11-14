@@ -1,6 +1,6 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import ViewButton from "@/src/components/ui/atoms/view-button";
-import { CHANNEL_LABEL, formatOrderDate, type OrderSummary } from "../../utils/orders";
+import { CHANNEL_LABEL, formatOrderTime, type OrderSummary } from "../../utils/orders";
 import { CLUSTER } from "../../utils/table-columns";
 import OrderStatusBadge from "../atoms/order-status-badge";
 import PaymentStatus from "../atoms/payment-status";
@@ -12,22 +12,28 @@ type OrderRowProps = {
 
 export default function OrderRow({ order, onView }: OrderRowProps) {
   const channel = CHANNEL_LABEL[order.channel];
+  const placed = formatOrderTime(order.placedAt);
+  const placedLabel = (
+    <>
+      {placed.date}, <span className="whitespace-nowrap">{placed.time}</span>
+    </>
+  );
   return (
     <TableRow className="border-hairline hover:bg-surface-hover/50">
       <TableCell className="px-3 py-3 whitespace-normal md:px-4 md:whitespace-nowrap xl:whitespace-normal">
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold text-ink tabular-nums slashed-zero">{order.code}</span>
           {/* Narrow screens drop the Date, Brand and Channel columns; they ride along here instead. */}
-          <time dateTime={order.date} className="text-ink-muted md:hidden">
-            {formatOrderDate(order.date)}
+          <time dateTime={order.placedAt} className="text-ink-muted md:hidden">
+            {placedLabel}
           </time>
           <span className="text-ink-muted md:hidden">
-            {order.brand} · {channel}
+            {order.brand} · <span className="whitespace-nowrap">{channel}</span>
           </span>
         </div>
       </TableCell>
       <TableCell className="hidden px-4 py-3 text-ink md:table-cell xl:whitespace-normal">
-        <time dateTime={order.date}>{formatOrderDate(order.date)}</time>
+        <time dateTime={order.placedAt}>{placedLabel}</time>
       </TableCell>
       <TableCell className="hidden px-4 py-3 text-ink md:table-cell xl:whitespace-normal">{order.brand}</TableCell>
       <TableCell className={`hidden px-4 py-3 text-ink-muted md:table-cell xl:whitespace-normal ${CLUSTER}`}>

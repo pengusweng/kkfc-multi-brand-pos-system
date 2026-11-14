@@ -1,4 +1,4 @@
-import type { KitchenTicket, OrderDetail } from "./orders";
+import type { KitchenTicket, OrderChannel, OrderDetail, OrderItem } from "./orders";
 
 // Placeholder orders until the list and detail are wired to the API. Menu
 // items, modifiers and prices come from the Sprint 1 seed data.
@@ -28,7 +28,7 @@ const NONE = {
   ticket: null,
 } as const;
 
-export const SAMPLE_ORDERS: OrderDetail[] = [
+const DETAILED: OrderDetail[] = [
   {
     ...NONE,
     id: "1",
@@ -275,3 +275,99 @@ export const SAMPLE_ORDERS: OrderDetail[] = [
     ],
   },
 ];
+
+// Older, settled orders so the table has enough rows to page through.
+const MENU: Record<string, { prefix: string; items: [string, number][] }> = {
+  Gamcheon: {
+    prefix: "GC",
+    items: [
+      ["Kimchi Fried Rice", 189],
+      ["Bibimbap", 229],
+      ["Japchae", 179],
+      ["Tteokbokki", 159],
+    ],
+  },
+  "Aurelia's Inasal": {
+    prefix: "AI",
+    items: [
+      ["Paa Inasal", 179],
+      ["Pecho Inasal", 189],
+      ["Batchoy Special", 145],
+      ["Halo-halo", 109],
+    ],
+  },
+  "King Kungs Kafé": {
+    prefix: "KK",
+    items: [
+      ["Americano", 120],
+      ["Matcha Latte", 170],
+      ["Clubhouse Sandwich", 195],
+      ["Ube Cheese Pandesal (3 pc)", 95],
+    ],
+  },
+};
+
+const BRAND_CYCLE = Object.keys(MENU);
+const CHANNEL_CYCLE: OrderChannel[] = ["DINE_IN", "TAKEAWAY", "GRABFOOD", "DINE_IN", "FOODPANDA"];
+const PLATFORM = new Set<OrderChannel>(["GRABFOOD", "FOODPANDA"]);
+
+/** Manila wall-clock time on a November 2026 day, as an ISO string. */
+function at(day: number, minutes: number) {
+  const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const mm = String(minutes % 60).padStart(2, "0");
+  return `2026-11-${String(day).padStart(2, "0")}T${hh}:${mm}:${String((minutes * 7) % 60).padStart(2, "0")}+08:00`;
+}
+
+function olderOrder(index: number): OrderDetail {
+  const day = 12 - Math.floor(index / 11); // 11 orders a day, Nov 12 back to Nov 10
+  const slot = index % 11;
+  const brand = BRAND_CYCLE[index % 3];
+  const { prefix, items } = MENU[brand];
+  const channel = CHANNEL_CYCLE[index % CHANNEL_CYCLE.length];
+  const cancelled = index % 9 === 4;
+  const start = 20 * 60 - slot * 52; // evening first, walking back through the day
+  const [name, price] = items[index % items.length];
+  const [sideName, sidePrice] = items[(index + 1) % items.length];
+  const orderItems: OrderItem[] = [
+    { id: `x${index}a`, name, quantity: 1 + (index % 3), unitPrice: price, notes: null, modifiers: [] },
+    ...(index % 2 === 0
+      ? [{ id: `x${index}b`, name: sideName, quantity: 1, unitPrice: sidePrice, notes: null, modifiers: [] }]
+      : []),
+  ];
+  const number = `T-${String(100 + index).padStart(3, "0")}`;
+
+  return {
+    ...NONE,
+    id: `x${index}`,
+    code: `${prefix}-${String(12 - slot).padStart(5, "0")}`,
+    date: `2026-11-${day}`,
+    placedAt: at(day, start),
+    brand,
+    channel,
+    status: cancelled ? "CANCELLED" : "COMPLETED",
+    payment: cancelled ? "REFUNDED" : "PAID",
+    table: channel === "DINE_IN" ? String(1 + (index % 12)) : null,
+    externalReference: PLATFORM.has(channel)
+      ? `${channel === "GRABFOOD" ? "GF" : "FP"}-${(4096 + index * 37).toString(16).toUpperCase()}`
+      : null,
+    paymentMethod: PLATFORM.has(channel) ? "PLATFORM_SETTLED" : index % 2 === 0 ? "CASH" : "CARD",
+    confirmedAt: at(day, start + 1),
+    completedAt: cancelled ? null : at(day, start + 19),
+    cancelledAt: cancelled ? at(day, start + 6) : null,
+    cancellationReason: cancelled ? "Customer changed their mind" : null,
+    ticket: ticket(
+      number,
+      cancelled
+        ? { acknowledgedAt: at(day, start + 2) }
+        : {
+            acknowledgedAt: at(day, start + 2),
+            preparationStartedAt: at(day, start + 3),
+            readyAt: at(day, start + 15),
+            handedOverAt: at(day, start + 18),
+          },
+    ),
+    items: orderItems,
+  };
+}
+
+export const SAMPLE_ORDERS: OrderDetail[] = [...DETAILED, ...Array.from({ length: 32 }, (_, i) => olderOrder(i))];
